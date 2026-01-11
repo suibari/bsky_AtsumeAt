@@ -9,20 +9,32 @@ export const GET: RequestHandler = async ({ url, fetch }) => {
   try {
     const res = await fetch(target);
     if (!res.ok) {
+      console.error(`Proxy upstream error: ${res.status} ${res.statusText}`);
       return new Response(`Failed to fetch: ${res.statusText}`, { status: res.status });
     }
 
-    const headers = new Headers(res.headers);
+    const responseHeaders = new Headers();
+    // Copy safe headers
+    const safeHeaders = ['content-type', 'cache-control', 'last-modified', 'etag'];
+    for (const key of safeHeaders) {
+      if (res.headers.has(key)) {
+        responseHeaders.set(key, res.headers.get(key)!);
+      }
+    }
+
     // Ensure CORS for our app
-    headers.set('Access-Control-Allow-Origin', '*');
-    // Optional: Cache control
-    headers.set('Cache-Control', 'public, max-age=3600');
+    responseHeaders.set('Access-Control-Allow-Origin', '*');
+    // Force cache if missing
+    if (!responseHeaders.has('cache-control')) {
+      responseHeaders.set('Cache-Control', 'public, max-age=3600');
+    }
 
     return new Response(res.body, {
       status: res.status,
-      headers
+      headers: responseHeaders
     });
-  } catch (e) {
-    return new Response('Proxy error', { status: 500 });
+  } catch (e: any) {
+    console.error('Proxy Error Details:', e);
+    return new Response(`Proxy error: ${e.message}`, { status: 500 });
   }
 };
