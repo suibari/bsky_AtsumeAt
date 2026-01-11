@@ -6,11 +6,14 @@ import { BlobRef } from '@atproto/api';
 
 export interface Sticker {
   $type: typeof STICKER_COLLECTION;
-  owner: string; // DID of the user depicted
-  model: string; // 'default', 'cat', etc. or CID of blob? For now string ID
-  image?: BlobRef; // proper blob reference for PDS pinning
-  description?: string; // Custom text or cached post snippet?
-  originalOwner?: string;
+  image: string | BlobRef; // Avatar URL or BlobRef
+  imageType?: 'avatar' | 'custom';
+  subjectDid?: string; // DID of the user depicted (if applicable)
+  originalOwner: string; // DID of the creator/minter
+
+  model: string; // 'default', 'cat', etc.
+  description?: string;
+  obtainedFrom?: string; // The user who gave this sticker (DID)
   obtainedAt: string;
   [key: string]: unknown;
 }
@@ -27,7 +30,8 @@ export interface Transaction {
   stickerIn: string[]; // CIDs or IDs
   stickerOut: string[]; // CIDs or IDs
   status: 'offered' | 'completed';
-  ref?: string; // URI of the referencing transaction (e.g., the Offer)
+  refPartner?: string; // URI of partner's profile (for Constellation)
+  refTransaction?: string; // URI of the referencing transaction (e.g., the Offer)
   createdAt: string;
   [key: string]: unknown;
 }

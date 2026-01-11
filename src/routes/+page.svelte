@@ -4,15 +4,22 @@
   import { Agent } from "@atproto/api";
   import Landing from "$lib/components/Landing.svelte";
   import StickerBook from "$lib/components/StickerBook.svelte";
-  import { initStickers, resolvePendingExchanges } from "$lib/game";
+  import {
+    initStickers,
+    resolvePendingExchanges,
+    checkIncomingOffers,
+  } from "$lib/game";
+  import AboutModal from "$lib/components/AboutModal.svelte";
 
   import { fade, fly } from "svelte/transition";
 
   let agent = $state<Agent | null>(null);
   let loading = $state(true);
-  let loadingMessage = $state("Loading..."); // Added
+  let loadingMessage = $state("Loading...");
   let view = $state<"landing" | "book">("landing");
   let menuOpen = $state(false);
+  let notificationCount = $state(0);
+  let showAbout = $state(false);
 
   onMount(async () => {
     try {
@@ -26,36 +33,31 @@
           // Check if new user -> Init stickers
           if (agent.assertDid) {
             // Check for Pending Exchanges (Finalize)
-            // Fire and forget, or await? Better to await so UI might update with new stickers?
-            // But initStickers also creates stickers.
             await resolvePendingExchanges(agent, (msg) => {
               loadingMessage = msg;
+            });
+
+            // Check for Incoming Offers (Notifications)
+            // Non-blocking for UI responsiveness
+            checkIncomingOffers(agent).then((offers) => {
+              const lastChecked = localStorage.getItem(
+                "lastCheckedNotificationAt",
+              );
+              if (lastChecked) {
+                const threshold = new Date(lastChecked).getTime();
+                notificationCount = offers.filter(
+                  (o) => new Date(o.offer.createdAt).getTime() > threshold,
+                ).length;
+              } else {
+                notificationCount = offers.length;
+              }
             });
 
             const returnUrl = localStorage.getItem("returnUrl");
 
             // Initialization logic - ALWAYS run before redirect
-            // We await this to ensure the "My Sticker" indicator is set.
-            // If this fails, we might still want to redirect, so we catch error.
             try {
-              // Check if we need to show "First Time" sequence
-              // But initStickers returns fast if already done.
-              // To avoid flashing, we can show it optimistically or just check result.
-              // Logic: Call it. If true, it took some time and created stickers. Show "Success" or "Start".
-              // If we want "Start" BEFORE, we don't know if it's new user yet without check.
-              // Modified strategy:
-              // 1. Check if configured (quick check). If not, SHOW BAR.
-              // 2. Run init.
-
-              // However, initStickers does the check inside.
-              // Let's rely on the return value.
-              // If it takes > 100ms, it's probably running.
-              // But user wants "Start" visual.
-
-              // We can just set loading state visually with the bar?
-              // "READY TO COLLECT"
-
-              loadingMessage = "Checking your sticker book..."; // Added
+              loadingMessage = "Checking your sticker book...";
               await initStickers(agent, agent.assertDid);
             } catch (e) {
               console.error("Init failed", e);
@@ -85,16 +87,7 @@
 </script>
 
 {#if loading}
-  <div
-    class="flex flex-col items-center justify-center h-screen bg-background gap-4"
-  >
-    <div
-      class="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"
-    ></div>
-    <div class="text-gray-600 font-medium animate-pulse">
-      {loadingMessage}
-    </div>
-  </div>
+  // ... existing loading ...
 {:else if agent && view === "book"}
   <div class="min-h-screen bg-surface">
     <header
@@ -102,28 +95,61 @@
     >
       <div class="flex items-center gap-2">
         <h1 class="text-xl font-bold text-primary">あつめあっと</h1>
+        <span class="text-sm text-gray-400 border-l pl-2 ml-1"
+          >Your Sticker Book</span
+        >
       </div>
 
-      <!-- Menu Button -->
-      <button
-        onclick={() => (menuOpen = !menuOpen)}
-        class="p-2 rounded-full hover:bg-gray-100 transition-colors"
-      >
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          class="h-6 w-6 text-gray-700"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
+      <div class="flex items-center gap-4">
+        <!-- Notification Bell -->
+        <a
+          href="/notifications"
+          class="relative p-2 text-gray-600 hover:text-primary transition-colors"
         >
-          <path
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            stroke-width="2"
-            d="M4 6h16M4 12h16m-7 6h7"
-          />
-        </svg>
-      </button>
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            class="h-6 w-6"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
+            />
+          </svg>
+          {#if notificationCount > 0}
+            <span
+              class="absolute top-1 right-1 flex h-4 w-4 bg-red-500 rounded-full items-center justify-center text-[10px] text-white font-bold ring-2 ring-white"
+            >
+              {notificationCount}
+            </span>
+          {/if}
+        </a>
+
+        <!-- Menu Button -->
+        <button
+          onclick={() => (menuOpen = !menuOpen)}
+          class="p-2 rounded-full hover:bg-gray-100 transition-colors"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            class="h-6 w-6 text-gray-700"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M4 6h16M4 12h16m-7 6h7"
+            />
+          </svg>
+        </button>
+      </div>
 
       <!-- Menu Dropdown -->
       {#if menuOpen}
@@ -143,6 +169,15 @@
           >
             <span>🤝</span> Exchange
           </a>
+          <button
+            onclick={() => {
+              menuOpen = false;
+              showAbout = true;
+            }}
+            class="px-4 py-2 w-full text-left hover:bg-blue-50 text-gray-700 font-medium text-sm flex items-center gap-2"
+          >
+            <span>ℹ️</span> About
+          </button>
           <div class="h-px bg-gray-100 my-1"></div>
           <button
             onclick={handleLogout}
@@ -162,9 +197,11 @@
     <main class="p-4">
       <StickerBook {agent} />
     </main>
+
+    {#if showAbout}
+      <AboutModal onClose={() => (showAbout = false)} />
+    {/if}
   </div>
 {:else}
   <Landing />
 {/if}
-
-<!-- Removed AnnouncementBar component -->

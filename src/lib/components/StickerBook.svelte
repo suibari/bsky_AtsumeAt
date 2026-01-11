@@ -59,19 +59,42 @@
         >
           <!-- 3D Sticker -->
           <div class="h-40 w-full mb-2">
-            <StickerCanvas avatarUrl={sticker.profile?.avatar} />
+            <StickerCanvas avatarUrl={sticker.image as string} />
           </div>
 
           <!-- Metadata -->
-          <div class="text-center">
+          <div class="text-center space-y-1">
+            <!-- Depicted (Sticker Name/Topic) -->
             <p class="font-bold text-gray-800 truncate text-sm">
               {sticker.profile?.displayName ||
                 sticker.profile?.handle ||
                 "Unknown"}
             </p>
-            <p class="text-xs text-gray-400 mt-1">
+
+            <!-- Giver -->
+            {#if sticker.giverProfile || sticker.obtainedFrom}
+              <p class="text-xs text-gray-500 truncate">
+                <span class="font-semibold">From:</span>
+                {sticker.giverProfile?.displayName ||
+                  sticker.giverProfile?.handle ||
+                  sticker.obtainedFrom}
+              </p>
+            {/if}
+
+            <!-- Original Issuer -->
+            {#if sticker.originalOwnerProfile || sticker.originalOwner}
+              <p class="text-xs text-gray-400 truncate">
+                <span class="font-semibold">Minter:</span>
+                {sticker.originalOwnerProfile?.displayName ||
+                  sticker.originalOwnerProfile?.handle ||
+                  sticker.originalOwner}
+              </p>
+            {/if}
+
+            <p class="text-[10px] text-gray-300">
               {new Date(sticker.obtainedAt).toLocaleDateString()}
             </p>
+
             {#if sticker.description}
               <p
                 class="text-xs text-gray-600 mt-2 line-clamp-3 bg-gray-50 p-1 rounded border border-gray-100 italic"

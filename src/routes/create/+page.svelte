@@ -133,9 +133,11 @@
       // 4. Create Sticker Record
       const record: Sticker = {
         $type: STICKER_COLLECTION,
-        owner: agent.assertDid!,
-        model: `cid:${cid}`,
         image: uploadRes.data.blob,
+        imageType: "custom",
+        subjectDid: agent.assertDid!,
+        originalOwner: agent.assertDid!,
+        model: `cid:${cid}`,
         description: description || undefined,
         obtainedAt: new Date().toISOString(),
       };

@@ -437,7 +437,7 @@
                     e.key === "Enter" && toggleSticker(sticker.uri)}
                 >
                   <div class="h-32 w-full">
-                    <StickerCanvas avatarUrl={sticker.profile?.avatar || ""} />
+                    <StickerCanvas avatarUrl={sticker.image as string} />
                   </div>
                   {#if selectedStickers.has(sticker.uri)}
                     <div
