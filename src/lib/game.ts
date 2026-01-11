@@ -1,5 +1,6 @@
-import type { Agent } from '@atproto/api';
-import { STICKER_COLLECTION, CONFIG_COLLECTION, type Sticker, type Config, TRANSACTION_COLLECTION } from './schemas';
+import { Agent } from '@atproto/api';
+import { STICKER_COLLECTION, CONFIG_COLLECTION, type Sticker, type Config, TRANSACTION_COLLECTION, type Transaction } from './schemas';
+import { getPdsEndpoint } from './atproto';
 
 const HUB_HANDLE = 'suibari.com';
 let cachedHubDid: string | null = null;
@@ -273,88 +274,275 @@ export async function createExchangePost(agent: Agent, targetHandle: string, tar
   });
 }
 
-export async function acceptExchange(agent: Agent, partnerDid: string) {
+// Helper to fetch all raw sticker records for duplicate checking
+async function getAllStickerRecords(agent: Agent, did: string): Promise<Sticker[]> {
+  let cursor;
+  const records: Sticker[] = [];
+  try {
+    do {
+      const res = await agent.com.atproto.repo.listRecords({
+        repo: did,
+        collection: STICKER_COLLECTION,
+        limit: 100,
+        cursor
+      });
+      cursor = res.data.cursor;
+      for (const r of res.data.records) {
+        records.push(r.value as unknown as Sticker);
+      }
+    } while (cursor);
+  } catch (e) {
+    console.warn("Failed to list stickers for dup check", e);
+  }
+  return records;
+}
+
+export async function acceptExchange(agent: Agent, partnerDid: string, stickersToGive: string[]) {
   const myDid = agent.assertDid;
   if (!myDid) return;
 
-  // 1. Give Sticker (Create record of Partner in My Repo)
-  // Check if we already have a default sticker from them?
-  // Simply give one for now.
-  const existingSticker = await agent.com.atproto.repo.listRecords({
-    repo: myDid,
-    collection: STICKER_COLLECTION,
-    limit: 100
-  });
+  // 0. Verify VALID Offer exists in Partner's Repo
+  // This prevents URL spoofing / forced exchange
+  let offeredStickerUris: string[] = [];
+  try {
+    let pdsAgent = agent;
+    const pdsUrl = await getPdsEndpoint(partnerDid);
+    if (pdsUrl) {
+      // Use unauthenticated agent for the specific PDS
+      pdsAgent = new Agent(pdsUrl);
+    }
 
-  const alreadyHas = existingSticker.data.records.some(r => (r.value as unknown as Sticker).owner === partnerDid);
-
-  if (!alreadyHas) {
-    await agent.com.atproto.repo.createRecord({
-      repo: myDid,
-      collection: STICKER_COLLECTION,
-      record: {
-        $type: STICKER_COLLECTION,
-        owner: partnerDid,
-        model: 'default',
-        obtainedAt: new Date().toISOString()
-      }
+    const partnerOffers = await pdsAgent.com.atproto.repo.listRecords({
+      repo: partnerDid,
+      collection: TRANSACTION_COLLECTION,
+      limit: 20, // Check recent transactions
     });
+
+    const validOffer = partnerOffers.data.records.find(r => {
+      const t = r.value as unknown as Transaction;
+      return t.partner === myDid && t.status === 'offered';
+    });
+
+    if (!validOffer) {
+      throw new Error("No active exchange offer found from this user.");
+    }
+
+    const offerData = validOffer.value as unknown as Transaction;
+    offeredStickerUris = offerData.stickerOut; // Stickers Partner OFFERED (My IN)
+
+    // 1. Fetch Details of Offered Stickers (from Partner PDS)
+    const receivedStickersData = await Promise.all(offeredStickerUris.map(async (uri) => {
+      const rkey = uri.split('/').pop();
+      if (!rkey) return null;
+      try {
+        const res = await pdsAgent.com.atproto.repo.getRecord({
+          repo: partnerDid,
+          collection: STICKER_COLLECTION,
+          rkey
+        });
+        return res.data.value as unknown as Sticker;
+      } catch (e) {
+        console.error(`Failed to fetch sticker ${uri}`, e);
+        return null;
+      }
+    }));
+
+    // 2. Create New Stickers in My Repo (Clone)
+    // DUPLICATE CHECK
+    const myStickers = await getAllStickerRecords(agent, myDid);
+
+    for (const stickerData of receivedStickersData) {
+      if (!stickerData) continue;
+
+      const alreadyHas = myStickers.some(s => s.owner === stickerData.owner && s.model === stickerData.model);
+      if (alreadyHas) continue;
+
+      await agent.com.atproto.repo.createRecord({
+        repo: myDid,
+        collection: STICKER_COLLECTION,
+        record: {
+          $type: STICKER_COLLECTION,
+          owner: stickerData.owner,
+          model: stickerData.model,
+          obtainedAt: new Date().toISOString()
+        }
+      });
+    }
+
+  } catch (e) {
+    console.error("Verification failed", e);
+    throw new Error("Could not verify exchange offer. User may not have offered a sticker.");
   }
 
-  // 2. Create Transaction to signal completion
+
+  // 3. NO Deletion! (User requested "Share" behavior)
+  // We keep our stickers, and just "Share" them by referencing them in the transaction.
+
+  // 4. Create Transaction to signal completion
   await agent.com.atproto.repo.createRecord({
     repo: myDid,
     collection: TRANSACTION_COLLECTION,
     record: {
       $type: TRANSACTION_COLLECTION,
       partner: partnerDid,
-      stickerIn: ['pending'],
-      stickerOut: ['pending'],
+      stickerIn: offeredStickerUris,
+      stickerOut: stickersToGive,
       status: 'completed',
       createdAt: new Date().toISOString()
     }
   });
 }
 
-export async function checkInverseExchange(agent: Agent, partnerDid: string) {
-  // Check if Partner has a transaction with Me
+export async function resolvePendingExchanges(agent: Agent) {
+  const myDid = agent.assertDid;
+  if (!myDid) return;
+
+  // 1. Get MY open offers
+  let cursor;
+  const myOffers: { uri: string, value: Transaction }[] = [];
+  do {
+    const res = await agent.com.atproto.repo.listRecords({
+      repo: myDid,
+      collection: TRANSACTION_COLLECTION,
+      limit: 50,
+      cursor
+    });
+    cursor = res.data.cursor;
+    for (const r of res.data.records) {
+      const t = r.value as unknown as Transaction;
+      if (t.status === 'offered') {
+        myOffers.push({ uri: r.uri, value: t });
+      }
+    }
+  } while (cursor);
+
+  // 2. Check each partner
+  for (const offer of myOffers) {
+    const partnerDid = offer.value.partner;
+    const claimed = await checkInverseExchange(agent, partnerDid, offer.value);
+
+    if (claimed) {
+      // 3. Update MY transaction to completed
+      const rkey = offer.uri.split('/').pop();
+      if (rkey) {
+        await agent.com.atproto.repo.putRecord({
+          repo: myDid,
+          collection: TRANSACTION_COLLECTION,
+          rkey: rkey,
+          record: {
+            ...offer.value,
+            status: 'completed',
+            updatedAt: new Date().toISOString()
+          }
+        });
+      }
+    }
+  }
+}
+
+export async function checkInverseExchange(agent: Agent, partnerDid: string, relatedOffer?: Transaction): Promise<boolean> {
   const myDid = agent.assertDid;
   if (!myDid) return false;
 
   try {
-    const res = await agent.com.atproto.repo.listRecords({
+    let pdsAgent = agent;
+    const pdsUrl = await getPdsEndpoint(partnerDid);
+    if (pdsUrl) {
+      pdsAgent = new Agent(pdsUrl);
+    }
+
+    const res = await pdsAgent.com.atproto.repo.listRecords({
       repo: partnerDid,
       collection: TRANSACTION_COLLECTION,
       limit: 20
     });
 
-    // Find transaction where partner is Me
-    const tx = res.data.records.find(r => (r.value as any).partner === myDid && (r.value as any).status === 'completed');
+    // Find transaction where partner is Me and status is completed
+    // AND createdAt > relatedOffer.createdAt (if provided)
+    // AND stickerIn matches relatedOffer.stickerOut (if provided)
+    const txRecord = res.data.records.find(r => {
+      const t = r.value as any;
+      const isPartnerMe = t.partner === myDid;
+      const isCompleted = t.status === 'completed';
 
-    if (tx) {
-      // Found! Ensure I have Partner's sticker
-      const existingSticker = await agent.com.atproto.repo.listRecords({
-        repo: myDid,
-        collection: STICKER_COLLECTION,
-        limit: 100
-      });
-      const alreadyHas = existingSticker.data.records.some(r => (r.value as unknown as Sticker).owner === partnerDid);
+      if (!isPartnerMe || !isCompleted) return false;
 
-      if (!alreadyHas) {
-        await agent.com.atproto.repo.createRecord({
-          repo: myDid,
+      if (relatedOffer) {
+        // Check Timestamp (Safeguard)
+        // If B's tx is older than A's offer, it's definitely old history.
+        if (new Date(t.createdAt) < new Date(relatedOffer.createdAt)) return false;
+
+        // Check Content (Robustness)
+        // B.stickerIn (what B received) SHOULD BE EQUAL TO A.stickerOut (what A offered)
+        // Sort to handle order differences? usually same order if logic is simple.
+        // Let's try flexible match: B.stickerIn must contain all A.stickerOut?
+        // "offeredStickerUris = offerData.stickerOut" in acceptExchange.
+        // So they should be identical strings.
+        const offerOut = relatedOffer.stickerOut || [];
+        const partnerIn = t.stickerIn || [];
+
+        // Simple length check first
+        if (offerOut.length !== partnerIn.length) return false;
+
+        // Every item in offerOut must exist in partnerIn
+        const match = offerOut.every(uri => partnerIn.includes(uri));
+        if (!match) return false;
+      }
+
+      return true;
+    });
+
+    if (!txRecord) return false;
+    const tx = txRecord.value as unknown as Transaction;
+    const incomingUris = tx.stickerOut;
+
+    // If no stickers to receive, effectively we are done?
+    if (!incomingUris || incomingUris.length === 0) return true; // Mark as done even if empty?
+
+    let addedCount = 0;
+
+    // Optimisation: Fetch myStickers thoroughly
+    const myStickers = await getAllStickerRecords(agent, myDid);
+
+    for (const uri of incomingUris) {
+      const rkey = uri.split('/').pop();
+      if (!rkey) continue;
+
+      try {
+        const remoteStickerRes = await pdsAgent.com.atproto.repo.getRecord({
+          repo: partnerDid,
           collection: STICKER_COLLECTION,
-          record: {
-            $type: STICKER_COLLECTION,
-            owner: partnerDid,
-            model: 'default',
-            shiny: Math.random() < 0.1,
-            obtainedAt: new Date().toISOString()
-          }
+          rkey
         });
-        return true; // Finalized
+        const remoteSticker = remoteStickerRes.data.value as unknown as Sticker;
+
+        // Check duplicate
+        const alreadyHas = myStickers.some(s => s.owner === remoteSticker.owner && s.model === remoteSticker.model);
+
+        if (!alreadyHas) {
+          await agent.com.atproto.repo.createRecord({
+            repo: myDid,
+            collection: STICKER_COLLECTION,
+            record: {
+              $type: STICKER_COLLECTION,
+              owner: remoteSticker.owner,
+              model: remoteSticker.model,
+              obtainedAt: new Date().toISOString()
+            }
+          });
+          addedCount++;
+        } else {
+          // If we already have it, we still consider this "claimed" so we can close the transaction
+          addedCount++;
+        }
+      } catch (e) {
+        console.warn("Failed to fetch/add inverse sticker", e);
       }
     }
+
+    // If we processed stickers (added or skipped duplicates), we considered it success
+    return addedCount > 0;
+
   } catch (e) {
     console.warn('Check inverse failed', e);
   }

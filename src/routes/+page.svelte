@@ -5,7 +5,7 @@
   import Landing from "$lib/components/Landing.svelte";
   import StickerBook from "$lib/components/StickerBook.svelte";
   import AnnouncementBar from "$lib/components/AnnouncementBar.svelte";
-  import { initStickers } from "$lib/game";
+  import { initStickers, resolvePendingExchanges } from "$lib/game";
 
   import { fade, fly } from "svelte/transition";
 
@@ -26,6 +26,11 @@
           view = "book";
           // Check if new user -> Init stickers
           if (agent.assertDid) {
+            // Check for Pending Exchanges (Finalize)
+            // Fire and forget, or await? Better to await so UI might update with new stickers?
+            // But initStickers also creates stickers.
+            await resolvePendingExchanges(agent);
+
             const returnUrl = localStorage.getItem("returnUrl");
 
             // Initialization logic - ALWAYS run before redirect

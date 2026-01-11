@@ -1,7 +1,7 @@
 <script lang="ts">
   import { page } from "$app/stores";
   import { onMount } from "svelte";
-  import { getClient } from "$lib/atproto";
+  import { getClient, getPdsEndpoint } from "$lib/atproto";
   import { Agent } from "@atproto/api";
   import type { ProfileViewBasic } from "@atproto/api/dist/client/types/app/bsky/actor/defs";
   import {
@@ -9,7 +9,12 @@
     getUserStickers,
     createExchangePost,
   } from "$lib/game";
-  import { STICKER_COLLECTION, type Sticker } from "$lib/schemas";
+  import {
+    STICKER_COLLECTION,
+    type Sticker,
+    TRANSACTION_COLLECTION,
+    type Transaction,
+  } from "$lib/schemas";
   import type { StickerWithProfile } from "$lib/game";
   import Landing from "$lib/components/Landing.svelte";
   import StickerCanvas from "$lib/components/StickerCanvas.svelte";
@@ -17,6 +22,8 @@
   let agent = $state<Agent | null>(null);
   let targetUserParam = $derived($page.url.searchParams.get("user"));
   let loading = $state(true);
+  let verifying = $state(false);
+  let isValidOffer = $state(false);
   let processing = $state(false);
 
   // Accept Mode State
@@ -38,14 +45,67 @@
       const res = await c.init();
       if (res) {
         agent = new Agent(res.session);
-        // If initiate mode, fetch stickers
-        if (!targetUserParam && agent.assertDid) {
+
+        // Always fetch stickers if logged in
+        if (agent.assertDid) {
           myStickers = await getUserStickers(agent, agent.assertDid);
+        }
+
+        // Verify Offer if targetUserParam exists
+        if (targetUserParam) {
+          await verifyIncomingOffer(targetUserParam);
         }
       }
     }
     loading = false;
   });
+
+  async function verifyIncomingOffer(did: string) {
+    if (!agent || !agent.assertDid) return;
+    verifying = true;
+    isValidOffer = false;
+
+    // 1. Basic DID check
+    if (!did.startsWith("did:")) {
+      verifying = false;
+      return;
+    }
+
+    // 2. Resolve PDS (Robust Cross-PDS)
+    let pdsAgent = agent;
+    const pdsUrl = await getPdsEndpoint(did);
+    if (pdsUrl) {
+      // Create unauthenticated agent for that PDS
+      pdsAgent = new Agent(pdsUrl);
+    }
+
+    // 3. Query Repo for Offer
+    try {
+      const res = await pdsAgent.com.atproto.repo.listRecords({
+        repo: did, // Now hitting the correct PDS
+        collection: TRANSACTION_COLLECTION,
+        limit: 10,
+      });
+
+      // We must reconstruct the Agent if valid because pdsAgent might be unauthed?
+      // Actually we just need to verify the record exists.
+
+      const offer = res.data.records.find((r) => {
+        const t = r.value as unknown as Transaction;
+        // Verify target matches ME (My Agent's DID)
+        return t.partner === agent!.assertDid && t.status === "offered";
+      });
+
+      if (offer) {
+        isValidOffer = true;
+      }
+    } catch (e) {
+      console.error("Failed to verify offer", e);
+      // Fallback: If pdsAgent failed, maybe main agent works? (Unlikely if different PDS)
+    } finally {
+      verifying = false;
+    }
+  }
 
   function handleInput(e: Event) {
     const value = (e.target as HTMLInputElement).value;
@@ -136,9 +196,18 @@
   // Handle Accept
   async function handleAccept() {
     if (!agent || !targetUserParam) return;
+    if (selectedStickers.size === 0) {
+      alert("Please select at least one sticker to give in return.");
+      return;
+    }
+
     processing = true;
     try {
-      await acceptExchange(agent, targetUserParam);
+      await acceptExchange(
+        agent,
+        targetUserParam,
+        Array.from(selectedStickers),
+      );
       successAccept = true;
     } catch (e) {
       console.error("Exchange failed", e);
@@ -168,40 +237,117 @@
     </div>
   {:else if targetUserParam}
     <!-- ACCEPT MODE -->
-    {#if successAccept}
-      <div class="bg-white p-8 rounded-2xl shadow-xl text-center max-w-md">
-        <h2 class="text-3xl font-bold text-green-500 mb-4">
-          Exchange Accepted!
-        </h2>
-        <p class="text-gray-600 mb-8">
-          You have received a new sticker and sent one back!
+    {#if verifying}
+      <div class="text-center mt-20">
+        <div
+          class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-2"
+        ></div>
+        <p class="text-gray-500">Verifying exchange offer...</p>
+      </div>
+    {:else if isValidOffer}
+      {#if successAccept}
+        <div class="bg-white p-8 rounded-2xl shadow-xl text-center max-w-md">
+          <h2 class="text-3xl font-bold text-green-500 mb-4">
+            Exchange Accepted!
+          </h2>
+          <p class="text-gray-600 mb-8">
+            You have received new stickers and sent yours back!
+          </p>
+          <a
+            href="/"
+            class="bg-primary text-white font-bold py-3 px-6 rounded-lg hover:bg-blue-600 transition"
+            >View My Book</a
+          >
+        </div>
+      {:else}
+        <div
+          class="bg-white p-8 rounded-2xl shadow-xl max-w-2xl text-center w-full"
+        >
+          <h2 class="text-2xl font-bold mb-2">Incoming Offer!</h2>
+          <p class="text-gray-600 mb-6">
+            User <span class="font-mono bg-gray-100 px-1 rounded"
+              >{targetUserParam}</span
+            > wants to swap.
+          </p>
+
+          <div class="mb-6 text-left">
+            <h3 class="text-lg font-bold mb-2">
+              Select Stickers to Give Back ({selectedStickers.size})
+            </h3>
+
+            {#if myStickers.length === 0}
+              <p class="text-gray-500 italic text-center py-4">
+                You have no stickers to give! Go collect some first.
+              </p>
+            {:else}
+              <div
+                class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 max-h-[300px] overflow-y-auto p-4 border rounded-xl bg-gray-50"
+              >
+                {#each myStickers as sticker}
+                  <div
+                    class="relative cursor-pointer transition-transform transform hover:scale-105 bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden"
+                    onclick={() => toggleSticker(sticker.uri)}
+                    role="button"
+                    tabindex="0"
+                    onkeydown={(e) =>
+                      e.key === "Enter" && toggleSticker(sticker.uri)}
+                  >
+                    <div class="h-24 w-full">
+                      <StickerCanvas
+                        avatarUrl={sticker.profile?.avatar || ""}
+                      />
+                    </div>
+                    {#if selectedStickers.has(sticker.uri)}
+                      <div
+                        class="absolute inset-0 bg-primary/10 border-4 border-primary rounded-xl flex items-start justify-end p-2"
+                      >
+                        <span
+                          class="bg-primary text-white text-xs font-bold rounded-full h-6 w-6 flex items-center justify-center shadow-sm"
+                          >✓</span
+                        >
+                      </div>
+                    {/if}
+                    <div
+                      class="p-1 text-center text-xs text-gray-500 truncate border-t border-gray-50"
+                    >
+                      {sticker.profile?.displayName || "Unknown"}
+                    </div>
+                  </div>
+                {/each}
+              </div>
+            {/if}
+          </div>
+
+          <div class="flex justify-center space-x-4">
+            <a
+              href="/"
+              class="px-4 py-2 text-gray-500 hover:text-gray-700 self-center"
+              >Cancel</a
+            >
+            <button
+              onclick={handleAccept}
+              disabled={processing || selectedStickers.size === 0}
+              class="bg-secondary text-white font-bold py-3 px-8 rounded-full hover:shadow-lg transition transform active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {processing ? "Exchanging..." : "Exchange Stickers!"}
+            </button>
+          </div>
+        </div>
+      {/if}
+    {:else}
+      <!-- Invalid Offer -->
+      <div class="bg-white p-8 rounded-2xl shadow-xl max-w-md text-center">
+        <h2 class="text-xl font-bold text-red-500 mb-4">Invalid Link</h2>
+        <p class="text-gray-600 mb-6">
+          The exchange link is invalid, expired, or the user did not make an
+          offer for you.
         </p>
         <a
-          href="/"
-          class="bg-primary text-white font-bold py-3 px-6 rounded-lg hover:bg-blue-600 transition"
-          >View My Book</a
+          href="/exchange"
+          class="bg-gray-100 text-gray-700 font-bold py-2 px-6 rounded-lg hover:bg-gray-200"
         >
-      </div>
-    {:else}
-      <div class="bg-white p-8 rounded-2xl shadow-xl max-w-md text-center">
-        <h2 class="text-2xl font-bold mb-2">Incoming Offer!</h2>
-        <p class="text-gray-600 mb-6">
-          User <span class="font-mono bg-gray-100 px-1 rounded"
-            >{targetUserParam}</span
-          > wants to swap.
-        </p>
-        <div class="flex justify-center space-x-4">
-          <a href="/" class="px-4 py-2 text-gray-500 hover:text-gray-700"
-            >Cancel</a
-          >
-          <button
-            onclick={handleAccept}
-            disabled={processing}
-            class="bg-secondary text-white font-bold py-3 px-8 rounded-full hover:shadow-lg transition transform active:scale-95 disabled:opacity-50"
-          >
-            {processing ? "Exchanging..." : "Accept Exchange!"}
-          </button>
-        </div>
+          Start New Exchange
+        </a>
       </div>
     {/if}
   {:else}
