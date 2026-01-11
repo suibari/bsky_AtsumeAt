@@ -42,39 +42,20 @@ export async function initStickers(agent: Agent, userDid: string): Promise<boole
       });
     }
   } while (cursor);
-  // 2. Fetch follows
-  let candidates: string[] = [];
-  try {
-    const follows = await agent.app.bsky.graph.getFollows({ actor: userDid, limit: 100 });
-    candidates = follows.data.follows.map(f => f.did);
-  } catch (e) {
-    console.warn('Failed to fetch follows, using self only', e);
-  }
+  // 2. Create Self Sticker (Only self for AtsumeAt)
+  const selfSticker: Sticker = {
+    $type: STICKER_COLLECTION,
+    owner: userDid,
+    model: 'default',
+    shiny: false,
+    obtainedAt: new Date().toISOString()
+  };
 
-  // 3. Pick 5 random + self
-  const shuffled = candidates.sort(() => 0.5 - Math.random());
-  const selected = shuffled.slice(0, 5);
-  const targets = [userDid, ...selected]; // Always include self
-
-  // Fill to 6 if not enough follows
-  while (targets.length < 6) {
-    targets.push(userDid);
-  }
-
-  // 4. Create stickers
-  for (const did of targets) {
-    await agent.com.atproto.repo.createRecord({
-      repo: userDid,
-      collection: STICKER_COLLECTION,
-      record: {
-        $type: STICKER_COLLECTION,
-        owner: did,
-        model: 'default',
-        shiny: Math.random() < 0.1,
-        obtainedAt: new Date().toISOString()
-      }
-    });
-  }
+  await agent.com.atproto.repo.createRecord({
+    repo: userDid,
+    collection: STICKER_COLLECTION,
+    record: selfSticker
+  });
 
   // 5. Create Config/HubRef
   await ensureHubRef(agent, userDid);
@@ -179,15 +160,37 @@ export async function getUserStickers(agent: Agent, userDid: string): Promise<St
         profilesMap.set(p.did, p);
       }
     } catch (e) {
-      console.warn('Failed to fetch profile chunk', chunk, e);
+      console.error('Failed to fetch profiles', e);
     }
   }
 
-  // 3. Attach Profiles
-  return stickers.map(s => ({
-    ...s,
-    profile: profilesMap.get(s.owner)
-  }));
+  // 3. Attach profiles & Handle Custom Images
+  stickers.forEach(s => {
+    // Attach profile info
+    if (profilesMap.has(s.owner)) {
+      const p = profilesMap.get(s.owner);
+      s.profile = {
+        handle: p.handle,
+        displayName: p.displayName,
+        avatar: p.avatar
+      };
+    }
+
+    // Override Avatar if Custom Sticker
+    if (s.model && s.model.startsWith('cid:')) {
+      const cid = s.model.split(':')[1];
+      // Use fullsize for better quality on sticker
+      const customUrl = `https://cdn.bsky.app/img/feed_fullsize/plain/${s.owner}/${cid}@jpeg`;
+
+      if (!s.profile) {
+        s.profile = { handle: 'unknown', avatar: customUrl };
+      } else {
+        s.profile.avatar = customUrl;
+      }
+    }
+  });
+
+  return stickers;
 }
 
 export async function createExchangePost(agent: Agent, targetHandle: string, targetDid: string) {

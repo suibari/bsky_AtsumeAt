@@ -33,7 +33,7 @@
   class="flex flex-col items-center justify-center min-h-screen bg-surface p-4 text-center"
 >
   <h1 class="text-6xl font-bold mb-4 text-primary drop-shadow-md">
-    BonBonDropAt
+    あつめあっと
   </h1>
   <p class="text-xl text-gray-600 mb-12">Avatar Sticker Exchange on Bluesky</p>
 

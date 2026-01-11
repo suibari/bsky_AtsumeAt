@@ -7,10 +7,13 @@
   import AnnouncementBar from "$lib/components/AnnouncementBar.svelte";
   import { initStickers } from "$lib/game";
 
+  import { fade, fly } from "svelte/transition";
+
   let agent = $state<Agent | null>(null);
   let loading = $state(true);
   let view = $state<"landing" | "book">("landing");
   let announcement = $state({ visible: false, mainText: "", subText: "" });
+  let menuOpen = $state(false);
 
   onMount(async () => {
     try {
@@ -58,7 +61,7 @@
                 announcement = {
                   visible: true,
                   mainText: "STICKERS GET!",
-                  subText: "6 New Stickers Added",
+                  subText: "My Sticker Added",
                 };
                 await new Promise((r) => setTimeout(r, 1500));
                 announcement.visible = false;
@@ -96,12 +99,67 @@
   </div>
 {:else if agent && view === "book"}
   <div class="min-h-screen bg-surface">
-    <header class="bg-white shadow p-4 flex justify-between items-center">
-      <h1 class="text-xl font-bold text-primary">BonBonDropAt</h1>
+    <header
+      class="bg-white shadow p-4 flex justify-between items-center relative z-20"
+    >
+      <div class="flex items-center gap-2">
+        <h1 class="text-xl font-bold text-primary">あつめあっと</h1>
+      </div>
+
+      <!-- Menu Button -->
       <button
-        onclick={handleLogout}
-        class="text-sm text-gray-500 hover:text-red-500">Sign Out</button
+        onclick={() => (menuOpen = !menuOpen)}
+        class="p-2 rounded-full hover:bg-gray-100 transition-colors"
       >
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          class="h-6 w-6 text-gray-700"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M4 6h16M4 12h16m-7 6h7"
+          />
+        </svg>
+      </button>
+
+      <!-- Menu Dropdown -->
+      {#if menuOpen}
+        <div
+          class="absolute top-16 right-4 w-48 bg-white rounded-lg shadow-xl border border-gray-100 py-2 flex flex-col z-30"
+          transition:fly={{ y: -10, duration: 200 }}
+        >
+          <a
+            href="/create"
+            class="px-4 py-2 hover:bg-blue-50 text-gray-700 font-medium text-sm flex items-center gap-2"
+          >
+            <span>🎨</span> Create Sticker
+          </a>
+          <a
+            href="/exchange"
+            class="px-4 py-2 hover:bg-blue-50 text-gray-700 font-medium text-sm flex items-center gap-2"
+          >
+            <span>🤝</span> Exchange
+          </a>
+          <div class="h-px bg-gray-100 my-1"></div>
+          <button
+            onclick={handleLogout}
+            class="px-4 py-2 w-full text-left hover:bg-red-50 text-red-600 font-medium text-sm flex items-center gap-2"
+          >
+            <span>🚪</span> Sign Out
+          </button>
+        </div>
+
+        <!-- Click outside handler overlay -->
+        <div
+          class="fixed inset-0 z-10"
+          onclick={() => (menuOpen = false)}
+        ></div>
+      {/if}
     </header>
     <main class="p-4">
       <StickerBook {agent} />
