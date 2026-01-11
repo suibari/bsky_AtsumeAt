@@ -164,7 +164,7 @@
   });
 </script>
 
-<div class="relative w-full h-full min-h-[200px]">
+<div class="relative w-full h-full">
   <div bind:this={container} class="w-full h-full"></div>
 
   <!-- Interaction Overlay -->

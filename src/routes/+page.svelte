@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount } from "svelte";
-  import { getClient } from "$lib/atproto";
+  import { getClient, signOut } from "$lib/atproto";
   import { Agent } from "@atproto/api";
   import Landing from "$lib/components/Landing.svelte";
   import StickerBook from "$lib/components/StickerBook.svelte";
@@ -85,8 +85,10 @@
     }
   });
 
-  function handleLogout() {
-    localStorage.removeItem("atproto-oauth-session");
+  async function handleLogout() {
+    if (agent?.assertDid) {
+      await signOut(agent.assertDid);
+    }
     window.location.reload();
   }
 </script>
@@ -163,14 +165,6 @@
     </header>
     <main class="p-4">
       <StickerBook {agent} />
-
-      <div class="mt-8">
-        <h3 class="text-lg font-bold mb-2">Exchange</h3>
-        <p class="text-sm text-gray-600">
-          Search for users and start an exchange.
-        </p>
-        <!-- Search Component Placeholder -->
-      </div>
     </main>
   </div>
 {:else}

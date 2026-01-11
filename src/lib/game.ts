@@ -225,12 +225,27 @@ export async function getUserStickers(agent: Agent, userDid: string): Promise<St
   return stickers;
 }
 
-export async function createExchangePost(agent: Agent, targetHandle: string, targetDid: string) {
+export async function createExchangePost(agent: Agent, targetHandle: string, targetDid: string, offeredStickers: StickerWithProfile[]) {
   const origin = window.location.origin;
   const myDid = agent.assertDid;
 
-  // Create text with mention
-  const text = `Let's exchange stickers @${targetHandle}! 🍬 #BonBonDropAt`;
+  // 1. Create Transaction Record (Offered)
+  await agent.com.atproto.repo.createRecord({
+    repo: myDid!,
+    collection: TRANSACTION_COLLECTION,
+    record: {
+      $type: TRANSACTION_COLLECTION,
+      partner: targetDid,
+      stickerIn: [], // We don't know what we get yet
+      stickerOut: offeredStickers.map(s => s.uri),
+      status: 'offered',
+      createdAt: new Date().toISOString()
+    }
+  });
+
+  // 2. Create text with mention
+  const stickerCount = offeredStickers.length;
+  const text = `Let's exchange stickers @${targetHandle}! offering ${stickerCount} sticker${stickerCount > 1 ? 's' : ''} 🍬 #AtsumeAt`;
 
   // Facets for mention and tag
   const facets = [
@@ -239,8 +254,8 @@ export async function createExchangePost(agent: Agent, targetHandle: string, tar
       features: [{ $type: 'app.bsky.richtext.facet#mention', did: targetDid }]
     },
     {
-      index: { byteStart: text.indexOf('#'), byteEnd: text.indexOf('#') + 13 },
-      features: [{ $type: 'app.bsky.richtext.facet#tag', tag: 'BonBonDropAt' }]
+      index: { byteStart: text.indexOf('#'), byteEnd: text.indexOf('#') + 9 },
+      features: [{ $type: 'app.bsky.richtext.facet#tag', tag: 'AtsumeAt' }]
     }
   ];
 
@@ -263,6 +278,8 @@ export async function acceptExchange(agent: Agent, partnerDid: string) {
   if (!myDid) return;
 
   // 1. Give Sticker (Create record of Partner in My Repo)
+  // Check if we already have a default sticker from them?
+  // Simply give one for now.
   const existingSticker = await agent.com.atproto.repo.listRecords({
     repo: myDid,
     collection: STICKER_COLLECTION,
@@ -279,7 +296,6 @@ export async function acceptExchange(agent: Agent, partnerDid: string) {
         $type: STICKER_COLLECTION,
         owner: partnerDid,
         model: 'default',
-        shiny: Math.random() < 0.1,
         obtainedAt: new Date().toISOString()
       }
     });
@@ -292,8 +308,8 @@ export async function acceptExchange(agent: Agent, partnerDid: string) {
     record: {
       $type: TRANSACTION_COLLECTION,
       partner: partnerDid,
-      stickerIn: 'pending',
-      stickerOut: 'pending',
+      stickerIn: ['pending'],
+      stickerOut: ['pending'],
       status: 'completed',
       createdAt: new Date().toISOString()
     }

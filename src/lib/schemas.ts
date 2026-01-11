@@ -24,8 +24,8 @@ export interface Config {
 export interface Transaction {
   $type: typeof TRANSACTION_COLLECTION;
   partner: string; // DID of exchange partner
-  stickerIn: string; // CID or ID of sticker received
-  stickerOut: string; // CID or ID of sticker sent
+  stickerIn: string[]; // CIDs or IDs
+  stickerOut: string[]; // CIDs or IDs
   status: 'offered' | 'completed';
   createdAt: string;
   [key: string]: unknown;

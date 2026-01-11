@@ -3,7 +3,7 @@ import type { Agent } from '@atproto/api';
 
 export let client: BrowserOAuthClient | null = null;
 
-const SCOPE = 'atproto transition:generic repo:blue.bonbondropat.sticker repo:blue.bonbondropat.config repo:blue.bonbondropat.transaction';
+const SCOPE = 'atproto transition:generic repo:blue.atsumeat.sticker repo:blue.atsumeat.config repo:blue.atsumeat.transaction';
 
 export function getClient() {
   if (typeof window === 'undefined') return null;
@@ -49,8 +49,13 @@ export async function signIn(handle: string) {
   });
 }
 
-export function signOut() {
-  // client.revoke(sub) could be used if we had the session
-  // For now purely client-side forget
+export async function signOut(did: string) {
+  const c = getClient();
+  if (!c) return;
+  try {
+    await c.revoke(did);
+  } catch (e) {
+    console.warn("Revoke failed", e);
+  }
   localStorage.removeItem('atproto-oauth-session');
 }
