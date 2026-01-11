@@ -8,6 +8,7 @@
   let agent = $state<Agent | null>(null);
   let fileInput: HTMLInputElement;
   let imageUrl = $state<string | null>(null);
+  let description = $state("");
   let processing = $state(false);
 
   // Crop State
@@ -134,7 +135,8 @@
         $type: STICKER_COLLECTION,
         owner: agent.assertDid!,
         model: `cid:${cid}`,
-        image: uploadRes.data.blob, // Store the blob ref
+        image: uploadRes.data.blob,
+        description: description || undefined,
         obtainedAt: new Date().toISOString(),
       };
 
@@ -216,11 +218,25 @@
           />
         </div>
 
-        <div class="flex gap-2">
+        <!-- Description Input -->
+        <div class="mt-4 w-full">
+          <label class="text-sm font-medium text-gray-700 mb-1 block"
+            >Description</label
+          >
+          <textarea
+            bind:value={description}
+            placeholder="Enter a description for your sticker..."
+            class="w-full border border-gray-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-primary focus:border-transparent outline-none resize-none h-20"
+            maxlength="100"
+          ></textarea>
+        </div>
+
+        <div class="flex gap-2 w-full">
           <button
             class="flex-1 py-2 px-4 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
             onclick={() => {
               imageUrl = null;
+              description = "";
             }}
           >
             Cancel

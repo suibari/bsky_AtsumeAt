@@ -59,10 +59,7 @@
         >
           <!-- 3D Sticker -->
           <div class="h-40 w-full mb-2">
-            <StickerCanvas
-              avatarUrl={sticker.profile?.avatar}
-              shiny={sticker.shiny}
-            />
+            <StickerCanvas avatarUrl={sticker.profile?.avatar} />
           </div>
 
           <!-- Metadata -->
@@ -72,15 +69,16 @@
                 sticker.profile?.handle ||
                 "Unknown"}
             </p>
-            {#if sticker.shiny}
-              <span
-                class="inline-block bg-yellow-100 text-yellow-800 text-xs px-2 py-0.5 rounded-full mt-1"
-                >Shiny!</span
-              >
-            {/if}
             <p class="text-xs text-gray-400 mt-1">
               {new Date(sticker.obtainedAt).toLocaleDateString()}
             </p>
+            {#if sticker.description}
+              <p
+                class="text-xs text-gray-600 mt-2 line-clamp-3 bg-gray-50 p-1 rounded border border-gray-100 italic"
+              >
+                "{sticker.description}"
+              </p>
+            {/if}
           </div>
 
           <!-- Detail View Action (Example) -->

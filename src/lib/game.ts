@@ -186,8 +186,41 @@ export async function getUserStickers(agent: Agent, userDid: string): Promise<St
       } else {
         s.profile.avatar = customUrl;
       }
+
     }
   });
+
+  // 4. Fetch Latest Posts for Avatar Stickers (Default)
+  const defaultStickerOwners = new Set(stickers.filter(s => s.model === 'default').map(s => s.owner));
+  if (defaultStickerOwners.size > 0) {
+    const owners = Array.from(defaultStickerOwners);
+    const postsMap = new Map<string, string>();
+
+    // Fetch in batches to avoid rate limits
+    const BATCH_SIZE = 5;
+    for (let i = 0; i < owners.length; i += BATCH_SIZE) {
+      const batch = owners.slice(i, i + BATCH_SIZE);
+      await Promise.all(batch.map(async (did) => {
+        try {
+          // Use posts_no_replies or posts_with_replies? User said "latest post". Usually no replies is better for bio-like context.
+          const feed = await agent.app.bsky.feed.getAuthorFeed({ actor: did, limit: 1, filter: 'posts_no_replies' });
+          if (feed.data.feed.length > 0) {
+            const post = feed.data.feed[0].post;
+            const record = post.record as any;
+            postsMap.set(did, record.text || '');
+          }
+        } catch (e) {
+          // ignore
+        }
+      }));
+    }
+
+    stickers.forEach(s => {
+      if (s.model === 'default' && postsMap.has(s.owner)) {
+        s.description = postsMap.get(s.owner);
+      }
+    });
+  }
 
   return stickers;
 }
