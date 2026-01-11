@@ -27,6 +27,7 @@ export interface Transaction {
   stickerIn: string[]; // CIDs or IDs
   stickerOut: string[]; // CIDs or IDs
   status: 'offered' | 'completed';
+  ref?: string; // URI of the referencing transaction (e.g., the Offer)
   createdAt: string;
   [key: string]: unknown;
 }

@@ -378,28 +378,12 @@ export async function acceptExchange(agent: Agent, partnerDid: string, stickersT
       });
     }
 
+    // 3. No Deletion !!
+
   } catch (e) {
     console.error("Verification failed", e);
     throw new Error("Could not verify exchange offer. User may not have offered a sticker.");
   }
-
-
-  // 3. NO Deletion! (User requested "Share" behavior)
-  // We keep our stickers, and just "Share" them by referencing them in the transaction.
-
-  // 4. Create Transaction to signal completion
-  await agent.com.atproto.repo.createRecord({
-    repo: myDid,
-    collection: TRANSACTION_COLLECTION,
-    record: {
-      $type: TRANSACTION_COLLECTION,
-      partner: partnerDid,
-      stickerIn: offeredStickerUris,
-      stickerOut: stickersToGive,
-      status: 'completed',
-      createdAt: new Date().toISOString()
-    }
-  });
 }
 
 export async function resolvePendingExchanges(agent: Agent, onStatus?: (msg: string) => void) {
@@ -441,7 +425,8 @@ export async function resolvePendingExchanges(agent: Agent, onStatus?: (msg: str
       onStatus(`Checking exchange with ${partnerName}...`);
     }
 
-    const claimed = await checkInverseExchange(agent, partnerDid, offer.value);
+    // PASS URI
+    const claimed = await checkInverseExchange(agent, partnerDid, offer.uri);
 
     if (claimed) {
       if (onStatus) onStatus(`Received sticker from ${partnerName}!`);
@@ -465,7 +450,7 @@ export async function resolvePendingExchanges(agent: Agent, onStatus?: (msg: str
   }
 }
 
-export async function checkInverseExchange(agent: Agent, partnerDid: string, relatedOffer?: Transaction): Promise<boolean> {
+export async function checkInverseExchange(agent: Agent, partnerDid: string, offerUri: string): Promise<boolean> {
   const myDid = agent.assertDid;
   if (!myDid) return false;
 
@@ -476,45 +461,19 @@ export async function checkInverseExchange(agent: Agent, partnerDid: string, rel
       pdsAgent = new Agent(pdsUrl);
     }
 
+    // We need to find B's transaction that references A's offerUri.
+    // Since we can't query by field easily without an AppView, we must list and filter.
+
     const res = await pdsAgent.com.atproto.repo.listRecords({
       repo: partnerDid,
       collection: TRANSACTION_COLLECTION,
       limit: 20
     });
 
-    // Find transaction where partner is Me and status is completed
-    // AND createdAt > relatedOffer.createdAt (if provided)
-    // AND stickerIn matches relatedOffer.stickerOut (if provided)
+    // Find transaction where ref matches offerUri and status is completed
     const txRecord = res.data.records.find(r => {
-      const t = r.value as any;
-      const isPartnerMe = t.partner === myDid;
-      const isCompleted = t.status === 'completed';
-
-      if (!isPartnerMe || !isCompleted) return false;
-
-      if (relatedOffer) {
-        // Check Timestamp (Safeguard)
-        // If B's tx is older than A's offer, it's definitely old history.
-        if (new Date(t.createdAt) < new Date(relatedOffer.createdAt)) return false;
-
-        // Check Content (Robustness)
-        // B.stickerIn (what B received) SHOULD BE EQUAL TO A.stickerOut (what A offered)
-        // Sort to handle order differences? usually same order if logic is simple.
-        // Let's try flexible match: B.stickerIn must contain all A.stickerOut?
-        // "offeredStickerUris = offerData.stickerOut" in acceptExchange.
-        // So they should be identical strings.
-        const offerOut = relatedOffer.stickerOut || [];
-        const partnerIn = t.stickerIn || [];
-
-        // Simple length check first
-        if (offerOut.length !== partnerIn.length) return false;
-
-        // Every item in offerOut must exist in partnerIn
-        const match = offerOut.every(uri => partnerIn.includes(uri));
-        if (!match) return false;
-      }
-
-      return true;
+      const t = r.value as unknown as Transaction;
+      return t.status === 'completed' && t.ref === offerUri;
     });
 
     if (!txRecord) return false;
