@@ -11,6 +11,38 @@
   let mesh: THREE.Mesh;
   let animationId: number;
 
+  // Drag State
+  let isDragging = false;
+  let previousMousePosition = { x: 0, y: 0 };
+
+  function onPointerDown(e: MouseEvent | TouchEvent) {
+    isDragging = true;
+    const x = "touches" in e ? e.touches[0].clientX : e.clientX;
+    const y = "touches" in e ? e.touches[0].clientY : e.clientY;
+    previousMousePosition = { x, y };
+  }
+
+  function onPointerMove(e: MouseEvent | TouchEvent) {
+    if (!isDragging || !mesh) return;
+
+    const x = "touches" in e ? e.touches[0].clientX : e.clientX;
+    const y = "touches" in e ? e.touches[0].clientY : e.clientY;
+
+    const deltaMove = {
+      x: x - previousMousePosition.x,
+      y: y - previousMousePosition.y,
+    };
+
+    // Rotate Mesh
+    mesh.rotation.y += deltaMove.x * 0.01;
+
+    previousMousePosition = { x, y };
+  }
+
+  function onPointerUp() {
+    isDragging = false;
+  }
+
   onMount(() => {
     if (!container) return;
 
@@ -90,10 +122,18 @@
     const animate = () => {
       animationId = requestAnimationFrame(animate);
       if (mesh) {
-        // Gentle float/rotate
-        mesh.rotation.y += 0.01;
-        mesh.rotation.x = Math.sin(Date.now() * 0.001) * 0.1;
+        // Gentle float
         mesh.position.y = Math.sin(Date.now() * 0.002) * 0.05;
+
+        // Auto rotate if not dragging
+        if (!isDragging) {
+          mesh.rotation.y += 0.01;
+          mesh.rotation.x = Math.sin(Date.now() * 0.001) * 0.1;
+        } else {
+          // Reset tilt or keep it?
+          // Letting drag control Y, but maybe auto-tilt is confusing while dragging.
+          // Let's just pause auto-tilt during drag to avoid fighting.
+        }
       }
       renderer.render(scene, camera);
     };
@@ -120,4 +160,19 @@
   });
 </script>
 
-<div bind:this={container} class="w-full h-full min-h-[200px]"></div>
+<div class="relative w-full h-full min-h-[200px]">
+  <div bind:this={container} class="w-full h-full"></div>
+
+  <!-- Interaction Overlay -->
+  <div
+    role="application"
+    class="absolute inset-0 cursor-grab active:cursor-grabbing touch-none z-10"
+    onmousedown={onPointerDown}
+    onmousemove={onPointerMove}
+    onmouseup={onPointerUp}
+    onmouseleave={onPointerUp}
+    ontouchstart={onPointerDown}
+    ontouchmove={onPointerMove}
+    ontouchend={onPointerUp}
+  ></div>
+</div>
