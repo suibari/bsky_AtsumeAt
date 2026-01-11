@@ -91,9 +91,17 @@
         texture.rotation = Math.PI / 2;
         const materials = [
           // Side
-          new THREE.MeshStandardMaterial({ color: 0xffffff }),
+          new THREE.MeshStandardMaterial({
+            color: shiny ? 0xffd700 : 0xffffff,
+            metalness: shiny ? 1.0 : 0.1,
+            roughness: shiny ? 0.3 : 0.8,
+          }),
           // Top (Face) - Avatar
-          new THREE.MeshStandardMaterial({ map: texture }),
+          new THREE.MeshStandardMaterial({
+            map: texture,
+            metalness: shiny ? 0.5 : 0,
+            roughness: shiny ? 0.2 : 0.8,
+          }),
           // Bottom (Back)
           new THREE.MeshStandardMaterial({ color: 0xeeeeee }),
         ];
@@ -105,9 +113,7 @@
         mesh = new THREE.Mesh(geometry, materials);
 
         if (shiny) {
-          // Add a shiny effect or extra mesh
-          // For now just emulate with material props
-          // (mesh.material as THREE.MeshStandardMaterial).metalness = 0.8;
+          // Future: Add particle system for sparkles here
         }
 
         scene.add(mesh);
