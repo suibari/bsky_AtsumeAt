@@ -11,7 +11,7 @@ export async function getHubDid(agent: Agent) {
   return cachedHubDid;
 }
 
-export async function initStickers(agent: Agent, userDid: string) {
+export async function initStickers(agent: Agent, userDid: string): Promise<boolean> {
   // 1. Check if Config/HubRef exists (Init indicator)
   // This is much more efficient than scanning stickers, as there is only 1 config record.
   const existing = await agent.com.atproto.repo.listRecords({
@@ -19,8 +19,29 @@ export async function initStickers(agent: Agent, userDid: string) {
     collection: CONFIG_COLLECTION,
     limit: 1
   });
-  if (existing.data.records.length > 0) return; // Already initialized
+  if (existing.data.records.length > 0) return false; // Already initialized
 
+  // If config missing, we wipe existing stickers to start fresh
+  // This handles the "Reset" case or "Broken State" case.
+  let cursor: string | undefined;
+  do {
+    const stale = await agent.com.atproto.repo.listRecords({
+      repo: userDid,
+      collection: STICKER_COLLECTION,
+      limit: 100,
+      cursor
+    });
+    cursor = stale.data.cursor;
+
+    // Delete batch
+    for (const r of stale.data.records) {
+      await agent.com.atproto.repo.deleteRecord({
+        repo: userDid,
+        collection: STICKER_COLLECTION,
+        rkey: r.uri.split('/').pop()!
+      });
+    }
+  } while (cursor);
   // 2. Fetch follows
   let candidates: string[] = [];
   try {
@@ -57,6 +78,7 @@ export async function initStickers(agent: Agent, userDid: string) {
 
   // 5. Create Config/HubRef
   await ensureHubRef(agent, userDid);
+  return true;
 }
 
 export async function ensureHubRef(agent: Agent, userDid: string) {
