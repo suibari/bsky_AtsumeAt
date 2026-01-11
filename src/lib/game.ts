@@ -12,14 +12,14 @@ export async function getHubDid(agent: Agent) {
 }
 
 export async function initStickers(agent: Agent, userDid: string) {
-  // 1. Check if "Self" sticker exists (Init indicator)
+  // 1. Check if Config/HubRef exists (Init indicator)
+  // This is much more efficient than scanning stickers, as there is only 1 config record.
   const existing = await agent.com.atproto.repo.listRecords({
     repo: userDid,
-    collection: STICKER_COLLECTION,
-    limit: 20
+    collection: CONFIG_COLLECTION,
+    limit: 1
   });
-  const hasSelfSticker = existing.data.records.some(r => (r.value as unknown as Sticker).owner === userDid);
-  if (hasSelfSticker) return; // Already initialized
+  if (existing.data.records.length > 0) return; // Already initialized
 
   // 2. Fetch follows
   let candidates: string[] = [];
