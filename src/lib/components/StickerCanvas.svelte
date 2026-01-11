@@ -2,7 +2,7 @@
   import { onMount, onDestroy } from "svelte";
   import * as THREE from "three";
 
-  let { avatarUrl = "", shiny = false } = $props();
+  let { avatarUrl = "" } = $props();
 
   let container: HTMLDivElement;
   let renderer: THREE.WebGLRenderer;
@@ -90,17 +90,17 @@
         texture.center.set(0.5, 0.5);
         texture.rotation = Math.PI / 2;
         const materials = [
-          // Side
+          // Side (Always Gold/Metallic)
           new THREE.MeshStandardMaterial({
-            color: shiny ? 0xffd700 : 0xffffff,
-            metalness: shiny ? 1.0 : 0.1,
-            roughness: shiny ? 0.3 : 0.8,
+            color: 0xffd700,
+            metalness: 1.0,
+            roughness: 0.3,
           }),
-          // Top (Face) - Avatar
+          // Top (Face) - Avatar (Slightly metallic)
           new THREE.MeshStandardMaterial({
             map: texture,
-            metalness: shiny ? 0.5 : 0,
-            roughness: shiny ? 0.2 : 0.8,
+            metalness: 0.5,
+            roughness: 0.2,
           }),
           // Bottom (Back)
           new THREE.MeshStandardMaterial({ color: 0xeeeeee }),
@@ -112,9 +112,7 @@
 
         mesh = new THREE.Mesh(geometry, materials);
 
-        if (shiny) {
-          // Future: Add particle system for sparkles here
-        }
+        // Future: Add particle system for sparkles here
 
         scene.add(mesh);
       },

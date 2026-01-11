@@ -135,7 +135,6 @@
         owner: agent.assertDid!,
         model: `cid:${cid}`,
         image: uploadRes.data.blob, // Store the blob ref
-        shiny: false,
         obtainedAt: new Date().toISOString(),
       };
 

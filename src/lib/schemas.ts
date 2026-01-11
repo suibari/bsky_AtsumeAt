@@ -9,7 +9,6 @@ export interface Sticker {
   owner: string; // DID of the user depicted
   model: string; // 'default', 'cat', etc. or CID of blob? For now string ID
   image?: BlobRef; // proper blob reference for PDS pinning
-  shiny: boolean;
   originalOwner?: string;
   obtainedAt: string;
   [key: string]: unknown;

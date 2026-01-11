@@ -47,7 +47,6 @@ export async function initStickers(agent: Agent, userDid: string): Promise<boole
     $type: STICKER_COLLECTION,
     owner: userDid,
     model: 'default',
-    shiny: false,
     obtainedAt: new Date().toISOString()
   };
 
