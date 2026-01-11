@@ -4,15 +4,14 @@
   import { Agent } from "@atproto/api";
   import Landing from "$lib/components/Landing.svelte";
   import StickerBook from "$lib/components/StickerBook.svelte";
-  import AnnouncementBar from "$lib/components/AnnouncementBar.svelte";
   import { initStickers, resolvePendingExchanges } from "$lib/game";
 
   import { fade, fly } from "svelte/transition";
 
   let agent = $state<Agent | null>(null);
   let loading = $state(true);
+  let loadingMessage = $state("Loading..."); // Added
   let view = $state<"landing" | "book">("landing");
-  let announcement = $state({ visible: false, mainText: "", subText: "" });
   let menuOpen = $state(false);
 
   onMount(async () => {
@@ -29,7 +28,9 @@
             // Check for Pending Exchanges (Finalize)
             // Fire and forget, or await? Better to await so UI might update with new stickers?
             // But initStickers also creates stickers.
-            await resolvePendingExchanges(agent);
+            await resolvePendingExchanges(agent, (msg) => {
+              loadingMessage = msg;
+            });
 
             const returnUrl = localStorage.getItem("returnUrl");
 
@@ -54,23 +55,8 @@
               // We can just set loading state visually with the bar?
               // "READY TO COLLECT"
 
-              const isNewUser = await initStickers(agent, agent.assertDid);
-              if (isNewUser) {
-                // Trigger Sequence
-                announcement = {
-                  visible: true,
-                  mainText: "INITIALIZING...",
-                  subText: "Setting up your sticker book",
-                };
-                await new Promise((r) => setTimeout(r, 2000)); // Show for effect
-                announcement = {
-                  visible: true,
-                  mainText: "STICKERS GET!",
-                  subText: "My Sticker Added",
-                };
-                await new Promise((r) => setTimeout(r, 1500));
-                announcement.visible = false;
-              }
+              loadingMessage = "Checking your sticker book..."; // Added
+              await initStickers(agent, agent.assertDid);
             } catch (e) {
               console.error("Init failed", e);
             }
@@ -99,10 +85,15 @@
 </script>
 
 {#if loading}
-  <div class="flex items-center justify-center h-screen bg-background">
+  <div
+    class="flex flex-col items-center justify-center h-screen bg-background gap-4"
+  >
     <div
       class="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"
     ></div>
+    <div class="text-gray-600 font-medium animate-pulse">
+      {loadingMessage}
+    </div>
   </div>
 {:else if agent && view === "book"}
   <div class="min-h-screen bg-surface">
@@ -176,8 +167,4 @@
   <Landing />
 {/if}
 
-<AnnouncementBar
-  visible={announcement.visible}
-  mainText={announcement.mainText}
-  subText={announcement.subText}
-/>
+<!-- Removed AnnouncementBar component -->

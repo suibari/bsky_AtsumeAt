@@ -12,7 +12,9 @@ export async function getHubDid(agent: Agent) {
   return cachedHubDid;
 }
 
-export async function initStickers(agent: Agent, userDid: string): Promise<boolean> {
+export async function initStickers(agent: Agent, userDid: string, onStatus?: (msg: string) => void): Promise<boolean> {
+  if (onStatus) onStatus("Initializing...");
+
   // 1. Check if Config/HubRef exists (Init indicator)
   // This is much more efficient than scanning stickers, as there is only 1 config record.
   const existing = await agent.com.atproto.repo.listRecords({
@@ -22,27 +24,34 @@ export async function initStickers(agent: Agent, userDid: string): Promise<boole
   });
   if (existing.data.records.length > 0) return false; // Already initialized
 
+  if (onStatus) onStatus("Generating your sticker...");
+
   // If config missing, we wipe existing stickers to start fresh
   // This handles the "Reset" case or "Broken State" case.
   let cursor: string | undefined;
-  do {
-    const stale = await agent.com.atproto.repo.listRecords({
-      repo: userDid,
-      collection: STICKER_COLLECTION,
-      limit: 100,
-      cursor
-    });
-    cursor = stale.data.cursor;
-
-    // Delete batch
-    for (const r of stale.data.records) {
-      await agent.com.atproto.repo.deleteRecord({
+  try {
+    do {
+      const stale = await agent.com.atproto.repo.listRecords({
         repo: userDid,
         collection: STICKER_COLLECTION,
-        rkey: r.uri.split('/').pop()!
+        limit: 100,
+        cursor
       });
-    }
-  } while (cursor);
+      cursor = stale.data.cursor;
+
+      // Delete batch
+      for (const r of stale.data.records) {
+        await agent.com.atproto.repo.deleteRecord({
+          repo: userDid,
+          collection: STICKER_COLLECTION,
+          rkey: r.uri.split('/').pop()!
+        });
+      }
+    } while (cursor);
+  } catch (e) { }
+
+  if (onStatus) onStatus("Creating sticker pack...");
+
   // 2. Create Self Sticker (Only self for AtsumeAt)
   const selfSticker: Sticker = {
     $type: STICKER_COLLECTION,
@@ -393,9 +402,11 @@ export async function acceptExchange(agent: Agent, partnerDid: string, stickersT
   });
 }
 
-export async function resolvePendingExchanges(agent: Agent) {
+export async function resolvePendingExchanges(agent: Agent, onStatus?: (msg: string) => void) {
   const myDid = agent.assertDid;
   if (!myDid) return;
+
+  if (onStatus) onStatus("Checking for pending exchanges...");
 
   // 1. Get MY open offers
   let cursor;
@@ -419,9 +430,23 @@ export async function resolvePendingExchanges(agent: Agent) {
   // 2. Check each partner
   for (const offer of myOffers) {
     const partnerDid = offer.value.partner;
+
+    let partnerName = partnerDid;
+    if (onStatus) {
+      try {
+        // Optimistic fetching
+        const profile = await agent.getProfile({ actor: partnerDid });
+        partnerName = profile.data.displayName || profile.data.handle || partnerDid;
+      } catch (e) { }
+      onStatus(`Checking exchange with ${partnerName}...`);
+    }
+
     const claimed = await checkInverseExchange(agent, partnerDid, offer.value);
 
     if (claimed) {
+      if (onStatus) onStatus(`Received sticker from ${partnerName}!`);
+      await new Promise(r => setTimeout(r, 1000));
+
       // 3. Update MY transaction to completed
       const rkey = offer.uri.split('/').pop();
       if (rkey) {
