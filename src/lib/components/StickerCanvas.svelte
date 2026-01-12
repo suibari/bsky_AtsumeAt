@@ -60,7 +60,7 @@
     const height = container.clientHeight;
 
     camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 100);
-    camera.position.z = 2.8;
+    camera.position.z = 3.0;
 
     renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
     renderer.setSize(width, height);

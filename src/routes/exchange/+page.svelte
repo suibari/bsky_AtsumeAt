@@ -260,7 +260,7 @@
         class="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mt-20"
       ></div>
     {:else if !agent}
-      <div class="bg-white p-8 rounded-2xl shadow-xl max-w-md text-center">
+      <div class="card-glass max-w-md text-center p-8">
         <h2 class="text-2xl font-bold mb-4">Sign In Required</h2>
         <p class="mb-6 text-gray-600">You need to sign in to exchange!</p>
         <Landing />
@@ -283,11 +283,7 @@
             <p class="text-gray-600 mb-8">
               You have received new stickers and sent yours back!
             </p>
-            <a
-              href="/"
-              class="bg-primary text-white font-bold py-3 px-6 rounded-lg hover:bg-blue-600 transition"
-              >View My Book</a
-            >
+            <a href="/" class="btn-primary">View My Book</a>
           </div>
         {:else}
           <div
@@ -335,7 +331,7 @@
                 >
                   {#each myStickers as sticker}
                     <div
-                      class="relative cursor-pointer transition-transform transform hover:scale-105 bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden"
+                      class="sticker-card-interactive overflow-hidden"
                       onclick={() => toggleSticker(sticker.uri)}
                       role="button"
                       tabindex="0"
@@ -387,7 +383,7 @@
               <button
                 onclick={handleAccept}
                 disabled={processing || selectedStickers.size === 0}
-                class="bg-secondary text-white font-bold py-3 px-8 rounded-full hover:shadow-lg transition transform active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+                class="btn-secondary"
               >
                 {processing ? "Exchanging..." : "Exchange Stickers!"}
               </button>
@@ -412,7 +408,9 @@
       {/if}
     {:else}
       <!-- INITIATE MODE -->
-      <div class="w-full max-w-4xl bg-white rounded-2xl shadow-xl p-6 relative">
+      <div
+        class="w-full max-w-4xl card-glass-strong p-8 relative border-2 border-white"
+      >
         <h2 class="text-xl font-bold mb-4">Start New Exchange</h2>
 
         <!-- 1. Select Partner -->
@@ -425,7 +423,7 @@
               value={partnerHandle}
               oninput={handleInput}
               placeholder="Search user e.g. suibari"
-              class="flex-1 border rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary outline-none"
+              class="flex-1 input-text"
             />
             <button
               onclick={resolvePartner}
@@ -489,7 +487,7 @@
               >
                 {#each myStickers as sticker}
                   <div
-                    class="relative cursor-pointer transition-transform transform hover:scale-105 bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden"
+                    class="sticker-card-interactive overflow-hidden"
                     onclick={() => toggleSticker(sticker.uri)}
                     role="button"
                     tabindex="0"
@@ -547,7 +545,7 @@
             <button
               onclick={handleInitiate}
               disabled={processing || selectedStickers.size === 0}
-              class="bg-secondary text-white font-bold py-3 px-8 rounded-full hover:shadow-lg transition disabled:opacity-50 disabled:cursor-not-allowed"
+              class="btn-secondary"
             >
               {processing ? "Sending..." : "Create Offer Post"}
             </button>

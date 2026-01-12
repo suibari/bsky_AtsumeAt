@@ -97,7 +97,9 @@
   </div>
 {:else if agent && view === "book"}
   <div class="min-h-screen bg-surface">
-    <header class="bg-white shadow z-20">
+    <header
+      class="bg-white/80 backdrop-blur-md shadow-sm border-b border-primary/20 z-20 sticky top-0"
+    >
       <div
         class="max-w-6xl mx-auto p-4 flex justify-between items-center relative"
       >
@@ -162,18 +164,18 @@
         <!-- Menu Dropdown -->
         {#if menuOpen}
           <div
-            class="absolute top-16 right-4 w-48 bg-white rounded-lg shadow-xl border border-gray-100 py-2 flex flex-col z-30"
+            class="absolute top-16 right-4 w-48 bg-white/95 backdrop-blur-xl rounded-2xl shadow-xl border-2 border-primary/10 py-2 flex flex-col z-30"
             transition:fly={{ y: -10, duration: 200 }}
           >
             <a
               href="/create"
-              class="px-4 py-2 hover:bg-blue-50 text-gray-700 font-medium text-sm flex items-center gap-2"
+              class="px-4 py-2 hover:bg-secondary/20 text-gray-700 font-medium text-sm flex items-center gap-2"
             >
               <span>🎨</span> Create Sticker
             </a>
             <a
               href="/exchange"
-              class="px-4 py-2 hover:bg-blue-50 text-gray-700 font-medium text-sm flex items-center gap-2"
+              class="px-4 py-2 hover:bg-secondary/20 text-gray-700 font-medium text-sm flex items-center gap-2"
             >
               <span>🤝</span> Exchange
             </a>
@@ -182,14 +184,14 @@
                 menuOpen = false;
                 showAbout = true;
               }}
-              class="px-4 py-2 w-full text-left hover:bg-blue-50 text-gray-700 font-medium text-sm flex items-center gap-2"
+              class="px-4 py-2 w-full text-left hover:bg-secondary/20 text-gray-700 font-medium text-sm flex items-center gap-2"
             >
               <span>ℹ️</span> About
             </button>
             <div class="h-px bg-gray-100 my-1"></div>
             <a
               href="/settings"
-              class="px-4 py-2 hover:bg-blue-50 text-gray-700 font-medium text-sm flex items-center gap-2"
+              class="px-4 py-2 hover:bg-secondary/20 text-gray-700 font-medium text-sm flex items-center gap-2"
             >
               <span>⚙️</span> Settings
             </a>

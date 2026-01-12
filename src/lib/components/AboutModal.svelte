@@ -12,16 +12,16 @@
   aria-modal="true"
 >
   <div
-    class="bg-white w-full max-w-lg rounded-2xl shadow-xl overflow-hidden flex flex-col max-h-[90vh]"
+    class="card-glass-strong w-full max-w-lg overflow-hidden flex flex-col max-h-[90vh]"
     onclick={(e) => e.stopPropagation()}
     transition:scale={{ duration: 200, start: 0.95 }}
     role="document"
   >
     <!-- Header -->
     <div
-      class="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50"
+      class="px-8 py-6 border-b border-primary/10 flex justify-between items-center bg-transparent"
     >
-      <h2 class="text-xl font-bold text-gray-800">About AtsumeAt</h2>
+      <h2 class="text-2xl font-bold text-gray-700">About AtsumeAt</h2>
       <button
         onclick={onClose}
         class="p-2 -mr-2 text-gray-400 hover:text-gray-600 rounded-full hover:bg-gray-100 transition"
@@ -43,8 +43,8 @@
     </div>
 
     <!-- Content -->
-    <div class="p-6 overflow-y-auto prose prose-sm text-gray-600">
-      <p>
+    <div class="p-8 overflow-y-auto prose prose-sm text-gray-600">
+      <p class="text-lg text-center font-medium text-gray-700 mb-6">
         AtsumeAt (あつめあっと) is a sticker collecting and exchanging app built
         on the AT Protocol (Bluesky).
       </p>
@@ -78,10 +78,10 @@
     </div>
 
     <!-- Footer -->
-    <div class="p-4 border-t border-gray-100 bg-gray-50 flex justify-end">
+    <div class="p-6 border-t border-primary/10 bg-gray-50/50 flex justify-end">
       <button
         onclick={onClose}
-        class="px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
+        class="px-6 py-2 bg-white border-2 border-gray-200 rounded-full text-sm font-bold text-gray-700 hover:bg-gray-50 hover:border-gray-300 focus:outline-none transition"
       >
         Close
       </button>

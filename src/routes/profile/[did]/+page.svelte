@@ -48,9 +48,13 @@
 </script>
 
 <div class="min-h-screen bg-surface">
-  <header class="bg-white shadow p-4 flex items-center gap-4 sticky top-0 z-20">
-    <a href="/" class="text-gray-500 hover:text-primary">← Home</a>
-    <h1 class="text-xl font-bold text-gray-800">Profile</h1>
+  <header
+    class="bg-white/80 backdrop-blur-md shadow-sm border-b border-primary/20 z-20 sticky top-0"
+  >
+    <div class="max-w-6xl mx-auto p-4 flex items-center gap-4">
+      <a href="/" class="text-gray-500 hover:text-primary">← Home</a>
+      <h1 class="text-xl font-bold text-gray-800">Profile</h1>
+    </div>
   </header>
 
   <main class="max-w-6xl mx-auto p-4 md:p-8">
@@ -63,7 +67,7 @@
       </div>
     {:else if profile}
       <div
-        class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 mb-8 flex flex-col md:flex-row items-center md:items-start gap-6"
+        class="card-glass p-6 mb-8 flex flex-col md:flex-row items-center md:items-start gap-6"
       >
         <!-- Avatar -->
         <a

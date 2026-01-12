@@ -1,14 +1,43 @@
 @import "tailwindcss";
 
 @theme {
-  --color-primary: #3b82f6;
-  --color-secondary: #f472b6;
-  --color-accent: #facc15;
-  --color-background: #ffffff;
-  --color-surface: #f3f4f6;
+  --color-primary: #FFB7B2; /* Soft Pink */
+  --color-secondary: #C7F9CC; /* Mint Green */
+  --color-accent: #FFF4BD; /* Creamy Yellow */
+  --color-background: #FEFEFA; /* Off-white */
+  --color-surface: #FFFFFF; /* White */
+  --font-display: "Zen Maru Gothic", sans-serif;
+  --font-body: "Zen Maru Gothic", sans-serif;
 }
 
 body {
   background-color: var(--color-background);
-  color: #111827; /* gray-900 */
+  color: #5d5d5d; /* Soft dark gray */
+  font-family: var(--font-body);
+}
+
+@layer utilities {
+  .card-glass {
+    @apply bg-white/80 backdrop-blur-sm rounded-[2rem] shadow-md border-2 border-primary/20;
+  }
+
+  .card-glass-strong {
+    @apply bg-white/95 backdrop-blur-xl rounded-[2rem] shadow-2xl border-2 border-primary/20;
+  }
+
+  .btn-primary {
+    @apply font-bold py-3 px-8 rounded-full transition transform active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed bg-primary text-white hover:bg-primary/90 hover:shadow-lg;
+  }
+
+  .btn-secondary {
+    @apply font-bold py-3 px-8 rounded-full transition transform active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed bg-secondary text-gray-700 hover:bg-secondary/80 hover:shadow-lg;
+  }
+
+  .sticker-card-interactive {
+    @apply relative bg-white rounded-[1.5rem] p-3 shadow-sm hover:shadow-lg transition-all duration-300 border-2 border-transparent hover:border-primary/50 hover:-translate-y-1;
+  }
+
+  .input-text {
+    @apply border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition;
+  }
 }

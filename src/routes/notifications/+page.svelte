@@ -61,7 +61,7 @@
           />
         </svg>
       </a>
-      <h1 class="text-xl font-bold text-gray-800">Notifications</h1>
+      <h1 class="text-xl font-bold text-gray-700">Notifications</h1>
     </header>
 
     {#if loading}
@@ -72,15 +72,15 @@
       </div>
     {:else if offers.length === 0}
       <div
-        class="text-center p-8 text-gray-500 bg-white rounded-xl border border-gray-100"
+        class="card-glass border-dashed border-primary/30 text-center p-12 text-gray-500"
       >
-        <p>No new exchange offers.</p>
+        <p>No new exchange offers. ✨</p>
       </div>
     {:else}
       <div class="space-y-4">
         {#each offers as offer (offer.uri)}
           <div
-            class="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex items-center justify-between"
+            class="sticker-card-interactive flex items-center justify-between"
             transition:slide
           >
             <div class="flex items-center gap-3">
@@ -127,7 +127,7 @@
             <button
               onclick={() => handleAccept(offer)}
               disabled={!!processing}
-              class="bg-primary text-white px-4 py-2 rounded-lg font-bold shadow hover:bg-primary/90 transition disabled:opacity-50"
+              class="btn-primary py-2 px-6"
             >
               {#if processing === offer.partnerDid}
                 ...

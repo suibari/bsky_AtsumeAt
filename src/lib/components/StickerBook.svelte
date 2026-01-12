@@ -123,15 +123,14 @@
       <p class="text-gray-500">Opening sticker book...</p>
     </div>
   {:else if stickers.length === 0}
-    <div
-      class="text-center p-8 bg-white rounded-xl shadow-sm border border-gray-100"
-    >
-      <h3 class="text-xl font-bold text-gray-800 mb-2">{displayTitle}</h3>
-      <p class="text-gray-500">No stickers yet!</p>
+    <div class="card-glass border-dashed border-primary/30 p-12 text-center">
+      <h3 class="text-xl font-bold text-gray-700 mb-2">{displayTitle}</h3>
+      <p class="text-gray-500">No stickers yet! ✨</p>
       {#if !targetDid || targetDid === agent.assertDid}
         <button
           onclick={() => loadStickers(agent.assertDid!)}
-          class="mt-4 text-primary font-medium hover:underline">Refresh</button
+          class="mt-4 px-6 py-2 bg-secondary/20 hover:bg-secondary/40 text-gray-700 rounded-full font-bold transition-colors"
+          >Refresh</button
         >
       {/if}
     </div>
@@ -140,9 +139,7 @@
       class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4"
     >
       {#each stickers as sticker (sticker.uri)}
-        <div
-          class="relative bg-white rounded-2xl p-2 shadow-sm hover:shadow-md transition border border-gray-100 group"
-        >
+        <div class="sticker-card-interactive">
           <!-- 3D Sticker -->
           <div class="h-40 w-full mb-2">
             <StickerCanvas
@@ -153,7 +150,8 @@
           <!-- Metadata -->
           <div class="text-center space-y-1">
             <!-- Depicted (Sticker Name) -->
-            <p class="font-bold text-gray-800 truncate text-sm">
+            <!-- Depicted (Sticker Name) -->
+            <p class="font-bold text-gray-700 truncate text-sm">
               {#if sticker.imageType === "custom"}
                 {sticker.name ||
                   `${sticker.originalOwnerProfile?.displayName || sticker.originalOwnerProfile?.handle || sticker.originalOwner || "Unknown"}のシール`}
@@ -213,8 +211,8 @@
                     class="h-5 w-5 transition-transform active:scale-95 {likeStates.get(
                       sticker.uri,
                     )?.isLiked
-                      ? 'text-red-500 fill-current'
-                      : 'text-gray-400 group-hover/btn:text-red-400'}"
+                      ? 'text-primary fill-current'
+                      : 'text-gray-300 group-hover/btn:text-primary'}"
                     viewBox="0 0 24 24"
                     stroke="currentColor"
                     stroke-width="2"
