@@ -19,6 +19,11 @@
   let isDragging = $state(false);
   let dragStart = $state({ x: 0, y: 0 });
 
+  // Pinch State
+  let pinchStartDist = $state(0);
+  let pinchStartScale = $state(1);
+  let isPinching = $state(false);
+
   onMount(async () => {
     const c = getClient();
     if (c) {
@@ -42,6 +47,8 @@
   }
 
   function onMouseDown(e: MouseEvent | TouchEvent) {
+    // Only handle mouse or single touch (if passed from generic handler, though we will separate them)
+    // We'll keep this strictly for dragging logic
     isDragging = true;
     const clientX = "touches" in e ? e.touches[0].clientX : e.clientX;
     const clientY = "touches" in e ? e.touches[0].clientY : e.clientY;
@@ -59,6 +66,55 @@
 
   function onMouseUp() {
     isDragging = false;
+  }
+
+  function onWheel(e: WheelEvent) {
+    e.preventDefault();
+    // Adjust zoom sensitivity
+    const zoomIntensity = 0.001;
+    const delta = -e.deltaY * zoomIntensity;
+    const newScale = Math.min(Math.max(scale + delta, 0.1), 3);
+    scale = newScale;
+  }
+
+  function getDistance(t1: Touch, t2: Touch) {
+    const dx = t1.clientX - t2.clientX;
+    const dy = t1.clientY - t2.clientY;
+    return Math.sqrt(dx * dx + dy * dy);
+  }
+
+  function onTouchStart(e: TouchEvent) {
+    if (e.touches.length === 2) {
+      isPinching = true;
+      isDragging = false;
+      pinchStartDist = getDistance(e.touches[0], e.touches[1]);
+      pinchStartScale = scale;
+      e.preventDefault();
+    } else if (e.touches.length === 1) {
+      onMouseDown(e);
+    }
+  }
+
+  function onTouchMove(e: TouchEvent) {
+    if (isPinching && e.touches.length === 2) {
+      e.preventDefault();
+      const currentDist = getDistance(e.touches[0], e.touches[1]);
+      if (pinchStartDist > 0) {
+        const ratio = currentDist / pinchStartDist;
+        scale = Math.min(Math.max(pinchStartScale * ratio, 0.1), 3);
+      }
+    } else if (!isPinching) {
+      onMouseMove(e);
+    }
+  }
+
+  function onTouchEnd(e: TouchEvent) {
+    if (isPinching) {
+      if (e.touches.length < 2) {
+        isPinching = false;
+      }
+    }
+    onMouseUp();
   }
 
   async function handleCreate() {
@@ -231,9 +287,11 @@
           onmousemove={onMouseMove}
           onmouseup={onMouseUp}
           onmouseleave={onMouseUp}
-          ontouchstart={onMouseDown}
-          ontouchmove={onMouseMove}
-          ontouchend={onMouseUp}
+          onwheel={onWheel}
+          ontouchstart={onTouchStart}
+          ontouchmove={onTouchMove}
+          ontouchend={onTouchEnd}
+          ontouchcancel={onTouchEnd}
           role="application"
         >
           <img
