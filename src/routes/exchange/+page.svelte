@@ -362,14 +362,12 @@
                       class="p-1 text-center text-xs text-gray-500 truncate border-t border-gray-50"
                     >
                       {#if sticker.imageType === "custom"}
-                        {sticker.description ||
-                          sticker.profile?.displayName ||
-                          sticker.profile?.handle ||
-                          "Unknown"}
+                        {sticker.name ||
+                          `${sticker.profile?.displayName || sticker.profile?.handle || "Unknown"}のシール`}
                       {:else}
                         {sticker.profile?.displayName ||
                           sticker.profile?.handle ||
-                          "Unknown"}
+                          "Unknown"}のシール
                       {/if}
                     </div>
                   </div>

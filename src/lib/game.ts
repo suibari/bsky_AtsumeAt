@@ -245,31 +245,6 @@ export async function getUserStickers(agent: Agent, userDid: string): Promise<St
     }
   });
 
-  // 4. Update descriptions for 'avatar' type (Latest Post)
-  // Only if description is empty? Or always update?
-  // Let's keep logic to populate if empty.
-  const avatarStickers = stickers.filter(s => s.imageType === 'avatar' && !s.description && s.subjectDid);
-  if (avatarStickers.length > 0) {
-    const subjects = Array.from(new Set(avatarStickers.map(s => s.subjectDid!)));
-    const BATCH_SIZE = 5;
-    for (let i = 0; i < subjects.length; i += BATCH_SIZE) {
-      const batch = subjects.slice(i, i + BATCH_SIZE);
-      await Promise.all(batch.map(async (did) => {
-        try {
-          const feed = await agent.app.bsky.feed.getAuthorFeed({ actor: did, limit: 1, filter: 'posts_no_replies' });
-          if (feed.data.feed.length > 0) {
-            const post = feed.data.feed[0].post;
-            const text = (post.record as any).text;
-            // Update in memory
-            stickers.filter(s => s.subjectDid === did).forEach(s => {
-              if (!s.description) s.description = text;
-            });
-          }
-        } catch { }
-      }));
-    }
-  }
-
   return stickers;
 }
 

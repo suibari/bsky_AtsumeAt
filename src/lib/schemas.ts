@@ -6,13 +6,12 @@ import { BlobRef } from '@atproto/api';
 
 export interface Sticker {
   $type: typeof STICKER_COLLECTION;
+  name?: string; // Name of the sticker
   image: string | BlobRef; // Avatar URL or BlobRef
   imageType?: 'avatar' | 'custom';
   subjectDid?: string; // DID of the user depicted (if applicable)
   originalOwner: string; // DID of the creator/minter
-
   model: string; // 'default', 'cat', etc.
-  description?: string;
   obtainedFrom?: string; // The user who gave this sticker (DID)
   obtainedAt: string;
   [key: string]: unknown;

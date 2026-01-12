@@ -65,11 +65,17 @@
           <!-- Metadata -->
           <div class="text-center space-y-1">
             <!-- Depicted (Sticker Name/Topic) -->
-            <!-- <p class="font-bold text-gray-800 truncate text-sm">
-              {sticker.profile?.displayName ||
-                sticker.profile?.handle ||
-                "Unknown"}
-            </p> -->
+            <!-- Depicted (Sticker Name) -->
+            <p class="font-bold text-gray-800 truncate text-sm">
+              {#if sticker.imageType === "custom"}
+                {sticker.name ||
+                  `${sticker.originalOwnerProfile?.displayName || sticker.originalOwnerProfile?.handle || sticker.originalOwner || "Unknown"}のシール`}
+              {:else}
+                {sticker.profile?.displayName ||
+                  sticker.profile?.handle ||
+                  "Unknown"}のシール
+              {/if}
+            </p>
 
             <!-- Giver -->
             {#if sticker.giverProfile || sticker.obtainedFrom}
@@ -110,14 +116,6 @@
             <p class="text-[10px] text-gray-300">
               {new Date(sticker.obtainedAt).toLocaleDateString()}
             </p>
-
-            {#if sticker.description}
-              <p
-                class="text-xs text-gray-600 mt-2 line-clamp-3 bg-gray-50 p-1 rounded border border-gray-100 italic"
-              >
-                "{sticker.description}"
-              </p>
-            {/if}
           </div>
 
           <!-- Detail View Action (Example) -->
