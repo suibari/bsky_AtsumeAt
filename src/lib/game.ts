@@ -213,7 +213,7 @@ export async function getUserStickers(agent: Agent, userDid: string): Promise<St
   for (let i = 0; i < didsArray.length; i += chunkSize) {
     const chunk = didsArray.slice(i, i + chunkSize);
     try {
-      const res = await agent.app.bsky.actor.getProfiles({ actors: chunk });
+      const res = await publicAgent.app.bsky.actor.getProfiles({ actors: chunk });
       for (const p of res.data.profiles) {
         profilesMap.set(p.did, p);
       }
