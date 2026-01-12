@@ -158,101 +158,103 @@
   }
 </script>
 
-<div class="min-h-screen bg-surface p-4 flex flex-col items-center">
-  <header class="w-full max-w-md flex items-center justify-between mb-8">
-    <a href="/" class="text-gray-500 hover:text-primary">← Back</a>
-    <h1 class="text-xl font-bold text-primary">Create Sticker</h1>
-    <div class="w-8"></div>
-  </header>
+<div class="min-h-screen bg-surface">
+  <div class="max-w-6xl mx-auto p-4 md:p-8 flex flex-col items-center">
+    <header class="w-full max-w-3xl flex items-center justify-between mb-8">
+      <a href="/" class="text-gray-500 hover:text-primary">← Back</a>
+      <h1 class="text-xl font-bold text-primary">Create Sticker</h1>
+      <div class="w-8"></div>
+    </header>
 
-  <div
-    class="w-full max-w-md bg-white rounded-xl shadow p-6 flex flex-col items-center"
-  >
-    {#if !imageUrl}
-      <div
-        class="w-full h-64 border-2 border-dashed border-gray-300 rounded-lg flex flex-col items-center justify-center bg-gray-50 cursor-pointer hover:bg-gray-100 transition-colors"
-        onclick={() => fileInput?.click()}
-      >
-        <span class="text-4xl mb-2">📷</span>
-        <span class="text-gray-500">Select Image</span>
-        <input
-          bind:this={fileInput}
-          type="file"
-          accept="image/*"
-          class="hidden"
-          onchange={handleFileSelect}
-        />
-      </div>
-    {:else}
-      <!-- Crop Area -->
-      <div
-        class="relative w-[300px] h-[300px] bg-gray-900 overflow-hidden rounded-full shadow-inner border-4 border-primary cursor-move touch-none"
-        bind:this={cropContainer}
-        onmousedown={onMouseDown}
-        onmousemove={onMouseMove}
-        onmouseup={onMouseUp}
-        onmouseleave={onMouseUp}
-        ontouchstart={onMouseDown}
-        ontouchmove={onMouseMove}
-        ontouchend={onMouseUp}
-        role="application"
-      >
-        <img
-          bind:this={imageElement}
-          src={imageUrl}
-          alt="Work"
-          class="absolute max-w-none origin-center pointer-events-none"
-          style="transform: translate(-50%, -50%) translate({position.x}px, {position.y}px) scale({scale}); left: 50%; top: 50%;"
-        />
-      </div>
-
-      <!-- Controls -->
-      <div class="w-full mt-6 space-y-4">
-        <div>
-          <label class="text-sm font-medium text-gray-700">Zoom</label>
+    <div
+      class="w-full max-w-3xl bg-white rounded-xl shadow p-6 flex flex-col items-center"
+    >
+      {#if !imageUrl}
+        <div
+          class="w-full h-64 border-2 border-dashed border-gray-300 rounded-lg flex flex-col items-center justify-center bg-gray-50 cursor-pointer hover:bg-gray-100 transition-colors"
+          onclick={() => fileInput?.click()}
+        >
+          <span class="text-4xl mb-2">📷</span>
+          <span class="text-gray-500">Select Image</span>
           <input
-            type="range"
-            min="0.1"
-            max="3"
-            step="0.1"
-            bind:value={scale}
-            class="w-full"
+            bind:this={fileInput}
+            type="file"
+            accept="image/*"
+            class="hidden"
+            onchange={handleFileSelect}
+          />
+        </div>
+      {:else}
+        <!-- Crop Area -->
+        <div
+          class="relative w-[300px] h-[300px] bg-gray-900 overflow-hidden rounded-full shadow-inner border-4 border-primary cursor-move touch-none"
+          bind:this={cropContainer}
+          onmousedown={onMouseDown}
+          onmousemove={onMouseMove}
+          onmouseup={onMouseUp}
+          onmouseleave={onMouseUp}
+          ontouchstart={onMouseDown}
+          ontouchmove={onMouseMove}
+          ontouchend={onMouseUp}
+          role="application"
+        >
+          <img
+            bind:this={imageElement}
+            src={imageUrl}
+            alt="Work"
+            class="absolute max-w-none origin-center pointer-events-none"
+            style="transform: translate(-50%, -50%) translate({position.x}px, {position.y}px) scale({scale}); left: 50%; top: 50%;"
           />
         </div>
 
-        <!-- Name Input -->
-        <div class="mt-4 w-full">
-          <label class="text-sm font-medium text-gray-700 mb-1 block"
-            >Name (Optional)</label
-          >
-          <input
-            type="text"
-            bind:value={name}
-            placeholder="e.g. My Awesome Sticker"
-            class="w-full border border-gray-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-primary focus:border-transparent outline-none h-10"
-            maxlength="50"
-          />
-        </div>
+        <!-- Controls -->
+        <div class="w-full mt-6 space-y-4">
+          <div>
+            <label class="text-sm font-medium text-gray-700">Zoom</label>
+            <input
+              type="range"
+              min="0.1"
+              max="3"
+              step="0.1"
+              bind:value={scale}
+              class="w-full"
+            />
+          </div>
 
-        <div class="flex gap-2 w-full">
-          <button
-            class="flex-1 py-2 px-4 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
-            onclick={() => {
-              imageUrl = null;
-              name = "";
-            }}
-          >
-            Cancel
-          </button>
-          <button
-            class="flex-1 py-2 px-4 bg-primary text-white rounded-lg hover:bg-primary/90 disabled:opacity-50"
-            onclick={handleCreate}
-            disabled={processing}
-          >
-            {processing ? "Creating..." : "Create Sticker"}
-          </button>
+          <!-- Name Input -->
+          <div class="mt-4 w-full">
+            <label class="text-sm font-medium text-gray-700 mb-1 block"
+              >Name (Optional)</label
+            >
+            <input
+              type="text"
+              bind:value={name}
+              placeholder="e.g. My Awesome Sticker"
+              class="w-full border border-gray-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-primary focus:border-transparent outline-none h-10"
+              maxlength="50"
+            />
+          </div>
+
+          <div class="flex gap-2 w-full">
+            <button
+              class="flex-1 py-2 px-4 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
+              onclick={() => {
+                imageUrl = null;
+                name = "";
+              }}
+            >
+              Cancel
+            </button>
+            <button
+              class="flex-1 py-2 px-4 bg-primary text-white rounded-lg hover:bg-primary/90 disabled:opacity-50"
+              onclick={handleCreate}
+              disabled={processing}
+            >
+              {processing ? "Creating..." : "Create Sticker"}
+            </button>
+          </div>
         </div>
-      </div>
-    {/if}
+      {/if}
+    </div>
   </div>
 </div>

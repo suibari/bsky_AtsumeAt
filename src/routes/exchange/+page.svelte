@@ -246,90 +246,245 @@
   }
 </script>
 
-<div class="min-h-screen bg-surface flex flex-col items-center p-4">
-  <header class="w-full max-w-4xl flex justify-between items-center mb-8">
-    <a href="/" class="text-gray-500 hover:text-primary">← Back to Book</a>
-    <h1 class="text-2xl font-bold text-primary">Exchange Center</h1>
-    <div class="w-20"></div>
-  </header>
+<div class="min-h-screen bg-surface">
+  <div class="max-w-6xl mx-auto p-4 md:p-8 flex flex-col items-center">
+    <header class="w-full flex justify-between items-center mb-8">
+      <a href="/" class="text-gray-500 hover:text-primary">← Back to Book</a>
+      <h1 class="text-2xl font-bold text-primary">Exchange Center</h1>
+      <div class="w-20"></div>
+    </header>
 
-  {#if loading}
-    <div
-      class="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mt-20"
-    ></div>
-  {:else if !agent}
-    <div class="bg-white p-8 rounded-2xl shadow-xl max-w-md text-center">
-      <h2 class="text-2xl font-bold mb-4">Sign In Required</h2>
-      <p class="mb-6 text-gray-600">You need to sign in to exchange!</p>
-      <Landing />
-    </div>
-  {:else if targetUserParam}
-    <!-- ACCEPT MODE -->
-    {#if verifying}
-      <div class="text-center mt-20">
-        <div
-          class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-2"
-        ></div>
-        <p class="text-gray-500">Verifying exchange offer...</p>
+    {#if loading}
+      <div
+        class="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mt-20"
+      ></div>
+    {:else if !agent}
+      <div class="bg-white p-8 rounded-2xl shadow-xl max-w-md text-center">
+        <h2 class="text-2xl font-bold mb-4">Sign In Required</h2>
+        <p class="mb-6 text-gray-600">You need to sign in to exchange!</p>
+        <Landing />
       </div>
-    {:else if isValidOffer}
-      {#if successAccept}
-        <div class="bg-white p-8 rounded-2xl shadow-xl text-center max-w-md">
-          <h2 class="text-3xl font-bold text-green-500 mb-4">
-            Exchange Accepted!
-          </h2>
-          <p class="text-gray-600 mb-8">
-            You have received new stickers and sent yours back!
-          </p>
-          <a
-            href="/"
-            class="bg-primary text-white font-bold py-3 px-6 rounded-lg hover:bg-blue-600 transition"
-            >View My Book</a
-          >
+    {:else if targetUserParam}
+      <!-- ACCEPT MODE -->
+      {#if verifying}
+        <div class="text-center mt-20">
+          <div
+            class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-2"
+          ></div>
+          <p class="text-gray-500">Verifying exchange offer...</p>
         </div>
-      {:else}
-        <div
-          class="bg-white p-8 rounded-2xl shadow-xl max-w-2xl text-center w-full"
-        >
-          <h2 class="text-2xl font-bold mb-2">Incoming Offer!</h2>
-          <p class="text-gray-600 mb-6">
-            User <span class="font-mono bg-gray-100 px-1 rounded"
-              >{targetUserParam}</span
-            > wants to swap.
-          </p>
+      {:else if isValidOffer}
+        {#if successAccept}
+          <div class="bg-white p-8 rounded-2xl shadow-xl text-center max-w-md">
+            <h2 class="text-3xl font-bold text-green-500 mb-4">
+              Exchange Accepted!
+            </h2>
+            <p class="text-gray-600 mb-8">
+              You have received new stickers and sent yours back!
+            </p>
+            <a
+              href="/"
+              class="bg-primary text-white font-bold py-3 px-6 rounded-lg hover:bg-blue-600 transition"
+              >View My Book</a
+            >
+          </div>
+        {:else}
+          <div
+            class="bg-white p-8 rounded-2xl shadow-xl max-w-2xl text-center w-full"
+          >
+            <h2 class="text-2xl font-bold mb-2">Incoming Offer!</h2>
+            <p class="text-gray-600 mb-6">
+              User <span class="font-mono bg-gray-100 px-1 rounded"
+                >{targetUserParam}</span
+              > wants to swap.
+            </p>
 
-          {#if incomingStickers.length > 0}
+            {#if incomingStickers.length > 0}
+              <div class="mb-6 text-left">
+                <h3 class="text-lg font-bold mb-2">
+                  You will receive ({incomingStickers.length})
+                </h3>
+                <div
+                  class="flex gap-2 overflow-x-auto min-h-[160px] p-2 bg-gray-50 rounded-xl"
+                >
+                  {#each incomingStickers as s}
+                    <div class="w-32 h-32 flex-shrink-0 relative">
+                      <StickerCanvas
+                        avatarUrl={typeof s.image === "string" ? s.image : ""}
+                        staticAngle={true}
+                      />
+                    </div>
+                  {/each}
+                </div>
+              </div>
+            {/if}
+
             <div class="mb-6 text-left">
               <h3 class="text-lg font-bold mb-2">
-                You will receive ({incomingStickers.length})
+                Select Stickers to Give Back ({selectedStickers.size})
               </h3>
-              <div
-                class="flex gap-2 overflow-x-auto min-h-[160px] p-2 bg-gray-50 rounded-xl"
+
+              {#if myStickers.length === 0}
+                <p class="text-gray-500 italic text-center py-4">
+                  You have no stickers to give! Go collect some first.
+                </p>
+              {:else}
+                <div
+                  class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 max-h-[300px] overflow-y-auto p-4 border rounded-xl bg-gray-50"
+                >
+                  {#each myStickers as sticker}
+                    <div
+                      class="relative cursor-pointer transition-transform transform hover:scale-105 bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden"
+                      onclick={() => toggleSticker(sticker.uri)}
+                      role="button"
+                      tabindex="0"
+                      onkeydown={(e) =>
+                        e.key === "Enter" && toggleSticker(sticker.uri)}
+                    >
+                      <div class="h-24 w-full">
+                        <StickerCanvas
+                          avatarUrl={typeof sticker.image === "string"
+                            ? sticker.image
+                            : ""}
+                          staticAngle={true}
+                        />
+                      </div>
+                      {#if selectedStickers.has(sticker.uri)}
+                        <div
+                          class="absolute inset-0 bg-primary/10 border-4 border-primary rounded-xl flex items-start justify-end p-2"
+                        >
+                          <span
+                            class="bg-primary text-white text-xs font-bold rounded-full h-6 w-6 flex items-center justify-center shadow-sm"
+                            >✓</span
+                          >
+                        </div>
+                      {/if}
+                      <div
+                        class="p-1 text-center text-xs text-gray-500 truncate border-t border-gray-50"
+                      >
+                        {#if sticker.imageType === "custom"}
+                          {sticker.name ||
+                            `${sticker.profile?.displayName || sticker.profile?.handle || "Unknown"}のシール`}
+                        {:else}
+                          {sticker.profile?.displayName ||
+                            sticker.profile?.handle ||
+                            "Unknown"}のシール
+                        {/if}
+                      </div>
+                    </div>
+                  {/each}
+                </div>
+              {/if}
+            </div>
+
+            <div class="flex justify-center space-x-4">
+              <a
+                href="/"
+                class="px-4 py-2 text-gray-500 hover:text-gray-700 self-center"
+                >Cancel</a
               >
-                {#each incomingStickers as s}
-                  <div class="w-32 h-32 flex-shrink-0 relative">
-                    <StickerCanvas
-                      avatarUrl={typeof s.image === "string" ? s.image : ""}
-                      staticAngle={true}
+              <button
+                onclick={handleAccept}
+                disabled={processing || selectedStickers.size === 0}
+                class="bg-secondary text-white font-bold py-3 px-8 rounded-full hover:shadow-lg transition transform active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {processing ? "Exchanging..." : "Exchange Stickers!"}
+              </button>
+            </div>
+          </div>
+        {/if}
+      {:else}
+        <!-- Invalid Offer -->
+        <div class="bg-white p-8 rounded-2xl shadow-xl max-w-md text-center">
+          <h2 class="text-xl font-bold text-red-500 mb-4">Invalid Link</h2>
+          <p class="text-gray-600 mb-6">
+            The exchange link is invalid, expired, or the user did not make an
+            offer for you.
+          </p>
+          <a
+            href="/exchange"
+            class="bg-gray-100 text-gray-700 font-bold py-2 px-6 rounded-lg hover:bg-gray-200"
+          >
+            Start New Exchange
+          </a>
+        </div>
+      {/if}
+    {:else}
+      <!-- INITIATE MODE -->
+      <div class="w-full max-w-4xl bg-white rounded-2xl shadow-xl p-6 relative">
+        <h2 class="text-xl font-bold mb-4">Start New Exchange</h2>
+
+        <!-- 1. Select Partner -->
+        <div class="mb-6 relative z-10">
+          <label class="block text-sm font-medium text-gray-700 mb-1"
+            >Partner Handle</label
+          >
+          <div class="flex gap-2">
+            <input
+              value={partnerHandle}
+              oninput={handleInput}
+              placeholder="Search user e.g. suibari"
+              class="flex-1 border rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary outline-none"
+            />
+            <button
+              onclick={resolvePartner}
+              class="bg-gray-100 hover:bg-gray-200 px-4 py-2 rounded-lg font-medium text-gray-700"
+            >
+              Check
+            </button>
+          </div>
+
+          <!-- Typeahead Results -->
+          {#if showDropdown && searchResults.length > 0}
+            <div
+              class="absolute top-FULL left-0 w-full bg-white border border-gray-200 rounded-lg shadow-xl mt-1 max-h-60 overflow-y-auto"
+            >
+              {#each searchResults as user}
+                <button
+                  class="w-full text-left px-4 py-2 hover:bg-gray-50 flex items-center gap-2 border-b last:border-b-0"
+                  onclick={() => selectUser(user)}
+                >
+                  {#if user.avatar}
+                    <img
+                      src={user.avatar}
+                      alt={user.handle}
+                      class="w-6 h-6 rounded-full"
                     />
+                  {:else}
+                    <div class="w-6 h-6 rounded-full bg-gray-200"></div>
+                  {/if}
+                  <div>
+                    <div class="font-bold text-sm">
+                      {user.displayName || user.handle}
+                    </div>
+                    <div class="text-xs text-gray-500">@{user.handle}</div>
                   </div>
-                {/each}
-              </div>
+                </button>
+              {/each}
             </div>
           {/if}
 
-          <div class="mb-6 text-left">
-            <h3 class="text-lg font-bold mb-2">
-              Select Stickers to Give Back ({selectedStickers.size})
-            </h3>
+          {#if resolveError}<p class="text-red-500 text-sm mt-1">
+              {resolveError}
+            </p>{/if}
+          {#if partnerDid}<p class="text-green-600 text-sm mt-1">
+              Selected: {partnerHandle}
+            </p>{/if}
+        </div>
 
+        <!-- 2. Select Stickers -->
+        {#if partnerDid}
+          <div class="mb-6">
+            <label class="block text-sm font-medium text-gray-700 mb-2"
+              >Select Stickers to Offer ({selectedStickers.size})</label
+            >
             {#if myStickers.length === 0}
-              <p class="text-gray-500 italic text-center py-4">
-                You have no stickers to give! Go collect some first.
+              <p class="text-gray-500 italic">
+                You assume to have stickers, but you have none...
               </p>
             {:else}
               <div
-                class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 max-h-[300px] overflow-y-auto p-4 border rounded-xl bg-gray-50"
+                class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 max-h-[500px] overflow-y-auto p-4 border rounded-xl bg-gray-50"
               >
                 {#each myStickers as sticker}
                   <div
@@ -340,13 +495,8 @@
                     onkeydown={(e) =>
                       e.key === "Enter" && toggleSticker(sticker.uri)}
                   >
-                    <div class="h-24 w-full">
-                      <StickerCanvas
-                        avatarUrl={typeof sticker.image === "string"
-                          ? sticker.image
-                          : ""}
-                        staticAngle={true}
-                      />
+                    <div class="h-32 w-full">
+                      <StickerCanvas avatarUrl={sticker.image as string} />
                     </div>
                     {#if selectedStickers.has(sticker.uri)}
                       <div
@@ -359,16 +509,9 @@
                       </div>
                     {/if}
                     <div
-                      class="p-1 text-center text-xs text-gray-500 truncate border-t border-gray-50"
+                      class="p-2 text-center text-xs text-gray-500 truncate border-t border-gray-50"
                     >
-                      {#if sticker.imageType === "custom"}
-                        {sticker.name ||
-                          `${sticker.profile?.displayName || sticker.profile?.handle || "Unknown"}のシール`}
-                      {:else}
-                        {sticker.profile?.displayName ||
-                          sticker.profile?.handle ||
-                          "Unknown"}のシール
-                      {/if}
+                      {sticker.profile?.displayName || "Unknown"}
                     </div>
                   </div>
                 {/each}
@@ -376,181 +519,40 @@
             {/if}
           </div>
 
-          <div class="flex justify-center space-x-4">
-            <a
-              href="/"
-              class="px-4 py-2 text-gray-500 hover:text-gray-700 self-center"
-              >Cancel</a
+          <div class="flex flex-col gap-2 mb-4 justify-end items-end">
+            <label
+              class="flex items-center gap-2 cursor-pointer text-sm text-gray-700"
             >
+              <input
+                type="checkbox"
+                bind:checked={mentionOnBluesky}
+                class="rounded text-primary focus:ring-primary"
+              />
+              Mention on Bluesky
+            </label>
+            <label
+              class="flex items-center gap-2 cursor-pointer text-sm text-gray-500"
+            >
+              <input
+                type="checkbox"
+                bind:checked={saveSettings}
+                class="rounded text-gray-500 focus:ring-gray-400"
+              />
+              Save Settings
+            </label>
+          </div>
+
+          <div class="flex justify-end">
             <button
-              onclick={handleAccept}
+              onclick={handleInitiate}
               disabled={processing || selectedStickers.size === 0}
-              class="bg-secondary text-white font-bold py-3 px-8 rounded-full hover:shadow-lg transition transform active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+              class="bg-secondary text-white font-bold py-3 px-8 rounded-full hover:shadow-lg transition disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {processing ? "Exchanging..." : "Exchange Stickers!"}
+              {processing ? "Sending..." : "Create Offer Post"}
             </button>
           </div>
-        </div>
-      {/if}
-    {:else}
-      <!-- Invalid Offer -->
-      <div class="bg-white p-8 rounded-2xl shadow-xl max-w-md text-center">
-        <h2 class="text-xl font-bold text-red-500 mb-4">Invalid Link</h2>
-        <p class="text-gray-600 mb-6">
-          The exchange link is invalid, expired, or the user did not make an
-          offer for you.
-        </p>
-        <a
-          href="/exchange"
-          class="bg-gray-100 text-gray-700 font-bold py-2 px-6 rounded-lg hover:bg-gray-200"
-        >
-          Start New Exchange
-        </a>
+        {/if}
       </div>
     {/if}
-  {:else}
-    <!-- INITIATE MODE -->
-    <div class="w-full max-w-4xl bg-white rounded-2xl shadow-xl p-6 relative">
-      <h2 class="text-xl font-bold mb-4">Start New Exchange</h2>
-
-      <!-- 1. Select Partner -->
-      <div class="mb-6 relative z-10">
-        <label class="block text-sm font-medium text-gray-700 mb-1"
-          >Partner Handle</label
-        >
-        <div class="flex gap-2">
-          <input
-            value={partnerHandle}
-            oninput={handleInput}
-            placeholder="Search user e.g. suibari"
-            class="flex-1 border rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary outline-none"
-          />
-          <button
-            onclick={resolvePartner}
-            class="bg-gray-100 hover:bg-gray-200 px-4 py-2 rounded-lg font-medium text-gray-700"
-          >
-            Check
-          </button>
-        </div>
-
-        <!-- Typeahead Results -->
-        {#if showDropdown && searchResults.length > 0}
-          <div
-            class="absolute top-FULL left-0 w-full bg-white border border-gray-200 rounded-lg shadow-xl mt-1 max-h-60 overflow-y-auto"
-          >
-            {#each searchResults as user}
-              <button
-                class="w-full text-left px-4 py-2 hover:bg-gray-50 flex items-center gap-2 border-b last:border-b-0"
-                onclick={() => selectUser(user)}
-              >
-                {#if user.avatar}
-                  <img
-                    src={user.avatar}
-                    alt={user.handle}
-                    class="w-6 h-6 rounded-full"
-                  />
-                {:else}
-                  <div class="w-6 h-6 rounded-full bg-gray-200"></div>
-                {/if}
-                <div>
-                  <div class="font-bold text-sm">
-                    {user.displayName || user.handle}
-                  </div>
-                  <div class="text-xs text-gray-500">@{user.handle}</div>
-                </div>
-              </button>
-            {/each}
-          </div>
-        {/if}
-
-        {#if resolveError}<p class="text-red-500 text-sm mt-1">
-            {resolveError}
-          </p>{/if}
-        {#if partnerDid}<p class="text-green-600 text-sm mt-1">
-            Selected: {partnerHandle}
-          </p>{/if}
-      </div>
-
-      <!-- 2. Select Stickers -->
-      {#if partnerDid}
-        <div class="mb-6">
-          <label class="block text-sm font-medium text-gray-700 mb-2"
-            >Select Stickers to Offer ({selectedStickers.size})</label
-          >
-          {#if myStickers.length === 0}
-            <p class="text-gray-500 italic">
-              You assume to have stickers, but you have none...
-            </p>
-          {:else}
-            <div
-              class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 max-h-[500px] overflow-y-auto p-4 border rounded-xl bg-gray-50"
-            >
-              {#each myStickers as sticker}
-                <div
-                  class="relative cursor-pointer transition-transform transform hover:scale-105 bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden"
-                  onclick={() => toggleSticker(sticker.uri)}
-                  role="button"
-                  tabindex="0"
-                  onkeydown={(e) =>
-                    e.key === "Enter" && toggleSticker(sticker.uri)}
-                >
-                  <div class="h-32 w-full">
-                    <StickerCanvas avatarUrl={sticker.image as string} />
-                  </div>
-                  {#if selectedStickers.has(sticker.uri)}
-                    <div
-                      class="absolute inset-0 bg-primary/10 border-4 border-primary rounded-xl flex items-start justify-end p-2"
-                    >
-                      <span
-                        class="bg-primary text-white text-xs font-bold rounded-full h-6 w-6 flex items-center justify-center shadow-sm"
-                        >✓</span
-                      >
-                    </div>
-                  {/if}
-                  <div
-                    class="p-2 text-center text-xs text-gray-500 truncate border-t border-gray-50"
-                  >
-                    {sticker.profile?.displayName || "Unknown"}
-                  </div>
-                </div>
-              {/each}
-            </div>
-          {/if}
-        </div>
-
-        <div class="flex flex-col gap-2 mb-4 justify-end items-end">
-          <label
-            class="flex items-center gap-2 cursor-pointer text-sm text-gray-700"
-          >
-            <input
-              type="checkbox"
-              bind:checked={mentionOnBluesky}
-              class="rounded text-primary focus:ring-primary"
-            />
-            Mention on Bluesky
-          </label>
-          <label
-            class="flex items-center gap-2 cursor-pointer text-sm text-gray-500"
-          >
-            <input
-              type="checkbox"
-              bind:checked={saveSettings}
-              class="rounded text-gray-500 focus:ring-gray-400"
-            />
-            Save Settings
-          </label>
-        </div>
-
-        <div class="flex justify-end">
-          <button
-            onclick={handleInitiate}
-            disabled={processing || selectedStickers.size === 0}
-            class="bg-secondary text-white font-bold py-3 px-8 rounded-full hover:shadow-lg transition disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {processing ? "Sending..." : "Create Offer Post"}
-          </button>
-        </div>
-      {/if}
-    </div>
-  {/if}
+  </div>
 </div>
