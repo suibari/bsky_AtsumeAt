@@ -3,7 +3,7 @@ import type { Agent } from '@atproto/api';
 
 export let client: BrowserOAuthClient | null = null;
 
-const SCOPE = 'atproto transition:generic repo:blue.atsumeat.sticker repo:blue.atsumeat.config repo:blue.atsumeat.transaction';
+const SCOPE = 'atproto blob:*/* repo:blue.atsumeat.sticker repo:blue.atsumeat.config repo:blue.atsumeat.transaction repo:app.bsky.feed.post?action=create';
 
 export function getClient() {
   if (typeof window === 'undefined') return null;
@@ -26,7 +26,7 @@ export function getClient() {
     handleResolver: 'https://bsky.social',
     clientMetadata: {
       client_id,
-      client_name: 'BonBonDropAt',
+      client_name: 'AtsumeAt',
       client_uri: origin,
       redirect_uris: [redirect_uri],
       scope: SCOPE,

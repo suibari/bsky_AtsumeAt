@@ -1,11 +1,11 @@
 {
-  "client_id": "http://localhost:5173/client-metadata.json",
-  "client_name": "BonBonDropAt",
-  "client_uri": "http://localhost:5173",
+  "client_id": "https://atsumeat.suibari.com/client-metadata.json",
+  "client_name": "AtsumeAt",
+  "client_uri": "https://atsumeat.suibari.com",
   "redirect_uris": [
-    "http://localhost:5173/"
+    "https://atsumeat.suibari.com/"
   ],
-  "scope": "atproto transition:generic",
+  "scope": "atproto blob:*/* repo:blue.atsumeat.sticker repo:blue.atsumeat.config repo:blue.atsumeat.transaction repo:app.bsky.feed.post?action=create",
   "grant_types": [
     "authorization_code",
     "refresh_token"
