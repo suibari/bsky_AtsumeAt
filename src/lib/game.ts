@@ -151,12 +151,24 @@ export type StickerWithProfile = Sticker & {
 };
 
 export async function getUserStickers(agent: Agent, userDid: string): Promise<StickerWithProfile[]> {
+  // 1. Resolve PDS
+  let pdsAgent = agent;
+  try {
+    const pdsUrl = await getPdsEndpoint(userDid);
+    if (pdsUrl) {
+      // Use specific PDS agent
+      pdsAgent = new Agent(pdsUrl);
+    }
+  } catch (e) {
+    console.warn('Failed to resolve PDS, trying default agent', e);
+  }
+
   // 1. Fetch records
   let stickers: StickerWithProfile[] = [];
   let cursor: string | undefined;
 
   do {
-    const res = await agent.com.atproto.repo.listRecords({
+    const res = await pdsAgent.com.atproto.repo.listRecords({
       repo: userDid,
       collection: STICKER_COLLECTION,
       limit: 100,

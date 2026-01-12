@@ -4,21 +4,33 @@
   import { getUserStickers, type StickerWithProfile } from "$lib/game";
   import StickerCanvas from "./StickerCanvas.svelte";
 
-  let { agent } = $props<{ agent: Agent }>();
+  let {
+    agent,
+    targetDid = undefined,
+    title = undefined,
+  } = $props<{ agent: Agent; targetDid?: string; title?: string }>();
   let stickers = $state<StickerWithProfile[]>([]);
   let loading = $state(true);
 
+  // Computed Title
+  let displayTitle = $derived(
+    title ||
+      (targetDid && targetDid !== agent.assertDid ? "Sticker Book" : "My Book"),
+  );
+
   onMount(async () => {
-    if (agent.assertDid) {
-      await loadStickers();
+    // If targetDid is provided, use it. Otherwise use agent.assertDid.
+    const didToLoad = targetDid || agent.assertDid;
+    if (didToLoad) {
+      await loadStickers(didToLoad);
     }
   });
 
-  async function loadStickers() {
+  async function loadStickers(did: string) {
     loading = true;
     try {
-      if (agent.assertDid) {
-        stickers = await getUserStickers(agent, agent.assertDid);
+      if (did) {
+        stickers = await getUserStickers(agent, did);
       }
     } catch (e) {
       console.error("Failed to load stickers", e);
@@ -34,20 +46,20 @@
       <div
         class="animate-spin rounded-full h-10 w-10 border-b-2 border-primary mx-auto mb-4"
       ></div>
-      <p class="text-gray-500">Opening your sticker book...</p>
+      <p class="text-gray-500">Opening sticker book...</p>
     </div>
   {:else if stickers.length === 0}
     <div
       class="text-center p-8 bg-white rounded-xl shadow-sm border border-gray-100"
     >
-      <h3 class="text-xl font-bold text-gray-800 mb-2">My Book</h3>
-      <p class="text-gray-500">
-        No stickers yet! Wait a moment if you just joined...
-      </p>
-      <button
-        onclick={loadStickers}
-        class="mt-4 text-primary font-medium hover:underline">Refresh</button
-      >
+      <h3 class="text-xl font-bold text-gray-800 mb-2">{displayTitle}</h3>
+      <p class="text-gray-500">No stickers yet!</p>
+      {#if !targetDid || targetDid === agent.assertDid}
+        <button
+          onclick={() => loadStickers(agent.assertDid!)}
+          class="mt-4 text-primary font-medium hover:underline">Refresh</button
+        >
+      {/if}
     </div>
   {:else}
     <div
@@ -59,12 +71,13 @@
         >
           <!-- 3D Sticker -->
           <div class="h-40 w-full mb-2">
-            <StickerCanvas avatarUrl={sticker.image as string} />
+            <StickerCanvas
+              avatarUrl={typeof sticker.image === "string" ? sticker.image : ""}
+            />
           </div>
 
           <!-- Metadata -->
           <div class="text-center space-y-1">
-            <!-- Depicted (Sticker Name/Topic) -->
             <!-- Depicted (Sticker Name) -->
             <p class="font-bold text-gray-800 truncate text-sm">
               {#if sticker.imageType === "custom"}
@@ -79,13 +92,10 @@
 
             <!-- Giver -->
             {#if sticker.giverProfile || sticker.obtainedFrom}
-              <p class="text-xs text-gray-500 truncate relative z-10">
-                <span class="font-semibold">From:</span>
-                <a
-                  href={`https://bsky.app/profile/${sticker.obtainedFrom}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  class="hover:underline text-primary"
+              <p class="text-xs text-gray-500 truncate">
+                From: <a
+                  href="/profile/{sticker.obtainedFrom}"
+                  class="text-primary hover:underline relative z-10"
                   onclick={(e) => e.stopPropagation()}
                 >
                   {sticker.giverProfile?.displayName ||
@@ -95,15 +105,12 @@
               </p>
             {/if}
 
-            <!-- Original Issuer -->
+            <!-- Original Owner (Minter) -->
             {#if sticker.originalOwnerProfile || sticker.originalOwner}
-              <p class="text-xs text-gray-400 truncate relative z-10">
-                <span class="font-semibold">Minter:</span>
-                <a
-                  href={`https://bsky.app/profile/${sticker.originalOwner}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  class="hover:underline text-primary"
+              <p class="text-xs text-gray-400 truncate">
+                Minter: <a
+                  href="/profile/{sticker.originalOwner}"
+                  class="text-primary hover:underline relative z-10"
                   onclick={(e) => e.stopPropagation()}
                 >
                   {sticker.originalOwnerProfile?.displayName ||
