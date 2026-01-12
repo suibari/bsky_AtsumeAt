@@ -773,6 +773,22 @@ export async function checkInverseExchange(agent: Agent, partnerDid: string, off
             imageToSave = `https://cdn.bsky.app/img/feed_fullsize/plain/${blobDid}/${link}@jpeg`;
           }
 
+          // Construct info payload for signing
+          // We must sign that we obtained this sticker from partnerDid
+          const infoPayload = {
+            model: remoteSticker.model,
+            image: imageToSave,
+            obtainedFrom: partnerDid,
+            originalCreator: rOriginalOwner
+          };
+
+          let sigData: { signature?: string, signedPayload?: string } = {};
+          try {
+            // Request signature from our own server
+            const res = await requestSignature(myDid, { info: infoPayload });
+            if (res) sigData = res;
+          } catch (e) { console.error("Signing failed in inverse exchange", e); }
+
           await agent.com.atproto.repo.createRecord({
             repo: myDid,
             collection: STICKER_COLLECTION,
@@ -785,7 +801,11 @@ export async function checkInverseExchange(agent: Agent, partnerDid: string, off
               model: remoteSticker.model,
               description: remoteSticker.description,
               obtainedFrom: partnerDid,
-              obtainedAt: new Date().toISOString()
+              obtainedAt: new Date().toISOString(),
+
+              // Signed Data
+              signature: sigData.signature,
+              signedPayload: sigData.signedPayload
             } as Sticker
           });
           addedCount++;
