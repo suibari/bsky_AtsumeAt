@@ -65,29 +65,45 @@
           <!-- Metadata -->
           <div class="text-center space-y-1">
             <!-- Depicted (Sticker Name/Topic) -->
-            <p class="font-bold text-gray-800 truncate text-sm">
+            <!-- <p class="font-bold text-gray-800 truncate text-sm">
               {sticker.profile?.displayName ||
                 sticker.profile?.handle ||
                 "Unknown"}
-            </p>
+            </p> -->
 
             <!-- Giver -->
             {#if sticker.giverProfile || sticker.obtainedFrom}
-              <p class="text-xs text-gray-500 truncate">
+              <p class="text-xs text-gray-500 truncate relative z-10">
                 <span class="font-semibold">From:</span>
-                {sticker.giverProfile?.displayName ||
-                  sticker.giverProfile?.handle ||
-                  sticker.obtainedFrom}
+                <a
+                  href={`https://bsky.app/profile/${sticker.obtainedFrom}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="hover:underline text-primary"
+                  onclick={(e) => e.stopPropagation()}
+                >
+                  {sticker.giverProfile?.displayName ||
+                    sticker.giverProfile?.handle ||
+                    sticker.obtainedFrom}
+                </a>
               </p>
             {/if}
 
             <!-- Original Issuer -->
             {#if sticker.originalOwnerProfile || sticker.originalOwner}
-              <p class="text-xs text-gray-400 truncate">
+              <p class="text-xs text-gray-400 truncate relative z-10">
                 <span class="font-semibold">Minter:</span>
-                {sticker.originalOwnerProfile?.displayName ||
-                  sticker.originalOwnerProfile?.handle ||
-                  sticker.originalOwner}
+                <a
+                  href={`https://bsky.app/profile/${sticker.originalOwner}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="hover:underline text-primary"
+                  onclick={(e) => e.stopPropagation()}
+                >
+                  {sticker.originalOwnerProfile?.displayName ||
+                    sticker.originalOwnerProfile?.handle ||
+                    sticker.originalOwner}
+                </a>
               </p>
             {/if}
 
