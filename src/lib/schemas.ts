@@ -14,6 +14,10 @@ export interface Sticker {
   model: string; // 'default', 'cat', etc.
   obtainedFrom?: string; // The user who gave this sticker (DID)
   obtainedAt: string;
+
+  // Verification
+  signature?: string;       // Server signature (base64)
+  signedPayload?: string;   // JSON string that was signed
   [key: string]: unknown;
 }
 

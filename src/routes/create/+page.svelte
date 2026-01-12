@@ -130,6 +130,42 @@
 
       const cid = uploadRes.data.blob.ref.toString();
 
+      // Construct the canonical CDN URL for the sticker
+      const stickerImageUrl = `https://cdn.bsky.app/img/feed_fullsize/plain/${agent.assertDid!}/${cid}@jpeg`;
+
+      // 3.5 Sign the Payload
+      // We need to fetch the signature helper logic or call the API directly here.
+      // Since requestSignature is not exported or we are in a component, let's call fetch directly.
+      const payloadInfo = {
+        model: `cid:${cid}`,
+        name: name || undefined,
+        image: stickerImageUrl, // Use the string URL to match acceptExchange consistency
+        obtainedFrom: agent.assertDid!, // Self-Mint
+      };
+
+      let signature: string | undefined;
+      let signedPayload: string | undefined;
+
+      try {
+        const signRes = await fetch("/api/sign-seal", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            userDid: agent.assertDid!,
+            payload: { info: payloadInfo },
+          }), // matching structure in game.ts
+        });
+        if (signRes.ok) {
+          const data = await signRes.json();
+          signature = data.signature;
+          signedPayload = data.signedPayload;
+        } else {
+          console.error("Signing failed");
+        }
+      } catch (e) {
+        console.error("Signing error", e);
+      }
+
       // 4. Create Sticker Record
       const record: Sticker = {
         $type: STICKER_COLLECTION,
@@ -140,6 +176,8 @@
         model: `cid:${cid}`,
         name: name || undefined,
         obtainedAt: new Date().toISOString(),
+        signature,
+        signedPayload,
       };
 
       await agent.com.atproto.repo.createRecord({

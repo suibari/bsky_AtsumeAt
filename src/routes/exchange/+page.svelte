@@ -9,6 +9,7 @@
     getUserStickers,
     createExchangePost,
     fetchStickersForTransaction,
+    publicAgent,
   } from "$lib/game";
   import {
     STICKER_COLLECTION,
@@ -144,7 +145,7 @@
     searchTimeout = setTimeout(async () => {
       if (!agent) return;
       try {
-        const res = await agent.searchActorsTypeahead({
+        const res = await publicAgent.searchActorsTypeahead({
           term: value,
           limit: 5,
         });

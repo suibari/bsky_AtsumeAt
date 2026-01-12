@@ -15,6 +15,7 @@
 		"@sveltejs/adapter-auto": "^7.0.0",
 		"@sveltejs/kit": "^2.49.1",
 		"@sveltejs/vite-plugin-svelte": "^6.2.1",
+		"@types/node": "^25.0.6",
 		"@types/three": "^0.182.0",
 		"autoprefixer": "^10.4.23",
 		"postcss": "^8.5.6",
@@ -26,6 +27,7 @@
 	},
 	"dependencies": {
 		"@atproto/api": "^0.18.13",
+		"@atproto/crypto": "^0.4.5",
 		"@atproto/oauth-client-browser": "^0.3.39",
 		"@tailwindcss/postcss": "^4.1.18",
 		"three": "^0.182.0"
