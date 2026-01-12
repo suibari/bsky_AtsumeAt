@@ -2,6 +2,8 @@ import { Agent } from '@atproto/api';
 import { STICKER_COLLECTION, CONFIG_COLLECTION, type Sticker, type Config, TRANSACTION_COLLECTION, type Transaction } from './schemas';
 import { getPdsEndpoint } from './atproto';
 
+const publicAgent = new Agent('https://public.api.bsky.app');
+
 const HUB_HANDLE = 'suibari.com';
 let cachedHubDid: string | null = null;
 
@@ -55,7 +57,7 @@ export async function initStickers(agent: Agent, userDid: string, onStatus?: (ms
   // 2. Fetch Profile for Avatar
   let avatar = '';
   try {
-    const p = await agent.getProfile({ actor: userDid });
+    const p = await publicAgent.getProfile({ actor: userDid });
     avatar = p.data.avatar || '';
   } catch (e) {
     console.warn("Failed to fetch profile for sticker init", e);
@@ -479,7 +481,7 @@ export async function resolvePendingExchanges(agent: Agent, onStatus?: (msg: str
     if (onStatus) {
       try {
         // Optimistic fetching
-        const profile = await agent.getProfile({ actor: partnerDid });
+        const profile = await publicAgent.getProfile({ actor: partnerDid });
         partnerName = profile.data.displayName || profile.data.handle || partnerDid;
       } catch (e) { }
       onStatus(`Checking exchange with ${partnerName}...`);
@@ -733,7 +735,7 @@ export async function checkIncomingOffers(agent: Agent): Promise<IncomingOffer[]
       // Fetch Profile
       let p;
       try {
-        const profileRes = await agent.getProfile({ actor: authorDid });
+        const profileRes = await publicAgent.getProfile({ actor: authorDid });
         p = profileRes.data;
       } catch { }
 
