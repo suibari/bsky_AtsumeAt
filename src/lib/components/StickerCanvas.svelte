@@ -68,7 +68,7 @@
     container.appendChild(renderer.domElement);
 
     // Lighting
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
+    const ambientLight = new THREE.AmbientLight(0xffffff, 1.2);
     scene.add(ambientLight);
     const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
     directionalLight.position.set(2, 2, 5);
@@ -104,7 +104,7 @@
           // Top (Face) - Avatar (Slightly metallic)
           new THREE.MeshStandardMaterial({
             map: texture,
-            metalness: 0.5,
+            metalness: 0.1,
             roughness: 0.2,
           }),
           // Bottom (Back)
