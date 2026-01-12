@@ -657,6 +657,24 @@ export async function checkIncomingOffers(agent: Agent): Promise<IncomingOffer[]
 
   const results: IncomingOffer[] = [];
 
+  // Optimize: Fetch my recent transactions to filter out already-responded offers
+  const myRespondedOfferUris = new Set<string>();
+  try {
+    const myRes = await agent.com.atproto.repo.listRecords({
+      repo: agent.assertDid!,
+      collection: TRANSACTION_COLLECTION,
+      limit: 50
+    });
+    for (const r of myRes.data.records) {
+      const t = r.value as unknown as Transaction;
+      if (t.refTransaction) {
+        myRespondedOfferUris.add(t.refTransaction);
+      }
+    }
+  } catch (e) {
+    console.warn("Failed to fetch my transactions", e);
+  }
+
   // Process links (parallel fetch for missing records)
   await Promise.all(links.map(async (link) => {
     let t: Transaction | undefined;
@@ -714,6 +732,13 @@ export async function checkIncomingOffers(agent: Agent): Promise<IncomingOffer[]
     }
 
     if (t && t.status === 'offered') {
+      // Check if I have already responded (does a transaction exist that references this offer?)
+      if (uri && myRespondedOfferUris.has(uri)) {
+        console.log("Skipping already responded offer:", uri);
+        return;
+      }
+
+
       // Fetch Profile
       let p;
       try {
