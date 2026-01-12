@@ -150,29 +150,7 @@ export async function initStickers(agent: Agent, userDid: string, onStatus?: (ms
 
   if (onStatus) onStatus("Generating your sticker...");
 
-  // If config missing, we wipe existing stickers to start fresh
-  // This handles the "Reset" case or "Broken State" case.
-  let cursor: string | undefined;
-  try {
-    do {
-      const stale = await agent.com.atproto.repo.listRecords({
-        repo: userDid,
-        collection: STICKER_COLLECTION,
-        limit: 100,
-        cursor
-      });
-      cursor = stale.data.cursor;
 
-      // Delete batch
-      for (const r of stale.data.records) {
-        await agent.com.atproto.repo.deleteRecord({
-          repo: userDid,
-          collection: STICKER_COLLECTION,
-          rkey: r.uri.split('/').pop()!
-        });
-      }
-    } while (cursor);
-  } catch (e) { }
 
   if (onStatus) onStatus("Creating sticker pack...");
 
@@ -1015,6 +993,36 @@ export async function fetchStickersForTransaction(agent: Agent, t: Transaction, 
     }
   }
   return stickers;
+}
+
+export async function deleteAllData(agent: Agent) {
+  const myDid = agent.assertDid;
+  if (!myDid) return;
+
+  const collections = [STICKER_COLLECTION, TRANSACTION_COLLECTION, CONFIG_COLLECTION];
+
+  for (const col of collections) {
+    let cursor: string | undefined;
+    do {
+      const res = await agent.com.atproto.repo.listRecords({
+        repo: myDid,
+        collection: col,
+        limit: 50,
+        cursor
+      });
+      cursor = res.data.cursor;
+      for (const r of res.data.records) {
+        const rkey = r.uri.split('/').pop();
+        if (rkey) {
+          await agent.com.atproto.repo.deleteRecord({
+            repo: myDid,
+            collection: col,
+            rkey
+          });
+        }
+      }
+    } while (cursor);
+  }
 }
 
 

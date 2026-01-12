@@ -187,6 +187,13 @@
               <span>ℹ️</span> About
             </button>
             <div class="h-px bg-gray-100 my-1"></div>
+            <a
+              href="/settings"
+              class="px-4 py-2 hover:bg-blue-50 text-gray-700 font-medium text-sm flex items-center gap-2"
+            >
+              <span>⚙️</span> Settings
+            </a>
+            <div class="h-px bg-gray-100 my-1"></div>
             <button
               onclick={handleLogout}
               class="px-4 py-2 w-full text-left hover:bg-red-50 text-red-600 font-medium text-sm flex items-center gap-2"
