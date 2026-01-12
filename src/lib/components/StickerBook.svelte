@@ -141,7 +141,7 @@
       {#each stickers as sticker (sticker.uri)}
         <div class="sticker-card-interactive">
           <!-- 3D Sticker -->
-          <div class="h-40 w-full mb-2">
+          <div class="aspect-square w-full mb-2 max-w-[160px] mx-auto">
             <StickerCanvas
               avatarUrl={typeof sticker.image === "string" ? sticker.image : ""}
             />
@@ -289,10 +289,6 @@
           </div>
 
           <!-- Detail View Action (Example) -->
-          <button
-            class="absolute inset-0 w-full h-full cursor-pointer focus:outline-none"
-            aria-label="View Sticker"
-          ></button>
         </div>
       {/each}
     </div>

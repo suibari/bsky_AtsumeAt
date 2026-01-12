@@ -1,190 +1,191 @@
 <script lang="ts">
   import { onMount, onDestroy } from "svelte";
-  import * as THREE from "three";
+  import { getDominantColor } from "$lib/color";
 
-  let { avatarUrl = "", staticAngle = false } = $props();
+  let { avatarUrl = "", staticAngle = false } = $props<{
+    avatarUrl?: string; // Expect a full URL or blob
+    staticAngle?: boolean;
+  }>();
 
   let container: HTMLDivElement;
-  let renderer: THREE.WebGLRenderer;
-  let scene: THREE.Scene;
-  let camera: THREE.PerspectiveCamera;
-  let mesh: THREE.Mesh;
   let animationId: number;
 
-  // Drag State
-  let isDragging = false;
-  let previousMousePosition = { x: 0, y: 0 };
+  // Rotation State
+  // Combined state: rotY includes both manual and auto components
+  let rotX = $state(0);
+  let rotY = $state(0);
+  let isDragging = $state(false);
+
+  let lastX = 0;
+  let lastY = 0;
+
+  // Dynamic Color State
+  let borderColor = $state("transparent"); // Start transparent to avoid yellow flash
 
   function onPointerDown(e: MouseEvent | TouchEvent) {
     if (staticAngle) return;
     isDragging = true;
-    const x = "touches" in e ? e.touches[0].clientX : e.clientX;
-    const y = "touches" in e ? e.touches[0].clientY : e.clientY;
-    previousMousePosition = { x, y };
+    lastX = "touches" in e ? e.touches[0].clientX : e.clientX;
+    lastY = "touches" in e ? e.touches[0].clientY : e.clientY;
+    e.preventDefault(); // Prevent scroll on touch
   }
 
   function onPointerMove(e: MouseEvent | TouchEvent) {
-    if (staticAngle) return;
-    if (!isDragging || !mesh) return;
+    if (staticAngle || !isDragging) return;
 
     const x = "touches" in e ? e.touches[0].clientX : e.clientX;
     const y = "touches" in e ? e.touches[0].clientY : e.clientY;
 
-    const deltaMove = {
-      x: x - previousMousePosition.x,
-      y: y - previousMousePosition.y,
-    };
+    const deltaX = x - lastX;
+    const deltaY = y - lastY;
 
-    // Rotate Mesh
-    if (container) {
-      const sensitivity = 4; // Approx 1.25 * PI (a bit more than 180 deg per width)
-      mesh.rotation.y += (deltaMove.x / container.clientWidth) * sensitivity;
-    }
+    // Apply rotation
+    rotY += deltaX * 0.5; // Sensitivity
+    rotX -= deltaY * 0.5;
 
-    previousMousePosition = { x, y };
+    // Clamp X
+    rotX = Math.max(-60, Math.min(60, rotX));
+
+    lastX = x;
+    lastY = y;
   }
 
   function onPointerUp() {
     isDragging = false;
   }
 
+  // Animation Loop for Auto-Rotation
+  function animate() {
+    if (staticAngle) return;
+    animationId = requestAnimationFrame(animate);
+
+    if (!isDragging) {
+      // Simply increment the unified rotY state
+      rotY += 0.5;
+    }
+  }
+
   onMount(() => {
-    if (!container) return;
-
-    // Scene Setup
-    scene = new THREE.Scene();
-    // Transparent background
-    scene.background = null;
-
-    const width = container.clientWidth;
-    const height = container.clientHeight;
-
-    camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 100);
-    camera.position.z = 3.0;
-
-    renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
-    renderer.setSize(width, height);
-    renderer.setPixelRatio(window.devicePixelRatio);
-    container.appendChild(renderer.domElement);
-
-    // Lighting
-    const ambientLight = new THREE.AmbientLight(0xffffff, 1.2);
-    scene.add(ambientLight);
-    const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
-    directionalLight.position.set(2, 2, 5);
-    scene.add(directionalLight);
-
-    // Geometry - A "Sticker" (thick card or simple plane)
-    // Using a Cylinder for a "coin" or "token" look, or Box for card
-    const geometry = new THREE.CylinderGeometry(1, 1, 0.05, 64);
-    geometry.rotateX(Math.PI / 2); // Make it face camera
-
-    // Material
-    // Load Avatar Texture
-    const loader = new THREE.TextureLoader();
-    loader.setCrossOrigin("anonymous");
-    const placeholder = "https://bsky.social/about/images/favicon-32x32.png"; // Fallback
-    const rawUrl = avatarUrl || placeholder;
-    // Use local proxy to bypass CORS
-    const urlToCheck = `/api/proxy?url=${encodeURIComponent(rawUrl)}`;
-
-    loader.load(
-      urlToCheck,
-      (texture) => {
-        texture.colorSpace = THREE.SRGBColorSpace;
-        texture.center.set(0.5, 0.5);
-        texture.rotation = Math.PI / 2;
-        const materials = [
-          // Side (Always Gold/Metallic)
-          new THREE.MeshStandardMaterial({
-            color: 0xffd700,
-            metalness: 1.0,
-            roughness: 0.3,
-          }),
-          // Top (Face) - Avatar (Slightly metallic)
-          new THREE.MeshStandardMaterial({
-            map: texture,
-            metalness: 0.1,
-            roughness: 0.2,
-          }),
-          // Bottom (Back)
-          new THREE.MeshStandardMaterial({ color: 0xeeeeee }),
-        ];
-        // Cylinder uses [side, top, bottom]
-        // But after rotation, indices might map differently?
-        // CylinderGeometry(radiusTop, radiusBottom, height, radialSegments)
-        // Materials array for Cylinder is [side, top, bottom]
-
-        mesh = new THREE.Mesh(geometry, materials);
-
-        // Future: Add particle system for sparkles here
-
-        scene.add(mesh);
-      },
-      undefined,
-      (err) => {
-        console.error("Texture load failed", err);
-      },
-    );
-
-    // Animation Loop
-    const animate = () => {
-      animationId = requestAnimationFrame(animate);
-      if (mesh) {
-        // Gentle float
-        mesh.position.y = Math.sin(Date.now() * 0.002) * 0.05;
-
-        // Auto rotate if not dragging
-        if (staticAngle) {
-          mesh.rotation.y = 0.5; // Fixed angle
-          mesh.rotation.x = 0;
-        } else if (!isDragging) {
-          mesh.rotation.y += 0.01;
-          mesh.rotation.x = Math.sin(Date.now() * 0.001) * 0.1;
-        } else {
-          // Reset tilt or keep it?
-          // Letting drag control Y, but maybe auto-tilt is confusing while dragging.
-          // Let's just pause auto-tilt during drag to avoid fighting.
-        }
-      }
-      renderer.render(scene, camera);
-    };
     animate();
 
-    // Resize
-    const resizeObserver = new ResizeObserver(() => {
-      if (!container) return;
-      const w = container.clientWidth;
-      const h = container.clientHeight;
-      renderer.setSize(w, h);
-      camera.aspect = w / h;
-      camera.updateProjectionMatrix();
-    });
-    resizeObserver.observe(container);
+    // Global mouse up helper
+    window.addEventListener("mouseup", onPointerUp);
+    window.addEventListener("touchend", onPointerUp);
 
     return () => {
       cancelAnimationFrame(animationId);
-      resizeObserver.disconnect();
-      if (renderer) renderer.dispose();
-      if (geometry) geometry.dispose();
-      // Disposing materials/textures is also good practice
+      window.removeEventListener("mouseup", onPointerUp);
+      window.removeEventListener("touchend", onPointerUp);
     };
+  });
+
+  // Computed final rotation
+  let finalRotY = $derived(rotY);
+  let finalRotX = $derived(rotX);
+
+  // Resolve Image
+  const placeholder = "https://bsky.social/about/images/favicon-32x32.png";
+  let displayImage = $derived(avatarUrl || placeholder);
+  let proxiedImage = $derived(
+    displayImage.startsWith("http")
+      ? `/api/proxy?url=${encodeURIComponent(displayImage)}`
+      : displayImage,
+  );
+
+  // Effect to update border color
+  $effect(() => {
+    if (proxiedImage) {
+      const key = `sticker-color:${proxiedImage}`;
+      // Try sync cache first
+      try {
+        const cached = localStorage.getItem(key);
+        if (cached) {
+          borderColor = cached;
+        }
+      } catch (e) {}
+
+      // Async fetch
+      getDominantColor(proxiedImage).then((c) => {
+        // Only update if changed (prevents flicker if same)
+        if (borderColor !== c) {
+          borderColor = c;
+          try {
+            localStorage.setItem(key, c);
+          } catch (e) {}
+        }
+      });
+    }
   });
 </script>
 
-<div class="relative w-full h-full">
-  <div bind:this={container} class="w-full h-full"></div>
-
-  <!-- Interaction Overlay -->
+<div
+  class="scene relative w-full h-full cursor-grab active:cursor-grabbing touch-none"
+  onmousedown={onPointerDown}
+  onmousemove={onPointerMove}
+  ontouchstart={onPointerDown}
+  ontouchmove={onPointerMove}
+  role="application"
+>
   <div
-    role="application"
-    class="absolute inset-0 cursor-grab active:cursor-grabbing touch-none z-10"
-    onmousedown={onPointerDown}
-    onmousemove={onPointerMove}
-    onmouseup={onPointerUp}
-    onmouseleave={onPointerUp}
-    ontouchstart={onPointerDown}
-    ontouchmove={onPointerMove}
-    ontouchend={onPointerUp}
-  ></div>
+    class="card w-full h-full relative"
+    style="transform: rotateX({finalRotX}deg) rotateY({finalRotY}deg);"
+  >
+    <!-- Front Face -->
+    <div
+      class="face front absolute inset-0 w-full h-full bg-white rounded-full overflow-hidden shadow-xl"
+      style="border: 4px solid {borderColor}; transition: border-color 0.3s ease;"
+    >
+      <img
+        src={proxiedImage}
+        alt="Sticker"
+        class="w-full h-full object-cover p-1 bg-white rounded-full"
+        draggable="false"
+      />
+
+      <!-- Gloss Overlay -->
+      <div
+        class="gloss absolute inset-0 w-full h-full rounded-full pointer-events-none z-10"
+        style="
+          background: linear-gradient(115deg, transparent 40%, rgba(255, 255, 255, 0.7) 50%, transparent 60%); 
+          background-size: 200% 100%;
+          background-position: {100 -
+          ((((finalRotY % 360) + 360) % 360) / 360) * 200}%;
+          mix-blend-mode: overlay;
+        "
+      ></div>
+
+      <!-- Specular Highlight (Static) -->
+      <div
+        class="absolute inset-0 rounded-full ring-1 ring-inset ring-white/50 z-20"
+      ></div>
+    </div>
+
+    <!-- Back Face -->
+    <div
+      class="face back absolute inset-0 w-full h-full rounded-full flex items-center justify-center border-4 border-white shadow-xl"
+      style="
+          transform: rotateY(180deg); 
+          background-color: {borderColor};
+          background-image: repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(0,0,0,0.1) 10px, rgba(0,0,0,0.1) 20px);
+          transition: background-color 0.3s ease;
+        "
+    >
+      <div class="w-2/3 h-2/3 bg-white/20 rounded-full animate-pulse"></div>
+    </div>
+  </div>
 </div>
+
+<style>
+  .scene {
+    perspective: 800px;
+  }
+  .card {
+    transform-style: preserve-3d;
+    transition: transform 0.1s cubic-bezier(0, 0, 0.2, 1); /* Slight smoothing */
+  }
+  .face {
+    backface-visibility: hidden;
+    /* Hardware acceleration hints */
+    -webkit-font-smoothing: antialiased;
+  }
+</style>

@@ -336,7 +336,7 @@
                       onkeydown={(e) =>
                         e.key === "Enter" && toggleSticker(sticker.uri)}
                     >
-                      <div class="h-24 w-full">
+                      <div class="aspect-square w-full max-w-[96px] mx-auto">
                         <StickerCanvas
                           avatarUrl={typeof sticker.image === "string"
                             ? sticker.image
@@ -492,8 +492,11 @@
                     onkeydown={(e) =>
                       e.key === "Enter" && toggleSticker(sticker.uri)}
                   >
-                    <div class="h-32 w-full">
-                      <StickerCanvas avatarUrl={sticker.image as string} />
+                    <div class="aspect-square w-full max-w-[128px] mx-auto">
+                      <StickerCanvas
+                        avatarUrl={sticker.image as string}
+                        staticAngle={true}
+                      />
                     </div>
                     {#if selectedStickers.has(sticker.uri)}
                       <div
