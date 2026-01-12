@@ -87,7 +87,14 @@
 </script>
 
 {#if loading}
-  // ... existing loading ...
+  <div class="min-h-screen bg-surface flex items-center justify-center">
+    <div class="text-center">
+      <div
+        class="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"
+      ></div>
+      <p class="text-gray-500 font-medium">{loadingMessage}</p>
+    </div>
+  </div>
 {:else if agent && view === "book"}
   <div class="min-h-screen bg-surface">
     <header
