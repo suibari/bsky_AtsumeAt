@@ -194,7 +194,7 @@
         ></div>
       {/if}
     </header>
-    <main class="p-4">
+    <main class="max-w-6xl mx-auto p-4 md:p-8">
       <StickerBook {agent} />
     </main>
 
