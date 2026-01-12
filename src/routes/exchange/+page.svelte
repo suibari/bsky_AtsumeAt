@@ -1,23 +1,21 @@
 <script lang="ts">
   import { page } from "$app/stores";
   import { onMount } from "svelte";
-  import { getClient, getPdsEndpoint } from "$lib/atproto";
+  import { getClient, getPdsEndpoint, publicAgent } from "$lib/atproto";
   import { Agent } from "@atproto/api";
   import type { ProfileViewBasic } from "@atproto/api/dist/client/types/app/bsky/actor/defs";
   import {
     acceptExchange,
-    getUserStickers,
     createExchangePost,
     fetchStickersForTransaction,
-    publicAgent,
-  } from "$lib/game";
+  } from "$lib/exchange";
+  import { getUserStickers, type StickerWithProfile } from "$lib/stickers";
   import {
     STICKER_COLLECTION,
     type Sticker,
     TRANSACTION_COLLECTION,
     type Transaction,
   } from "$lib/schemas";
-  import type { StickerWithProfile } from "$lib/game";
   import Landing from "$lib/components/Landing.svelte";
   import StickerCanvas from "$lib/components/StickerCanvas.svelte";
 

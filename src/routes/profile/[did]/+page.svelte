@@ -1,11 +1,12 @@
 <script lang="ts">
   import { page } from "$app/stores";
   import { onMount } from "svelte";
-  import { getClient } from "$lib/atproto";
+  import { getClient, publicAgent } from "$lib/atproto";
   import { Agent } from "@atproto/api";
   import { goto } from "$app/navigation";
   import StickerBook from "$lib/components/StickerBook.svelte";
-  import { publicAgent } from "$lib/game";
+  import { getUserStickers, type StickerWithProfile } from "$lib/stickers";
+  import { createExchangePost } from "$lib/exchange";
 
   let agent = $state<Agent | null>(null);
   let profile = $state<any>(null);

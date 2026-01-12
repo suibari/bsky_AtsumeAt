@@ -1,5 +1,8 @@
 import { BrowserOAuthClient } from '@atproto/oauth-client-browser';
 import type { Agent } from '@atproto/api';
+import { Agent as AtpAgent } from '@atproto/api'; // Import Class for instantiation
+
+export const publicAgent = new AtpAgent('https://public.api.bsky.app');
 
 export let client: BrowserOAuthClient | null = null;
 

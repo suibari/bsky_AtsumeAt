@@ -1,14 +1,11 @@
 <script lang="ts">
   import { onMount } from "svelte";
-  import { getClient, signOut } from "$lib/atproto";
+  import { initStickers } from "$lib/stickers";
+  import { getClient, signOut, publicAgent } from "$lib/atproto";
   import { Agent } from "@atproto/api";
   import Landing from "$lib/components/Landing.svelte";
   import StickerBook from "$lib/components/StickerBook.svelte";
-  import {
-    initStickers,
-    resolvePendingExchanges,
-    checkIncomingOffers,
-  } from "$lib/game";
+  import { resolvePendingExchanges, checkIncomingOffers } from "$lib/exchange";
   import AboutModal from "$lib/components/AboutModal.svelte";
 
   import { fade, fly } from "svelte/transition";

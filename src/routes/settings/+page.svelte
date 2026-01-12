@@ -2,7 +2,7 @@
   import { onMount } from "svelte";
   import { getClient } from "$lib/atproto";
   import { Agent } from "@atproto/api";
-  import { deleteAllData } from "$lib/game";
+  import { deleteAllData } from "$lib/hub";
 
   let agent = $state<Agent | null>(null);
   let isDeleting = $state(false);

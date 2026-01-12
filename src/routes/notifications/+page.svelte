@@ -2,11 +2,7 @@
   import { onMount, onDestroy } from "svelte";
   import { getClient } from "$lib/atproto";
   import { Agent } from "@atproto/api";
-  import {
-    checkIncomingOffers,
-    acceptExchange,
-    type IncomingOffer,
-  } from "$lib/game";
+  import { checkIncomingOffers, type IncomingOffer } from "$lib/exchange";
   import StickerCanvas from "$lib/components/StickerCanvas.svelte";
   import { fade, slide } from "svelte/transition";
 

@@ -2,13 +2,13 @@
   import { onMount } from "svelte";
   import type { Agent } from "@atproto/api";
   import {
-    getUserStickers,
     type StickerWithProfile,
-    toggleStickerLike,
+    getUserStickers,
     loadStickerLikeState,
-    type LikeState,
+    toggleStickerLike,
     deleteSticker,
-  } from "$lib/game";
+    type LikeState,
+  } from "$lib/stickers";
   import StickerCanvas from "./StickerCanvas.svelte";
   import { fade } from "svelte/transition";
 
