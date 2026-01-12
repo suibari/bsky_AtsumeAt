@@ -2,7 +2,7 @@
   import { onMount, onDestroy } from "svelte";
   import * as THREE from "three";
 
-  let { avatarUrl = "" } = $props();
+  let { avatarUrl = "", staticAngle = false } = $props();
 
   let container: HTMLDivElement;
   let renderer: THREE.WebGLRenderer;
@@ -16,6 +16,7 @@
   let previousMousePosition = { x: 0, y: 0 };
 
   function onPointerDown(e: MouseEvent | TouchEvent) {
+    if (staticAngle) return;
     isDragging = true;
     const x = "touches" in e ? e.touches[0].clientX : e.clientX;
     const y = "touches" in e ? e.touches[0].clientY : e.clientY;
@@ -23,6 +24,7 @@
   }
 
   function onPointerMove(e: MouseEvent | TouchEvent) {
+    if (staticAngle) return;
     if (!isDragging || !mesh) return;
 
     const x = "touches" in e ? e.touches[0].clientX : e.clientX;
@@ -130,7 +132,10 @@
         mesh.position.y = Math.sin(Date.now() * 0.002) * 0.05;
 
         // Auto rotate if not dragging
-        if (!isDragging) {
+        if (staticAngle) {
+          mesh.rotation.y = 0.5; // Fixed angle
+          mesh.rotation.x = 0;
+        } else if (!isDragging) {
           mesh.rotation.y += 0.01;
           mesh.rotation.x = Math.sin(Date.now() * 0.001) * 0.1;
         } else {

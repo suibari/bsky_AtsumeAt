@@ -7,6 +7,7 @@
     acceptExchange,
     type IncomingOffer,
   } from "$lib/game";
+  import StickerCanvas from "$lib/components/StickerCanvas.svelte";
   import { fade, slide } from "svelte/transition";
 
   let agent = $state<Agent | null>(null);
@@ -107,6 +108,19 @@
                 > stickers.
               </p>
             </div>
+            <!-- Stickers Preview -->
+            {#if offer.stickers && offer.stickers.length > 0}
+              <div class="flex gap-2 ml-4 overflow-x-auto min-h-[64px]">
+                {#each offer.stickers as s}
+                  <div class="w-16 h-16 flex-shrink-0">
+                    <StickerCanvas
+                      avatarUrl={typeof s.image === "string" ? s.image : ""}
+                      staticAngle={true}
+                    />
+                  </div>
+                {/each}
+              </div>
+            {/if}
           </div>
 
           <button

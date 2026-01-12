@@ -6,18 +6,18 @@
   import { STICKER_COLLECTION, type Sticker } from "$lib/schemas";
 
   let agent = $state<Agent | null>(null);
-  let fileInput: HTMLInputElement;
+  let fileInput = $state<HTMLInputElement>();
   let imageUrl = $state<string | null>(null);
   let description = $state("");
   let processing = $state(false);
 
   // Crop State
-  let cropContainer: HTMLDivElement;
-  let imageElement: HTMLImageElement;
+  let cropContainer = $state<HTMLDivElement>();
+  let imageElement = $state<HTMLImageElement>();
   let scale = $state(1);
   let position = $state({ x: 0, y: 0 });
-  let isDragging = false;
-  let dragStart = { x: 0, y: 0 };
+  let isDragging = $state(false);
+  let dragStart = $state({ x: 0, y: 0 });
 
   onMount(async () => {
     const c = getClient();
@@ -171,7 +171,7 @@
     {#if !imageUrl}
       <div
         class="w-full h-64 border-2 border-dashed border-gray-300 rounded-lg flex flex-col items-center justify-center bg-gray-50 cursor-pointer hover:bg-gray-100 transition-colors"
-        onclick={() => fileInput.click()}
+        onclick={() => fileInput?.click()}
       >
         <span class="text-4xl mb-2">📷</span>
         <span class="text-gray-500">Select Image</span>

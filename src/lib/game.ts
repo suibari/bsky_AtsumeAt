@@ -635,6 +635,7 @@ export interface IncomingOffer {
     displayName?: string;
     handle: string;
   };
+  stickers?: Sticker[];
 }
 
 export async function checkIncomingOffers(agent: Agent): Promise<IncomingOffer[]> {
@@ -749,6 +750,10 @@ export async function checkIncomingOffers(agent: Agent): Promise<IncomingOffer[]
         p = profileRes.data;
       } catch { }
 
+      // Fetch Offered Stickers Details
+      const stickers = await fetchStickersForTransaction(agent, t, authorDid);
+
+
       results.push({
         partnerDid: authorDid,
         offer: t,
@@ -757,12 +762,56 @@ export async function checkIncomingOffers(agent: Agent): Promise<IncomingOffer[]
           avatar: p.avatar,
           displayName: p.displayName,
           handle: p.handle
-        } : undefined
+        } : undefined,
+        stickers
       });
     }
   }));
 
   return results;
+}
+
+export async function fetchStickersForTransaction(agent: Agent, t: Transaction, partnerDid: string): Promise<Sticker[]> {
+  let stickers: Sticker[] = [];
+  if (t.stickerOut && t.stickerOut.length > 0) {
+    try {
+      const pds = await getPdsEndpoint(partnerDid);
+      if (pds) {
+        const results = await Promise.all(t.stickerOut.map(async (sUri) => {
+          const rkey = sUri.split('/').pop();
+          if (!rkey) return null;
+          const url = `${pds}/xrpc/com.atproto.repo.getRecord?repo=${partnerDid}&collection=${STICKER_COLLECTION}&rkey=${rkey}`;
+          const res = await fetch(url);
+          if (res.ok) {
+            const d = await res.json();
+            const s = d.value as Sticker;
+            // Image Resolution (Blob -> CDN URL)
+            // We assume the blob is hosted in the author's PDS/Repo
+            if (s.image && typeof s.image === 'object') {
+              const blob = s.image as any;
+              let link = '';
+              // Handle IPLD JSON format { ref: { $link: "cid" } }
+              if (blob.ref && blob.ref['$link']) {
+                link = blob.ref['$link'];
+              } else if (blob.ref) {
+                link = blob.ref.toString();
+              }
+
+              if (link && link !== '[object Object]') {
+                s.image = `https://cdn.bsky.app/img/feed_fullsize/plain/${partnerDid}/${link}@jpeg`;
+              }
+            }
+            return s;
+          }
+          return null;
+        }));
+        stickers = results.filter((s): s is Sticker => s !== null);
+      }
+    } catch (e) {
+      console.warn("Failed to fetch offered stickers", e);
+    }
+  }
+  return stickers;
 }
 
 

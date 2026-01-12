@@ -8,6 +8,7 @@
     acceptExchange,
     getUserStickers,
     createExchangePost,
+    fetchStickersForTransaction,
   } from "$lib/game";
   import {
     STICKER_COLLECTION,
@@ -25,6 +26,7 @@
   let verifying = $state(false);
   let isValidOffer = $state(false);
   let processing = $state(false);
+  let incomingStickers = $state<Sticker[]>([]);
 
   // Accept Mode State
   let successAccept = $state(false);
@@ -112,6 +114,11 @@
 
       if (offer) {
         isValidOffer = true;
+        incomingStickers = await fetchStickersForTransaction(
+          agent!,
+          offer.value as unknown as Transaction,
+          did,
+        );
       }
     } catch (e) {
       console.error("Failed to verify offer", e);
@@ -291,6 +298,26 @@
             > wants to swap.
           </p>
 
+          {#if incomingStickers.length > 0}
+            <div class="mb-6 text-left">
+              <h3 class="text-lg font-bold mb-2">
+                You will receive ({incomingStickers.length})
+              </h3>
+              <div
+                class="flex gap-2 overflow-x-auto min-h-[160px] p-2 bg-gray-50 rounded-xl"
+              >
+                {#each incomingStickers as s}
+                  <div class="w-32 h-32 flex-shrink-0 relative">
+                    <StickerCanvas
+                      avatarUrl={typeof s.image === "string" ? s.image : ""}
+                      staticAngle={true}
+                    />
+                  </div>
+                {/each}
+              </div>
+            </div>
+          {/if}
+
           <div class="mb-6 text-left">
             <h3 class="text-lg font-bold mb-2">
               Select Stickers to Give Back ({selectedStickers.size})
@@ -315,7 +342,10 @@
                   >
                     <div class="h-24 w-full">
                       <StickerCanvas
-                        avatarUrl={sticker.profile?.avatar || ""}
+                        avatarUrl={typeof sticker.image === "string"
+                          ? sticker.image
+                          : ""}
+                        staticAngle={true}
                       />
                     </div>
                     {#if selectedStickers.has(sticker.uri)}
