@@ -36,7 +36,10 @@
     };
 
     // Rotate Mesh
-    mesh.rotation.y += deltaMove.x * 0.01;
+    if (container) {
+      const sensitivity = 4; // Approx 1.25 * PI (a bit more than 180 deg per width)
+      mesh.rotation.y += (deltaMove.x / container.clientWidth) * sensitivity;
+    }
 
     previousMousePosition = { x, y };
   }
@@ -57,7 +60,7 @@
     const height = container.clientHeight;
 
     camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 100);
-    camera.position.z = 3.5;
+    camera.position.z = 2.8;
 
     renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
     renderer.setSize(width, height);

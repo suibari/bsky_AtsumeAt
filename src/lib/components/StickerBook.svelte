@@ -51,11 +51,11 @@
     </div>
   {:else}
     <div
-      class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6"
+      class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4"
     >
       {#each stickers as sticker (sticker.uri)}
         <div
-          class="relative bg-white rounded-2xl p-4 shadow-sm hover:shadow-md transition border border-gray-100 group"
+          class="relative bg-white rounded-2xl p-2 shadow-sm hover:shadow-md transition border border-gray-100 group"
         >
           <!-- 3D Sticker -->
           <div class="h-40 w-full mb-2">
