@@ -361,7 +361,16 @@
                     <div
                       class="p-1 text-center text-xs text-gray-500 truncate border-t border-gray-50"
                     >
-                      {sticker.profile?.displayName || "Unknown"}
+                      {#if sticker.imageType === "custom"}
+                        {sticker.description ||
+                          sticker.profile?.displayName ||
+                          sticker.profile?.handle ||
+                          "Unknown"}
+                      {:else}
+                        {sticker.profile?.displayName ||
+                          sticker.profile?.handle ||
+                          "Unknown"}
+                      {/if}
                     </div>
                   </div>
                 {/each}
