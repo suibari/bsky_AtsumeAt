@@ -1,10 +1,25 @@
 import { json } from '@sveltejs/kit';
-import { Buffer } from 'node:buffer';
 import { ISSUER_PRIVATE_KEY_HEX } from '$env/static/private';
 import { Secp256k1Keypair } from '@atproto/crypto';
 
 // Polyfill for text encoder in node environment if needed (usually global in SvelteKit/Node 20)
 // import { TextEncoder } from 'util';
+
+// Helper: Hex String -> Uint8Array
+function hexToBytes(hex: string): Uint8Array {
+  if (hex.length % 2 !== 0) throw new Error("Invalid hex string");
+  const bytes = new Uint8Array(hex.length / 2);
+  for (let i = 0; i < hex.length; i += 2) {
+    bytes[i / 2] = parseInt(hex.substring(i, i + 2), 16);
+  }
+  return bytes;
+}
+
+// Helper: Uint8Array -> Base64 String
+function bytesToBase64(bytes: Uint8Array): string {
+  const binary = String.fromCharCode(...bytes);
+  return btoa(binary);
+}
 
 // 1. Prepare Issuer Key (Single Instance)
 let issuerKeyPromise: Promise<Secp256k1Keypair> | null = null;
@@ -16,7 +31,7 @@ async function getIssuerKey() {
         throw new Error('Server Config Error: ISSUER_PRIVATE_KEY_HEX not set');
       }
 
-      const privateKeyBytes = Buffer.from(ISSUER_PRIVATE_KEY_HEX, 'hex');
+      const privateKeyBytes = hexToBytes(ISSUER_PRIVATE_KEY_HEX);
       return Secp256k1Keypair.import(privateKeyBytes);
     })();
   }
@@ -60,7 +75,7 @@ export async function POST({ request }) {
     // Sign using Keypair (wrapper) or raw Secp256k1
     // Secp256k1Keypair.sign() returns Uint8Array signature
     const signatureBytes = await key.sign(data);
-    const signatureBase64 = Buffer.from(signatureBytes).toString('base64');
+    const signatureBase64 = bytesToBase64(signatureBytes);
 
     return json({
       signedPayload: payloadString,
