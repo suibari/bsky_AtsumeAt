@@ -39,7 +39,21 @@
   let showDropdown = $state(false);
   let searchTimeout: ReturnType<typeof setTimeout>;
 
+  // Settings
+  let mentionOnBluesky = $state(true);
+  let saveSettings = $state(false);
+
   onMount(async () => {
+    // Load Settings
+    const savedMention = localStorage.getItem("mentionOnBluesky");
+    if (savedMention !== null) {
+      mentionOnBluesky = savedMention === "true";
+      saveSettings = true; // If we found settings, assume user wanted them saved (or just default checkbox to true if previously saved?)
+      // Let's just restore the value. Should we restore the "saveSettings" checkbox state?
+      // Usually "save settings" is an action or persistently checked. Let's make it checked if we loaded something.
+      saveSettings = true;
+    }
+
     const c = getClient();
     if (c) {
       const res = await c.init();
@@ -172,6 +186,12 @@
       return;
     }
 
+    if (saveSettings) {
+      localStorage.setItem("mentionOnBluesky", String(mentionOnBluesky));
+    } else {
+      localStorage.removeItem("mentionOnBluesky");
+    }
+
     processing = true;
     try {
       const stickersToSend = myStickers.filter((s) =>
@@ -182,6 +202,7 @@
         partnerHandle,
         partnerDid,
         stickersToSend,
+        mentionOnBluesky, // Pass flag
       );
       alert("Exchange offer sent!");
       window.location.href = "/";
@@ -458,6 +479,29 @@
               {/each}
             </div>
           {/if}
+        </div>
+
+        <div class="flex flex-col gap-2 mb-4 justify-end items-end">
+          <label
+            class="flex items-center gap-2 cursor-pointer text-sm text-gray-700"
+          >
+            <input
+              type="checkbox"
+              bind:checked={mentionOnBluesky}
+              class="rounded text-primary focus:ring-primary"
+            />
+            Mention on Bluesky
+          </label>
+          <label
+            class="flex items-center gap-2 cursor-pointer text-sm text-gray-500"
+          >
+            <input
+              type="checkbox"
+              bind:checked={saveSettings}
+              class="rounded text-gray-500 focus:ring-gray-400"
+            />
+            Save Settings
+          </label>
         </div>
 
         <div class="flex justify-end">

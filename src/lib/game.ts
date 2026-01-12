@@ -273,7 +273,7 @@ export async function getUserStickers(agent: Agent, userDid: string): Promise<St
   return stickers;
 }
 
-export async function createExchangePost(agent: Agent, targetHandle: string, targetDid: string, offeredStickers: StickerWithProfile[]) {
+export async function createExchangePost(agent: Agent, targetHandle: string, targetDid: string, offeredStickers: StickerWithProfile[], withPost: boolean = true) {
   const origin = window.location.origin;
   const myDid = agent.assertDid;
 
@@ -293,34 +293,37 @@ export async function createExchangePost(agent: Agent, targetHandle: string, tar
   });
 
 
-  // 2. Create text with mention
-  const stickerCount = offeredStickers.length;
-  const text = `Let's exchange stickers @${targetHandle}! offering ${stickerCount} sticker${stickerCount > 1 ? 's' : ''} 🍬 #AtsumeAt`;
+  // 2. Create text with mention (Optional)
+  if (withPost) {
+    const stickerCount = offeredStickers.length;
 
-  // Facets for mention and tag
-  const facets = [
-    {
-      index: { byteStart: text.indexOf('@'), byteEnd: text.indexOf('@') + 1 + targetHandle.length },
-      features: [{ $type: 'app.bsky.richtext.facet#mention', did: targetDid }]
-    },
-    {
-      index: { byteStart: text.indexOf('#'), byteEnd: text.indexOf('#') + 9 },
-      features: [{ $type: 'app.bsky.richtext.facet#tag', tag: 'AtsumeAt' }]
-    }
-  ];
+    const text = `Let's exchange stickers @${targetHandle}! offering ${stickerCount} sticker${stickerCount > 1 ? 's' : ''} 🍬 #AtsumeAt`;
 
-  await agent.post({
-    text,
-    facets,
-    embed: {
-      $type: 'app.bsky.embed.external',
-      external: {
-        uri: `${origin}/exchange?user=${myDid}`,
-        title: 'Exchange Stickers',
-        description: 'Click to accept the sticker exchange!',
+    // Facets for mention and tag
+    const facets = [
+      {
+        index: { byteStart: text.indexOf('@'), byteEnd: text.indexOf('@') + 1 + targetHandle.length },
+        features: [{ $type: 'app.bsky.richtext.facet#mention', did: targetDid }]
+      },
+      {
+        index: { byteStart: text.indexOf('#'), byteEnd: text.indexOf('#') + 9 },
+        features: [{ $type: 'app.bsky.richtext.facet#tag', tag: 'AtsumeAt' }]
       }
-    }
-  });
+    ];
+
+    await agent.post({
+      text,
+      facets,
+      embed: {
+        $type: 'app.bsky.embed.external',
+        external: {
+          uri: `${origin}/exchange?user=${myDid}`,
+          title: 'Exchange Stickers',
+          description: 'Click to accept the sticker exchange!',
+        }
+      }
+    });
+  }
 }
 
 // Helper to fetch all raw sticker records for duplicate checking
