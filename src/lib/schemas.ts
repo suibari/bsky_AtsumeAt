@@ -1,6 +1,7 @@
 export const STICKER_COLLECTION = 'blue.atsumeat.sticker';
 export const CONFIG_COLLECTION = 'blue.atsumeat.config';
 export const TRANSACTION_COLLECTION = 'blue.atsumeat.transaction';
+export const STICKER_LIKE_COLLECTION = 'blue.atsumeat.stickerLike';
 
 import { BlobRef } from '@atproto/api';
 
@@ -35,6 +36,16 @@ export interface Transaction {
   status: 'offered' | 'completed';
   refPartner?: string; // URI of partner's profile (for Constellation)
   refTransaction?: string; // URI of the referencing transaction (e.g., the Offer)
+  createdAt: string;
+  [key: string]: unknown;
+}
+
+export interface StickerLike {
+  $type: typeof STICKER_LIKE_COLLECTION;
+  subject: {
+    uri: string;
+    cid: string;
+  };
   createdAt: string;
   [key: string]: unknown;
 }

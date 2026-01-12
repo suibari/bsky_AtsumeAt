@@ -5,6 +5,7 @@
   import { Agent } from "@atproto/api";
   import { goto } from "$app/navigation";
   import StickerBook from "$lib/components/StickerBook.svelte";
+  import { publicAgent } from "$lib/game";
 
   let agent = $state<Agent | null>(null);
   let profile = $state<any>(null);
@@ -29,7 +30,7 @@
     if (!agent || !did) return;
     loadingProfile = true;
     try {
-      const res = await agent.getProfile({ actor: did });
+      const res = await publicAgent.getProfile({ actor: did });
       profile = res.data;
     } catch (e) {
       console.error("Failed to fetch profile", e);

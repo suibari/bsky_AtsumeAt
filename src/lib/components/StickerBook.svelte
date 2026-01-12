@@ -1,8 +1,16 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import type { Agent } from "@atproto/api";
-  import { getUserStickers, type StickerWithProfile } from "$lib/game";
+  import {
+    getUserStickers,
+    type StickerWithProfile,
+    toggleStickerLike,
+    loadStickerLikeState,
+    type LikeState,
+    deleteSticker,
+  } from "$lib/game";
   import StickerCanvas from "./StickerCanvas.svelte";
+  import { fade } from "svelte/transition";
 
   let {
     agent,
@@ -10,6 +18,7 @@
     title = undefined,
   } = $props<{ agent: Agent; targetDid?: string; title?: string }>();
   let stickers = $state<StickerWithProfile[]>([]);
+  let likeStates = $state<Map<string, LikeState>>(new Map());
   let loading = $state(true);
 
   // Computed Title
@@ -31,11 +40,76 @@
     try {
       if (did) {
         stickers = await getUserStickers(agent, did);
+        // Load likes in background
+        loadLikes();
       }
     } catch (e) {
       console.error("Failed to load stickers", e);
     } finally {
       loading = false;
+    }
+  }
+
+  async function loadLikes() {
+    for (const s of stickers) {
+      loadStickerLikeState(agent, s.uri).then((state) => {
+        likeStates.set(s.uri, state);
+        likeStates = new Map(likeStates);
+      });
+    }
+  }
+
+  async function handleLike(sticker: StickerWithProfile, e: Event) {
+    e.stopPropagation();
+    const uri = sticker.uri;
+    const current = likeStates.get(uri);
+
+    // Optimistic Update
+    const wasLiked = current?.isLiked;
+    const currentCount = current?.count || 0;
+
+    // Create new optimistic state
+    const optimistic: LikeState = {
+      count: wasLiked ? currentCount - 1 : currentCount + 1,
+      isLiked: !wasLiked,
+      likers: current?.likers || [], // Managing likers list optimistically is hard, let's just keep it stable or maybe add self?
+      uri: current?.uri, // If unliking, we will clear this later. If liking, we get it later.
+    };
+
+    if (!wasLiked && agent.assertDid) {
+      // Add self to likers optimistically
+      // Fetch self profile? Or just dummy
+      // We will just let fetch handle it eventually, but immediate update is better
+    }
+
+    likeStates.set(uri, optimistic);
+    likeStates = new Map(likeStates);
+
+    try {
+      const newLikeUri = await toggleStickerLike(agent, sticker, current?.uri);
+      // Reload state to be sure
+      const freshState = await loadStickerLikeState(agent, sticker.uri);
+      likeStates.set(uri, freshState);
+      likeStates = new Map(likeStates);
+    } catch (e) {
+      console.error("Like failed", e);
+      // Revert
+      if (current) likeStates.set(uri, current);
+      else likeStates.delete(uri);
+      likeStates = new Map(likeStates);
+    }
+  }
+
+  async function handleDelete(sticker: StickerWithProfile, e: Event) {
+    e.stopPropagation();
+    if (!confirm("Are you sure you want to delete this sticker?")) return;
+
+    try {
+      await deleteSticker(agent, sticker.uri);
+      // Remove from list
+      stickers = stickers.filter((s) => s.uri !== sticker.uri);
+    } catch (e) {
+      alert("Failed to delete sticker");
     }
   }
 </script>
@@ -123,6 +197,97 @@
             <p class="text-[10px] text-gray-300">
               {new Date(sticker.obtainedAt).toLocaleDateString()}
             </p>
+
+            <!-- Like Section -->
+            <div class="pt-2 flex items-center justify-between gap-2">
+              <div class="flex items-center gap-2">
+                <button
+                  onclick={(e) => handleLike(sticker, e)}
+                  class="p-1 rounded-full hover:bg-gray-50 transition-colors relative z-20 group/btn"
+                  title={likeStates.get(sticker.uri)?.isLiked
+                    ? "Unlike"
+                    : "Like"}
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    class="h-5 w-5 transition-transform active:scale-95 {likeStates.get(
+                      sticker.uri,
+                    )?.isLiked
+                      ? 'text-red-500 fill-current'
+                      : 'text-gray-400 group-hover/btn:text-red-400'}"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    fill="none"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
+                    />
+                  </svg>
+                </button>
+
+                <!-- Likers Avatars -->
+                {#if likeStates.get(sticker.uri)?.likers.length}
+                  <div class="flex -space-x-2 relative z-20">
+                    {#each likeStates
+                      .get(sticker.uri)!
+                      .likers.slice(0, 3) as liker}
+                      <a
+                        href="/profile/{liker.did}"
+                        onclick={(e) => e.stopPropagation()}
+                        class="block relative hover:z-30 transition-transform hover:scale-110"
+                        title={liker.handle || "Liker"}
+                      >
+                        {#if liker.avatar}
+                          <img
+                            src={liker.avatar}
+                            alt="Liker"
+                            class="w-5 h-5 rounded-full border border-white ring-1 ring-gray-100 object-cover bg-gray-200"
+                          />
+                        {:else}
+                          <div
+                            class="w-5 h-5 rounded-full border border-white ring-1 ring-gray-100 bg-gray-300 flex items-center justify-center text-[8px] text-white"
+                          >
+                            ?
+                          </div>
+                        {/if}
+                      </a>
+                    {/each}
+                    {#if (likeStates.get(sticker.uri)?.count || 0) > 3}
+                      <span class="text-[10px] text-gray-400 pl-2"
+                        >+{(likeStates.get(sticker.uri)?.count || 0) - 3}</span
+                      >
+                    {/if}
+                  </div>
+                {/if}
+              </div>
+
+              <!-- Delete Button (Only if owner) -->
+              {#if !targetDid || targetDid === agent.assertDid}
+                <button
+                  class="p-1 text-gray-300 hover:text-red-500 transition-colors z-20"
+                  title="Delete Sticker"
+                  onclick={(e) => handleDelete(sticker, e)}
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    class="h-4 w-4"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                    />
+                  </svg>
+                </button>
+              {/if}
+            </div>
           </div>
 
           <!-- Detail View Action (Example) -->
