@@ -129,7 +129,8 @@ export async function acceptExchange(agent: Agent, partnerDid: string, stickersT
         model: stickerData.model,
         image: imageToSave, // Signed Image URL
         obtainedFrom: partnerDid, // The GIVER is the partner
-        originalCreator: rOriginalOwner // Original Issuer
+        originalCreator: rOriginalOwner, // Original Issuer
+        name: stickerData.name // Preserve Name
       };
 
       let sigData: { signature?: string, signedPayload?: string } = {};
@@ -153,6 +154,7 @@ export async function acceptExchange(agent: Agent, partnerDid: string, stickersT
           originalOwner: rOriginalOwner,
           model: stickerData.model,
           description: stickerData.description,
+          name: stickerData.name, // Add Name
           obtainedFrom: partnerDid,
           obtainedAt: new Date().toISOString(),
 
@@ -341,7 +343,8 @@ export async function checkInverseExchange(agent: Agent, partnerDid: string, off
             model: remoteSticker.model,
             image: imageToSave,
             obtainedFrom: partnerDid,
-            originalCreator: rOriginalOwner
+            originalCreator: rOriginalOwner,
+            name: remoteSticker.name // Preserve Name
           };
 
           let sigData: { signature?: string, signedPayload?: string } = {};
@@ -362,6 +365,7 @@ export async function checkInverseExchange(agent: Agent, partnerDid: string, off
               originalOwner: rOriginalOwner,
               model: remoteSticker.model,
               description: remoteSticker.description,
+              name: remoteSticker.name, // Add Name
               obtainedFrom: partnerDid,
               obtainedAt: new Date().toISOString(),
 
