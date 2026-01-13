@@ -238,6 +238,17 @@
     }
   }
 
+  function undo() {
+    if (!canvas) return;
+    const objects = canvas.getObjects();
+    if (objects.length > 0) {
+      // Remove the last added object (newest on top)
+      const last = objects[objects.length - 1];
+      canvas.remove(last);
+      canvas.requestRenderAll();
+    }
+  }
+
   function deleteSelected() {
     if (!canvas) return;
     const active = canvas.getActiveObjects();
@@ -340,6 +351,13 @@
           title="Pen Tool"
         >
           ✏️
+        </button>
+        <button
+          class="p-3 rounded-full bg-white shadow-md hover:bg-gray-50 text-gray-600 transition-colors"
+          onclick={undo}
+          title="Undo"
+        >
+          ↩️
         </button>
         <button
           class="p-3 rounded-full bg-white shadow-md hover:bg-gray-50 text-red-500 transition-colors"
