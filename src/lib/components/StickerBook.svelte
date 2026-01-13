@@ -68,7 +68,7 @@
 
   async function loadLikes() {
     for (const s of stickers) {
-      loadStickerLikeState(agent, s.uri).then((state) => {
+      loadStickerLikeState(agent, s).then((state) => {
         likeStates.set(s.uri, state);
         likeStates = new Map(likeStates);
       });

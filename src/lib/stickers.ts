@@ -254,7 +254,96 @@ export interface LikeState {
   isLiked: boolean; // by current user
   likers: { did: string; avatar?: string; handle?: string }[];
   uri?: string; // URI of the user's like record (if liked)
+  targetUri?: string; // The URI of the sticker that is actually liked (Original or Self)
 }
+
+// Helper: Resolve the "True" Target for Liking (The Original Sticker)
+async function resolveLikeTarget(agent: Agent, sticker: StickerWithProfile): Promise<{ uri: string, cid: string }> {
+  // 1. If I am the original owner, the target is ME (this sticker).
+  // Note: sticker.originalOwner should be set. If not, fallback to subject/owner.
+  const originalOwner = sticker.originalOwner || sticker.subjectDid;
+
+  // If the record itself is owned by the original owner, it IS the original.
+  const { repo } = getRepoAndRkey(sticker.uri);
+  if (repo === originalOwner) {
+    // I am looking at the original!
+    // We need the CID. If not present in object, we might need to fetch it.
+    let cid = (sticker as any).cid;
+    if (!cid) {
+      cid = await fetchCid(agent, sticker.uri);
+    }
+    return { uri: sticker.uri, cid };
+  }
+
+  // 2. I am looking at a COPY. I need to find the Original in the Issuer's Repo.
+  // We match by 'model'.
+  // Optimization: If no model (legacy?), we can't safely link. Fallback to this sticker.
+  if (!sticker.model || sticker.model === 'default') {
+    console.log("No unique model ID to link back to original. Liking local copy.");
+    // Fallback
+    let cid = (sticker as any).cid;
+    if (!cid) cid = await fetchCid(agent, sticker.uri);
+    return { uri: sticker.uri, cid };
+  }
+
+  try {
+    // Find sticker in OriginalOwner's repo with same model
+    // Simple scan for now (assuming user doesn't have thousands of created stickers yet)
+    // TODO: optimization - backend index or caching?
+    let pdsAgent = agent;
+    const pdsUrl = await getPdsEndpoint(originalOwner!);
+    if (pdsUrl) pdsAgent = new Agent(pdsUrl);
+
+    let cursor;
+    do {
+      const res = await pdsAgent.com.atproto.repo.listRecords({
+        repo: originalOwner!,
+        collection: STICKER_COLLECTION,
+        limit: 100,
+        cursor
+      });
+      cursor = res.data.cursor;
+      for (const r of res.data.records) {
+        const val = r.value as Sticker;
+        if (val.model === sticker.model) {
+          // Found the original!
+          return { uri: r.uri, cid: r.cid };
+        }
+      }
+    } while (cursor);
+
+    console.warn("Original sticker not found in issuer's repo. Fallback to local copy.");
+  } catch (e) {
+    console.warn("Failed to resolve original sticker", e);
+  }
+
+  // Fallback: This sticker
+  let cid = (sticker as any).cid;
+  if (!cid) cid = await fetchCid(agent, sticker.uri);
+  return { uri: sticker.uri, cid };
+}
+
+async function fetchCid(agent: Agent, uri: string): Promise<string> {
+  try {
+    const { repo, rkey } = getRepoAndRkey(uri);
+    if (!rkey || !repo) return "";
+
+    let pdsAgent = agent;
+    const pdsUrl = await getPdsEndpoint(repo);
+    if (pdsUrl) pdsAgent = new Agent(pdsUrl);
+
+    const res = await pdsAgent.com.atproto.repo.getRecord({
+      repo,
+      collection: STICKER_COLLECTION,
+      rkey: rkey as string
+    });
+    return res.data.cid || "";
+  } catch (e) {
+    console.warn("Could not fetch CID", e);
+    return "";
+  }
+}
+
 
 // 1. Toggle Like (Create or Delete)
 export async function toggleStickerLike(agent: Agent, sticker: StickerWithProfile, currentLikeUri?: string): Promise<string | undefined> {
@@ -274,32 +363,9 @@ export async function toggleStickerLike(agent: Agent, sticker: StickerWithProfil
     }
   } else {
     // LIKE: Create New Record
-    // note: sticker.cid might be missing depending on how we fetched it.
-    // However, createRecord usually returns the record info.
-    // For StrongRef, we need CID.
-    let cid = (sticker as any).cid;
-    if (!cid) {
-      // Fallback: If CID is missing in our object, we might need to fetch it or rely on weak ref?
-      // Like record usually requires StrongRef (uri + cid).
-      // Let's assume we have it or can get it.
-      // For now, if missing, we try to fetch head? Or just fail?
-      // Let's try to get it from the URI if we can't find it.
-      try {
-        let pdsAgent = agent;
-        const { repo, rkey } = getRepoAndRkey(sticker.uri);
-        const pdsUrl = await getPdsEndpoint(repo);
-        if (pdsUrl) {
-          pdsAgent = new Agent(pdsUrl);
-        }
-
-        const res = await pdsAgent.com.atproto.repo.getRecord({
-          repo,
-          collection: STICKER_COLLECTION,
-          rkey
-        });
-        cid = res.data.cid;
-      } catch (e) { console.warn("Could not resolve CID for liking", e); return; }
-    }
+    // Resolve Target (Original or Self)
+    const target = await resolveLikeTarget(agent, sticker);
+    if (!target.cid) return; // Can't like without CID
 
     const res = await agent.com.atproto.repo.createRecord({
       repo: myDid,
@@ -307,8 +373,8 @@ export async function toggleStickerLike(agent: Agent, sticker: StickerWithProfil
       record: {
         $type: STICKER_LIKE_COLLECTION,
         subject: {
-          uri: sticker.uri,
-          cid: cid
+          uri: target.uri,
+          cid: target.cid
         },
         createdAt: new Date().toISOString()
       }
@@ -335,7 +401,7 @@ export async function deleteSticker(agent: Agent, stickerUri: string) {
     await agent.com.atproto.repo.deleteRecord({
       repo: myDid,
       collection: STICKER_COLLECTION,
-      rkey
+      rkey: rkey as string
     });
   } catch (e) {
     console.error("Failed to delete sticker", e);
@@ -385,26 +451,25 @@ export async function getStickerLikes(agent: Agent, stickerUri: string): Promise
 // If not, we do it one by one or lazy load.
 // For now, let's just expose a function to load state for ONE sticker fully (with profiles).
 
-export async function loadStickerLikeState(agent: Agent, stickerUri: string): Promise<LikeState> {
+export async function loadStickerLikeState(agent: Agent, sticker: StickerWithProfile): Promise<LikeState> {
   const myDid = agent.assertDid;
 
-  // 1. Get Likers DIDs
-  // const likerDids = await getStickerLikes(agent, stickerUri); // Redundant if we do raw fetch below
+  // Resolve TARGET URI first!
+  // We want to see likes on the ORIGINAL, not necessarily this specific record URI if it's a copy.
+  let targetUri = sticker.uri;
 
-  // 2. Check if I liked it
-  let isLiked = false;
-  let myLikeUri: string | undefined;
+  // Checking if we are original or copy without network:
+  const originalOwner = sticker.originalOwner || sticker.subjectDid;
+  const { repo } = getRepoAndRkey(sticker.uri);
 
-  // To check if I liked it, we can check if myDid is in likerDids.
-  // However, to UNLIKE, we need the URI of my like record.
-  // Constellation provides the URI in the link record!
-  // So we should actually process the raw links from getStickerLikes.
-
-  // Let's refactor getStickerLikes to return fuller objects if needed, 
-  // or just duplicate logic here for efficiency.
+  if (repo !== originalOwner && sticker.model && sticker.model !== 'default') {
+    // We SHOULD resolve.
+    const resolved = await resolveLikeTarget(agent, sticker);
+    targetUri = resolved.uri;
+  }
 
   // Re-impl for efficiency:
-  const subject = encodeURIComponent(stickerUri);
+  const subject = encodeURIComponent(targetUri);
   const source = encodeURIComponent(`${STICKER_LIKE_COLLECTION}:subject.uri`);
   const url = `https://constellation.microcosm.blue/xrpc/blue.microcosm.links.getBacklinks?subject=${subject}&source=${source}`;
 
@@ -418,6 +483,9 @@ export async function loadStickerLikeState(agent: Agent, stickerUri: string): Pr
   } catch (e) { }
 
   const likers: { did: string; avatar?: string; handle?: string }[] = [];
+
+  let isLiked = false;
+  let myLikeUri: string | undefined;
 
   // Check Status
   for (const r of records) {
@@ -451,6 +519,7 @@ export async function loadStickerLikeState(agent: Agent, stickerUri: string): Pr
     count: likers.length,
     isLiked,
     uri: myLikeUri,
+    targetUri, // Return the actual URI we checked
     likers
   };
 }
