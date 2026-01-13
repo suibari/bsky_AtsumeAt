@@ -176,6 +176,12 @@
             >
               <span>🤝</span> Exchange
             </a>
+            <a
+              href="/share"
+              class="px-4 py-2 hover:bg-secondary/20 text-gray-700 font-medium text-sm flex items-center gap-2"
+            >
+              <span>✨</span> Share
+            </a>
             <button
               onclick={() => {
                 menuOpen = false;
