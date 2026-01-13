@@ -4,7 +4,7 @@ import { type StickerWithProfile, getAllStickerRecords } from './stickers';
 import { requestSignature } from './signatures';
 import { getPdsEndpoint, publicAgent } from './atproto';
 
-export async function createExchangePost(agent: Agent, targetHandle: string, targetDid: string, offeredStickers: StickerWithProfile[], withPost: boolean = true) {
+export async function createExchangePost(agent: Agent, targetHandle: string, targetDid: string, offeredStickers: StickerWithProfile[], withPost: boolean = true, message?: string) {
   const origin = window.location.origin;
   const myDid = agent.assertDid;
 
@@ -18,6 +18,7 @@ export async function createExchangePost(agent: Agent, targetHandle: string, tar
       refPartner: `at://${targetDid}/app.bsky.actor.profile/self`, // Reference Profile URI for Constellation
       stickerIn: [], // We don't know what we get yet
       stickerOut: offeredStickers.map(s => s.uri),
+      message, // Save the proposal message
       status: 'offered',
       createdAt: new Date().toISOString()
     }
@@ -48,7 +49,7 @@ export async function createExchangePost(agent: Agent, targetHandle: string, tar
   }
 }
 
-export async function acceptExchange(agent: Agent, partnerDid: string, stickersToGive: string[]) {
+export async function acceptExchange(agent: Agent, partnerDid: string, stickersToGive: string[], message?: string) {
   const myDid = agent.assertDid;
   if (!myDid) return;
 
@@ -78,6 +79,7 @@ export async function acceptExchange(agent: Agent, partnerDid: string, stickersT
 
     const offerData = validOffer.value as unknown as Transaction;
     offeredStickerUris = offerData.stickerOut;
+    const incomingMessage = offerData.message; // Get the message from the proposal
 
     // 1. Fetch Details of Offered Stickers
     const receivedStickersData = await Promise.all(offeredStickerUris.map(async (uri) => {
@@ -130,7 +132,8 @@ export async function acceptExchange(agent: Agent, partnerDid: string, stickersT
         image: imageToSave, // Signed Image URL
         obtainedFrom: partnerDid, // The GIVER is the partner
         originalCreator: rOriginalOwner, // Original Issuer
-        name: stickerData.name // Preserve Name
+        name: stickerData.name, // Preserve Name
+        message: incomingMessage // Apply message to sticker!
       };
 
       let sigData: { signature?: string, signedPayload?: string } = {};
@@ -155,6 +158,7 @@ export async function acceptExchange(agent: Agent, partnerDid: string, stickersT
           model: stickerData.model,
           description: stickerData.description,
           name: stickerData.name, // Add Name
+          message: incomingMessage, // Add message
           obtainedFrom: partnerDid,
           obtainedAt: new Date().toISOString(),
 
@@ -174,6 +178,7 @@ export async function acceptExchange(agent: Agent, partnerDid: string, stickersT
         partner: partnerDid,
         stickerIn: offeredStickerUris,
         stickerOut: stickersToGive,
+        message, // Save acceptance message
         status: 'completed',
         refTransaction: validOffer.uri,
         createdAt: new Date().toISOString()
@@ -297,6 +302,7 @@ export async function checkInverseExchange(agent: Agent, partnerDid: string, off
     if (!txRecord) return false;
     const tx = txRecord.value as unknown as Transaction;
     const incomingUris = tx.stickerOut;
+    const incomingMessage = tx.message; // Get acceptance message
 
     // If no stickers to receive, effectively we are done?
     if (!incomingUris || incomingUris.length === 0) return true; // Mark as done even if empty?
@@ -344,7 +350,8 @@ export async function checkInverseExchange(agent: Agent, partnerDid: string, off
             image: imageToSave,
             obtainedFrom: partnerDid,
             originalCreator: rOriginalOwner,
-            name: remoteSticker.name // Preserve Name
+            name: remoteSticker.name, // Preserve Name
+            message: incomingMessage // Apply message
           };
 
           let sigData: { signature?: string, signedPayload?: string } = {};
@@ -366,6 +373,7 @@ export async function checkInverseExchange(agent: Agent, partnerDid: string, off
               model: remoteSticker.model,
               description: remoteSticker.description,
               name: remoteSticker.name, // Add Name
+              message: incomingMessage, // Add message
               obtainedFrom: partnerDid,
               obtainedAt: new Date().toISOString(),
 

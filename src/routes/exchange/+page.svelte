@@ -26,15 +26,18 @@
   let isValidOffer = $state(false);
   let processing = $state(false);
   let incomingStickers = $state<Sticker[]>([]);
+  let incomingMessage = $state<string | undefined>(undefined);
 
   // Accept Mode State
   let successAccept = $state(false);
+  let acceptanceMessage = $state("");
 
   // Initiate Mode State
   let partnerHandle = $state("");
   let partnerDid = $state<string | null>(null);
   let myStickers = $state<StickerWithProfile[]>([]);
   let selectedStickers = $state<Set<string>>(new Set()); // URIs
+  let proposalMessage = $state("");
   let resolveError = $state("");
   let searchResults = $state<ProfileViewBasic[]>([]);
   let showDropdown = $state(false);
@@ -118,6 +121,10 @@
           offer.value as unknown as Transaction,
           did,
         );
+        const t = offer.value as unknown as Transaction;
+        if (t.message) {
+          incomingMessage = t.message;
+        }
       }
     } catch (e) {
       console.error("Failed to verify offer", e);
@@ -209,6 +216,7 @@
         partnerDid,
         stickersToSend,
         mentionOnBluesky, // Pass flag
+        proposalMessage, // Pass message
       );
       alert("Exchange offer sent!");
       window.location.href = "/";
@@ -234,6 +242,7 @@
         agent,
         targetUserParam,
         Array.from(selectedStickers),
+        acceptanceMessage, // Pass message
       );
       successAccept = true;
     } catch (e) {
@@ -293,6 +302,14 @@
                 >{targetUserParam}</span
               > wants to swap.
             </p>
+
+            {#if incomingMessage}
+              <div
+                class="mb-6 p-4 bg-yellow-50 text-gray-700 italic border-l-4 border-yellow-300 rounded-r-lg shadow-sm"
+              >
+                "{incomingMessage}"
+              </div>
+            {/if}
 
             {#if incomingStickers.length > 0}
               <div class="mb-6 text-left">
@@ -364,6 +381,19 @@
                   {/each}
                 </div>
               {/if}
+            </div>
+
+            <div class="mb-6 text-left">
+              <label class="block text-sm font-medium text-gray-700 mb-1"
+                >Add a Message (Optional)</label
+              >
+              <input
+                type="text"
+                bind:value={acceptanceMessage}
+                placeholder="Thank you! / Thanks for the trade!"
+                class="input-text w-full"
+                maxlength="100"
+              />
             </div>
 
             <div class="flex justify-center space-x-4">
@@ -512,6 +542,19 @@
                 {/each}
               </div>
             {/if}
+          </div>
+
+          <div class="mb-4">
+            <label class="block text-sm font-medium text-gray-700 mb-1"
+              >Add a Message (Optional)</label
+            >
+            <input
+              type="text"
+              bind:value={proposalMessage}
+              placeholder="Let's trade! / I love your stickers!"
+              class="input-text w-full"
+              maxlength="100"
+            />
           </div>
 
           <div class="flex flex-col gap-2 mb-4 justify-end items-end">

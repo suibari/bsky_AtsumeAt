@@ -229,6 +229,20 @@
               {new Date(sticker.obtainedAt).toLocaleDateString()}
             </p>
 
+            <!-- Message -->
+            {#if sticker.message}
+              <div class="mt-2 p-2 bg-yellow-50 rounded-lg relative">
+                <div
+                  class="absolute -top-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-yellow-50 rotate-45"
+                ></div>
+                <p
+                  class="text-xs text-gray-600 italic break-words leading-tight"
+                >
+                  "{sticker.message}"
+                </p>
+              </div>
+            {/if}
+
             <!-- Like Section -->
             <div class="pt-2 flex items-center justify-between gap-2">
               <div class="flex items-center gap-2">

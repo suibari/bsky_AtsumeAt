@@ -8,6 +8,7 @@ import { BlobRef } from '@atproto/api';
 export interface Sticker {
   $type: typeof STICKER_COLLECTION;
   name?: string; // Name of the sticker
+  message?: string; // Optional sticker message
   image: string | BlobRef; // Avatar URL or BlobRef
   imageType?: 'avatar' | 'custom';
   subjectDid?: string; // DID of the user depicted (if applicable)
@@ -33,6 +34,7 @@ export interface Transaction {
   partner: string; // DID of exchange partner
   stickerIn: string[]; // CIDs or IDs
   stickerOut: string[]; // CIDs or IDs
+  message?: string; // Optional exchange message
   status: 'offered' | 'completed';
   refPartner?: string; // URI of partner's profile (for Constellation)
   refTransaction?: string; // URI of the referencing transaction (e.g., the Offer)
