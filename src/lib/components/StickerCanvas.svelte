@@ -27,24 +27,29 @@
     isDragging = true;
     lastX = "touches" in e ? e.touches[0].clientX : e.clientX;
     lastY = "touches" in e ? e.touches[0].clientY : e.clientY;
-    e.preventDefault(); // Prevent scroll on touch
+    // Removed e.preventDefault() to allow browser to handle vertical scroll if pan-y is set
   }
 
   function onPointerMove(e: MouseEvent | TouchEvent) {
     if (staticAngle || !isDragging) return;
 
-    const x = "touches" in e ? e.touches[0].clientX : e.clientX;
-    const y = "touches" in e ? e.touches[0].clientY : e.clientY;
+    const isTouch = "touches" in e;
+    const x = isTouch ? e.touches[0].clientX : e.clientX;
+    const y = isTouch ? e.touches[0].clientY : e.clientY;
 
     const deltaX = x - lastX;
     const deltaY = y - lastY;
 
     // Apply rotation
     rotY += deltaX * 0.5; // Sensitivity
-    rotX -= deltaY * 0.5;
 
-    // Clamp X
-    rotX = Math.max(-60, Math.min(60, rotX));
+    if (!isTouch) {
+      // Only allow X-axis dragging (tilting up/down) on Mouse
+      // On touch, we want vertical movement to scroll the page
+      rotX -= deltaY * 0.5;
+      // Clamp X
+      rotX = Math.max(-60, Math.min(60, rotX));
+    }
 
     lastX = x;
     lastY = y;
@@ -119,7 +124,7 @@
 </script>
 
 <div
-  class="scene relative w-full h-full cursor-grab active:cursor-grabbing touch-none"
+  class="scene relative w-full h-full cursor-grab active:cursor-grabbing touch-pan-y"
   onmousedown={onPointerDown}
   onmousemove={onPointerMove}
   ontouchstart={onPointerDown}
