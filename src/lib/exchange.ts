@@ -1,4 +1,4 @@
-import { Agent } from '@atproto/api';
+import { Agent, RichText } from '@atproto/api';
 import { TRANSACTION_COLLECTION, STICKER_COLLECTION, type Transaction, type Sticker } from './schemas';
 import { type StickerWithProfile, getAllStickerRecords } from './stickers';
 import { requestSignature } from './signatures';
@@ -30,21 +30,12 @@ export async function createExchangePost(agent: Agent, targetHandle: string, tar
 
     const text = `Let's exchange stickers @${targetHandle}! offering ${stickerCount} sticker${stickerCount > 1 ? 's' : ''} 🍬 #AtsumeAt`;
 
-    // Facets for mention and tag
-    const facets = [
-      {
-        index: { byteStart: text.indexOf('@'), byteEnd: text.indexOf('@') + 1 + targetHandle.length },
-        features: [{ $type: 'app.bsky.richtext.facet#mention', did: targetDid }]
-      },
-      {
-        index: { byteStart: text.indexOf('#'), byteEnd: text.indexOf('#') + 9 },
-        features: [{ $type: 'app.bsky.richtext.facet#tag', tag: 'AtsumeAt' }]
-      }
-    ];
+    const rt = new RichText({ text });
+    await rt.detectFacets(agent);
 
     await agent.post({
-      text,
-      facets,
+      text: rt.text,
+      facets: rt.facets,
       embed: {
         $type: 'app.bsky.embed.external',
         external: {
