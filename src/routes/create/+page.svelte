@@ -280,7 +280,7 @@
       {:else}
         <!-- Crop Area -->
         <div
-          class="relative w-[300px] h-[300px] bg-gray-900 overflow-hidden rounded-full shadow-inner border-4 border-primary cursor-move touch-none"
+          class="relative w-[300px] h-[300px] bg-white overflow-hidden rounded-full shadow-inner border-4 border-primary cursor-move touch-none"
           bind:this={cropContainer}
           onmousedown={onMouseDown}
           onmousemove={onMouseMove}
