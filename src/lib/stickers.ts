@@ -54,9 +54,7 @@ export async function initStickers(agent: Agent, userDid: string, onStatus?: (ms
   const infoPayload = {
     model: 'default',
     image: avatar, // We verify the avatar URL logic in verifySeal if needed, but here we just sign it.
-    // Self-issued, so obtainedFrom is self or null?
-    // Let's say obtainedFrom = userDid (Self-Mint)
-    obtainedFrom: userDid
+    // Self-issued, so obtainedFrom is undefined (implicit)
   };
 
   // Sign it!

@@ -196,7 +196,6 @@
         model: `cid:${cid}`,
         name: name || undefined,
         image: stickerImageUrl, // Use the string URL to match acceptExchange consistency
-        obtainedFrom: agent.assertDid!, // Self-Mint
       };
 
       let signature: string | undefined;

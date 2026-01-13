@@ -196,7 +196,7 @@
             </p>
 
             <!-- Giver -->
-            {#if sticker.giverProfile || sticker.obtainedFrom}
+            {#if sticker.giverProfile && sticker.obtainedFrom}
               <p class="text-xs text-gray-500 truncate">
                 From: <a
                   href="/profile/{sticker.obtainedFrom}"
