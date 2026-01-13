@@ -3,6 +3,7 @@
   import { getClient } from "$lib/atproto";
   import { Agent } from "@atproto/api";
   import { checkIncomingOffers, type IncomingOffer } from "$lib/exchange";
+  import { i18n } from "$lib/i18n.svelte";
   import StickerCanvas from "$lib/components/StickerCanvas.svelte";
   import { fade, slide } from "svelte/transition";
 
@@ -39,38 +40,28 @@
 </script>
 
 <div class="min-h-screen bg-surface">
-  <div class="max-w-6xl mx-auto p-4 md:p-8">
-    <header class="mb-6 flex items-center gap-2">
-      <a href="/" class="p-2 rounded-full hover:bg-white text-gray-500">
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          class="h-6 w-6"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-        >
-          <path
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            stroke-width="2"
-            d="M10 19l-7-7m0 0l7-7m-7 7h18"
-          />
-        </svg>
-      </a>
-      <h1 class="text-xl font-bold text-gray-700">Notifications</h1>
+  <div class="max-w-4xl mx-auto p-4 md:p-8">
+    <header class="mb-6 flex items-center justify-between">
+      <a href="/" class="text-gray-500 hover:text-primary"
+        >← {i18n.t.common.back}</a
+      >
+      <h1 class="text-2xl font-bold text-primary">
+        {i18n.t.notifications.title}
+      </h1>
+      <div class="w-8"></div>
     </header>
 
     {#if loading}
-      <div class="flex justify-center p-8">
+      <div class="flex justify-center py-12">
         <div
           class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"
         ></div>
       </div>
     {:else if offers.length === 0}
       <div
-        class="card-glass border-dashed border-primary/30 text-center p-12 text-gray-500"
+        class="text-center py-20 bg-white/50 rounded-2xl border-2 border-dashed border-white"
       >
-        <p>No new exchange offers. ✨</p>
+        <p class="text-gray-500 font-medium">{i18n.t.notifications.empty}</p>
       </div>
     {:else}
       <div class="space-y-4">
@@ -99,37 +90,20 @@
                     offer.profile?.handle ||
                     offer.partnerDid}
                 </h3>
-                <p class="text-sm text-gray-500">
-                  Wants to send you <span class="font-bold text-primary"
-                    >{offer.offer.stickerOut?.length || 0}</span
-                  > stickers.
+                <p class="text-sm text-gray-600">
+                  {i18n.t.notifications.wantsToSend.replace(
+                    "{n}",
+                    (offer.offer.stickerOut?.length || 0).toString(),
+                  )}
                 </p>
               </div>
-              <!-- Stickers Preview -->
-              {#if offer.stickers && offer.stickers.length > 0}
-                <div class="flex gap-2 ml-4 overflow-x-auto min-h-[64px]">
-                  {#each offer.stickers as s}
-                    <div class="w-16 h-16 flex-shrink-0">
-                      <StickerCanvas
-                        avatarUrl={typeof s.image === "string" ? s.image : ""}
-                        staticAngle={true}
-                      />
-                    </div>
-                  {/each}
-                </div>
-              {/if}
             </div>
 
             <button
               onclick={() => handleAccept(offer)}
-              disabled={!!processing}
-              class="btn-primary py-2 px-6"
+              class="bg-secondary text-white px-6 py-2 rounded-full text-sm font-bold shadow-sm hover:shadow-md transition-shadow"
             >
-              {#if processing === offer.partnerDid}
-                ...
-              {:else}
-                Accept
-              {/if}
+              {i18n.t.notifications.accept}
             </button>
           </div>
         {/each}

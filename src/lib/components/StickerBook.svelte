@@ -10,6 +10,7 @@
     type LikeState,
   } from "$lib/stickers";
   import { publicAgent } from "$lib/atproto";
+  import { i18n } from "$lib/i18n.svelte";
   import StickerCanvas from "./StickerCanvas.svelte";
   import { fade } from "svelte/transition";
 
@@ -153,12 +154,12 @@
       <div
         class="animate-spin rounded-full h-10 w-10 border-b-2 border-primary mx-auto mb-4"
       ></div>
-      <p class="text-gray-500">Opening sticker book...</p>
+      <p class="text-gray-500">{i18n.t.common.loading}</p>
     </div>
   {:else if stickers.length === 0}
     <div class="card-glass border-dashed border-primary/30 p-12 text-center">
       <h3 class="text-xl font-bold text-gray-700 mb-2">{displayTitle}</h3>
-      <p class="text-gray-500">No stickers yet! ✨</p>
+      <p class="text-gray-500">{i18n.t.common.noStickers}</p>
       {#if !targetDid || targetDid === agent.assertDid}
         <button
           onclick={() => loadStickers(agent.assertDid!)}

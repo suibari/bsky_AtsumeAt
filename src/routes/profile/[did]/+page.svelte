@@ -7,9 +7,11 @@
   import StickerBook from "$lib/components/StickerBook.svelte";
   import { getUserStickers, type StickerWithProfile } from "$lib/stickers";
   import { createExchangePost } from "$lib/exchange";
+  import type { ProfileViewDetailed } from "@atproto/api/dist/client/types/app/bsky/actor/defs";
+  import { i18n } from "$lib/i18n.svelte";
 
   let agent = $state<Agent | null>(null);
-  let profile = $state<any>(null);
+  let profile = $state<ProfileViewDetailed | null>(null);
   let loadingProfile = $state(true);
 
   const did = $derived($page.params.did);
@@ -60,11 +62,11 @@
 
   <main class="max-w-6xl mx-auto p-4 md:p-8">
     {#if loadingProfile}
-      <div class="text-center py-12">
+      <div class="flex justify-center p-20">
         <div
-          class="animate-spin rounded-full h-10 w-10 border-b-2 border-primary mx-auto mb-4"
+          class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"
         ></div>
-        <p class="text-gray-500">Loading Profile...</p>
+        <p class="ml-3 text-gray-500">{i18n.t.profile.loading}</p>
       </div>
     {:else if profile}
       <div
@@ -105,32 +107,41 @@
           {/if}
 
           <!-- Stats -->
-          <div
-            class="mt-4 flex items-center justify-center md:justify-start gap-6 text-sm text-gray-500"
-          >
-            <div>
-              <span class="font-bold text-gray-900"
-                >{profile.followersCount}</span
-              > Followers
+          <div class="flex gap-6 mt-4">
+            <div class="text-center">
+              <div class="font-bold text-lg">{profile.followersCount || 0}</div>
+              <div class="text-xs text-gray-500 uppercase tracking-wider">
+                {i18n.t.profile.followers}
+              </div>
             </div>
-            <div>
-              <span class="font-bold text-gray-900">{profile.followsCount}</span
-              > Following
+            <div class="text-center">
+              <div class="font-bold text-lg">{profile.followsCount || 0}</div>
+              <div class="text-xs text-gray-500 uppercase tracking-wider">
+                {i18n.t.profile.following}
+              </div>
             </div>
           </div>
         </div>
       </div>
 
       <!-- Sticker Book -->
-      {#if agent}
-        <StickerBook
-          {agent}
-          targetDid={did}
-          title={`${profile.displayName || profile.handle}'s Stickers`}
-        />
-      {/if}
+      <div class="mt-8">
+        <h2 class="text-xl font-bold mb-6 text-primary flex items-center gap-2">
+          <span class="text-2xl">✨</span>
+          {i18n.t.profile.userStickers.replace(
+            "{name}",
+            profile.displayName || profile.handle,
+          )}
+        </h2>
+        {#if agent}
+          <StickerBook {agent} targetDid={did} />
+        {/if}
+      </div>
     {:else}
-      <div class="text-center py-12 text-gray-500">Profile not found.</div>
+      <div class="text-center py-20">
+        <p class="text-gray-500 mb-6">{i18n.t.profile.notFound}</p>
+        <a href="/" class="btn-primary">{i18n.t.profile.backHome}</a>
+      </div>
     {/if}
   </main>
 </div>

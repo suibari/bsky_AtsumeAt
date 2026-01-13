@@ -4,6 +4,7 @@
   import { Agent } from "@atproto/api";
   import { goto } from "$app/navigation";
   import { STICKER_COLLECTION, type Sticker } from "$lib/schemas";
+  import { i18n } from "$lib/i18n.svelte";
 
   let agent = $state<Agent | null>(null);
   let fileInput = $state<HTMLInputElement>();
@@ -272,7 +273,7 @@
       goto("/");
     } catch (e) {
       console.error("Creation failed", e);
-      alert("Failed to create sticker");
+      alert(i18n.t.create.failed);
     } finally {
       processing = false;
     }
@@ -282,8 +283,10 @@
 <div class="min-h-screen bg-surface">
   <div class="max-w-6xl mx-auto p-4 md:p-8 flex flex-col items-center">
     <header class="w-full max-w-3xl flex items-center justify-between mb-8">
-      <a href="/" class="text-gray-500 hover:text-primary">← Back</a>
-      <h1 class="text-xl font-bold text-primary">Create Sticker</h1>
+      <a href="/" class="text-gray-500 hover:text-primary"
+        >← {i18n.t.common.back}</a
+      >
+      <h1 class="text-xl font-bold text-primary">{i18n.t.create.title}</h1>
       <div class="w-8"></div>
     </header>
 
@@ -304,7 +307,7 @@
           onkeydown={(e) => e.key === "Enter" && fileInput?.click()}
         >
           <span class="text-4xl mb-2">📷</span>
-          <span class="text-gray-500">Select Image or Drop Here</span>
+          <span class="text-gray-500">{i18n.t.create.selectImage}</span>
           <input
             bind:this={fileInput}
             type="file"
@@ -341,7 +344,9 @@
         <!-- Controls -->
         <div class="w-full mt-6 space-y-4">
           <div>
-            <label class="text-sm font-medium text-gray-700">Zoom</label>
+            <label class="text-sm font-medium text-gray-700"
+              >{i18n.t.create.zoom}</label
+            >
             <input
               type="range"
               min="0.1"
@@ -355,12 +360,12 @@
           <!-- Name Input -->
           <div class="mt-4 w-full">
             <label class="text-sm font-medium text-gray-700 mb-1 block"
-              >Name (Optional)</label
+              >{i18n.t.create.nameLabel}</label
             >
             <input
               type="text"
               bind:value={name}
-              placeholder="e.g. My Awesome Sticker"
+              placeholder={i18n.t.create.namePlaceholder}
               class="w-full border border-gray-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-primary focus:border-transparent outline-none h-10"
               maxlength="50"
             />
@@ -374,14 +379,14 @@
                 name = "";
               }}
             >
-              Cancel
+              {i18n.t.common.cancel}
             </button>
             <button
               class="flex-1 py-2 px-4 bg-primary text-white rounded-lg hover:bg-primary/90 disabled:opacity-50"
               onclick={handleCreate}
               disabled={processing}
             >
-              {processing ? "Creating..." : "Create Sticker"}
+              {processing ? i18n.t.create.creating : i18n.t.create.title}
             </button>
           </div>
         </div>

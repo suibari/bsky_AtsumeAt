@@ -6,6 +6,9 @@
   import StickerThumb from "./StickerThumb.svelte";
   import html2canvas from "html2canvas";
   import { getDominantColor } from "$lib/color";
+  import StickerCanvas from "$lib/components/StickerCanvas.svelte";
+  import { i18n } from "$lib/i18n.svelte";
+  import { fade } from "svelte/transition";
 
   let agent = $state<Agent | null>(null);
   let stickers = $state<StickerWithProfile[]>([]);
@@ -13,6 +16,8 @@
   let canvasEl: HTMLCanvasElement;
   let processing = $state(false);
   let isPenMode = $state(false);
+  let postText = $state(i18n.t.share.defaultPostText);
+  let showToast = $state(false);
 
   // Fabric modules loaded dynamically
   let fabricModule: any;
@@ -306,17 +311,18 @@
       );
 
       await agent.post({
-        text: "Check out my sticker collection! ✨ #あつめあっと #AtsumeAt",
+        text: postText,
         embed: {
           $type: "app.bsky.embed.images",
           images: [{ alt: "My Sticker Collection", image: data.blob }],
         },
       });
 
-      alert("Posted to Bluesky!");
+      showToast = true;
+      setTimeout(() => (showToast = false), 3000);
     } catch (e) {
       console.error("Share failed", e);
-      alert("Failed to share. Please try again.");
+      alert(i18n.t.share.failed);
     } finally {
       processing = false;
     }
@@ -324,14 +330,14 @@
 </script>
 
 <div class="min-h-screen bg-surface flex flex-col items-center">
-  <!-- Header -->
   <header
     class="w-full max-w-6xl p-4 flex justify-between items-center z-10 relative"
   >
-    <a href="/" class="text-gray-500 hover:text-primary font-bold">← Back</a>
-    <h1 class="text-xl font-bold text-primary">Sticker Deco</h1>
+    <a href="/" class="text-gray-500 hover:text-primary font-bold"
+      >← {i18n.t.common.back}</a
+    >
+    <h1 class="text-xl font-bold text-primary">{i18n.t.share.title}</h1>
     <div class="w-16"></div>
-    <!-- Spacer for balance -->
   </header>
 
   <main
@@ -348,28 +354,28 @@
             ? 'ring-2 ring-primary text-primary'
             : 'text-gray-600'}"
           onclick={togglePen}
-          title="Pen Tool"
+          title={i18n.t.share.penTool}
         >
           ✏️
         </button>
         <button
           class="p-3 rounded-full bg-white shadow-md hover:bg-gray-50 text-gray-600 transition-colors"
           onclick={undo}
-          title="Undo"
+          title={i18n.t.share.undo}
         >
           ↩️
         </button>
         <button
           class="p-3 rounded-full bg-white shadow-md hover:bg-gray-50 text-red-500 transition-colors"
           onclick={deleteSelected}
-          title="Delete Selected"
+          title={i18n.t.share.delete}
         >
           🗑️
         </button>
         <button
           class="p-3 rounded-full bg-white shadow-md hover:bg-gray-50 text-gray-500 transition-colors"
           onclick={randomizeBackground}
-          title="Change Background"
+          title={i18n.t.share.changeBg}
         >
           🎨
         </button>
@@ -394,19 +400,18 @@
       </div>
 
       <p class="text-center text-gray-400 text-xs">
-        Drag stickers here OR Tap to add • Decorate with Pen
+        {i18n.t.share.guide}
       </p>
     </div>
 
     <!-- Sticker Drawer (Side/Bottom) -->
-    <!-- Increased height from h-48 to h-96 for mobile -->
     <div
       class="w-full md:w-80 h-96 md:h-[600px] bg-white/80 backdrop-blur rounded-2xl border-2 border-primary/20 shadow-xl flex flex-col z-20"
     >
       <div
         class="p-4 border-b border-gray-100 flex justify-between items-center"
       >
-        <h2 class="font-bold text-gray-700">My Stickers</h2>
+        <h2 class="font-bold text-gray-700">{i18n.t.share.myStickers}</h2>
         <span class="text-xs bg-primary/20 text-primary px-2 py-1 rounded-full"
           >{stickers.length}</span
         >
@@ -418,9 +423,9 @@
         {#if stickers.length === 0}
           <div class="col-span-3 text-center py-8 text-gray-400">
             {#if agent}
-              Loading stickers...
+              {i18n.t.share.loadingStickers}
             {:else}
-              Sign in to load
+              {i18n.t.share.signInToLoad}
             {/if}
           </div>
         {:else}
@@ -429,24 +434,39 @@
           {/each}
         {/if}
       </div>
+
+      <!-- Footer Post Controls -->
+      <div class="p-4 bg-gray-50 border-t border-gray-100 rounded-b-2xl">
+        <textarea
+          bind:value={postText}
+          class="w-full h-20 p-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none resize-none mb-3"
+        ></textarea>
+        <button
+          class="w-full bg-primary text-white font-bold py-3 rounded-xl shadow-lg hover:bg-primary/90 disabled:opacity-50 transition-all flex items-center justify-center gap-2"
+          onclick={handleShare}
+          disabled={processing}
+        >
+          {#if processing}
+            <div
+              class="animate-spin rounded-full h-4 w-4 border-b-2 border-white"
+            ></div>
+            {i18n.t.share.posting}
+          {:else}
+            <span>✨</span> {i18n.t.share.postToBluesky}
+          {/if}
+        </button>
+      </div>
     </div>
   </main>
 
-  <!-- Post Button (Standard Flow) -->
-  <div class="w-full p-8 flex justify-center pb-12">
-    <button
-      class="btn-primary flex items-center gap-2 shadow-xl hover:shadow-2xl hover:-translate-y-1 transition-all"
-      onclick={handleShare}
-      disabled={processing}
+  {#if showToast}
+    <div
+      class="fixed bottom-24 left-1/2 -translate-x-1/2 bg-gray-800 text-white px-6 py-3 rounded-full font-bold shadow-2xl z-[1000] flex items-center gap-2"
+      transition:fade
     >
-      {#if processing}
-        <span
-          class="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full"
-        ></span>
-        Posting...
-      {:else}
-        <span>🦋</span> Post to Bluesky
-      {/if}
-    </button>
-  </div>
+      <span>✅</span>
+      {i18n.t.share.posted}
+    </div>
+  {/if}
 </div>
+```

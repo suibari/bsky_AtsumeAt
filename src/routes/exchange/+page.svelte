@@ -23,6 +23,7 @@
   } from "$lib/schemas";
   import Landing from "$lib/components/Landing.svelte";
   import StickerCanvas from "$lib/components/StickerCanvas.svelte";
+  import { i18n } from "$lib/i18n.svelte";
 
   let agent = $state<Agent | null>(null);
   let targetUserParam = $derived($page.url.searchParams.get("user"));
@@ -304,7 +305,7 @@
       const res = await agent.resolveHandle({ handle: partnerHandle });
       partnerDid = res.data.did;
     } catch (e) {
-      resolveError = "User not found.";
+      resolveError = i18n.t.exchange.userNotFound;
       partnerDid = null;
     }
   }
@@ -322,7 +323,7 @@
   async function handleInitiate() {
     if (!agent || !partnerDid) return;
     if (selectedStickers.size === 0) {
-      alert("Please select at least one sticker.");
+      alert(i18n.t.exchange.selectToGive.replace("{n}", "1")); // Fallback message
       return;
     }
 
@@ -345,11 +346,11 @@
         mentionOnBluesky, // Pass flag
         proposalMessage, // Pass message
       );
-      alert("Exchange offer sent!");
+      alert(i18n.t.exchange.offerSuccess);
       window.location.href = "/";
     } catch (e) {
       console.error(e);
-      alert("Failed to send offer.");
+      alert(i18n.t.exchange.failedToOffer);
     } finally {
       processing = false;
     }
@@ -359,7 +360,7 @@
   async function handleAccept() {
     if (!agent || !targetUserParam) return;
     if (selectedStickers.size === 0) {
-      alert("Please select at least one sticker to give in return.");
+      alert(i18n.t.exchange.selectToGive.replace("{n}", "1"));
       return;
     }
 
@@ -384,8 +385,10 @@
 <div class="min-h-screen bg-surface">
   <div class="max-w-6xl mx-auto p-4 md:p-8 flex flex-col items-center">
     <header class="w-full flex justify-between items-center mb-8">
-      <a href="/" class="text-gray-500 hover:text-primary">← Back to Book</a>
-      <h1 class="text-2xl font-bold text-primary">Exchange Center</h1>
+      <a href="/" class="text-gray-500 hover:text-primary"
+        >← {i18n.t.exchange.backToBook}</a
+      >
+      <h1 class="text-2xl font-bold text-primary">{i18n.t.exchange.title}</h1>
       <div class="w-20"></div>
     </header>
 
@@ -395,8 +398,10 @@
       ></div>
     {:else if !agent}
       <div class="card-glass max-w-md text-center p-8">
-        <h2 class="text-2xl font-bold mb-4">Sign In Required</h2>
-        <p class="mb-6 text-gray-600">You need to sign in to exchange!</p>
+        <h2 class="text-2xl font-bold mb-4">
+          {i18n.t.exchange.signInRequired}
+        </h2>
+        <p class="mb-6 text-gray-600">{i18n.t.exchange.signInMessage}</p>
         <Landing />
       </div>
     {:else if targetUserParam}
@@ -406,28 +411,29 @@
           <div
             class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-2"
           ></div>
-          <p class="text-gray-500">Verifying exchange offer...</p>
+          <p class="text-gray-500">{i18n.t.exchange.verifying}</p>
         </div>
       {:else if isValidOffer}
         {#if successAccept}
           <div class="bg-white p-8 rounded-2xl shadow-xl text-center max-w-md">
             <h2 class="text-3xl font-bold text-green-500 mb-4">
-              Exchange Accepted!
+              {i18n.t.exchange.acceptedTitle}
             </h2>
             <p class="text-gray-600 mb-8">
-              You have received new stickers and sent yours back!
+              {i18n.t.exchange.acceptedMessage}
             </p>
-            <a href="/" class="btn-primary">View My Book</a>
+            <a href="/" class="btn-primary">{i18n.t.exchange.viewBook}</a>
           </div>
         {:else}
           <div
             class="bg-white p-8 rounded-2xl shadow-xl max-w-2xl text-center w-full"
           >
-            <h2 class="text-2xl font-bold mb-2">Incoming Offer!</h2>
+            <h2 class="text-2xl font-bold mb-2">
+              {i18n.t.exchange.incomingTitle}
+            </h2>
             <p class="text-gray-600 mb-6">
-              User <span class="font-mono bg-gray-100 px-1 rounded"
-                >{targetUserParam}</span
-              > wants to swap.
+              {targetUserParam}
+              {i18n.t.exchange.wantsToSwap}
             </p>
 
             {#if incomingMessage}
@@ -441,7 +447,10 @@
             {#if incomingStickers.length > 0}
               <div class="mb-6 text-left">
                 <h3 class="text-lg font-bold mb-2">
-                  You will receive ({incomingStickers.length})
+                  {i18n.t.exchange.willReceive.replace(
+                    "{n}",
+                    incomingStickers.length.toString(),
+                  )}
                 </h3>
                 <div
                   class="flex gap-2 overflow-x-auto min-h-[160px] p-2 bg-gray-50 rounded-xl"
@@ -460,12 +469,15 @@
 
             <div class="mb-6 text-left">
               <h3 class="text-lg font-bold mb-2">
-                Select Stickers to Give Back ({selectedStickers.size})
+                {i18n.t.exchange.selectToGive.replace(
+                  "{n}",
+                  selectedStickers.size.toString(),
+                )}
               </h3>
 
               {#if myStickers.length === 0}
                 <p class="text-gray-500 italic text-center py-4">
-                  You have no stickers to give! Go collect some first.
+                  {i18n.t.exchange.noStickers}
                 </p>
               {:else}
                 <div
@@ -502,7 +514,9 @@
                         class="p-1 text-center text-xs text-gray-500 truncate border-t border-gray-50"
                       >
                         {sticker.name ||
-                          `${sticker.profile?.displayName || sticker.profile?.handle || "Unknown"}のシール`}
+                          (i18n.lang === "ja"
+                            ? `${sticker.profile?.displayName || sticker.profile?.handle || "だれか"}のシール`
+                            : `${sticker.profile?.displayName || sticker.profile?.handle || "Unknown"}'s sticker`)}
                       </div>
                     </div>
                   {/each}
@@ -512,12 +526,12 @@
 
             <div class="mb-6 text-left">
               <label class="block text-sm font-medium text-gray-700 mb-1"
-                >Add a Message (Optional)</label
+                >{i18n.t.exchange.messageLabel}</label
               >
               <input
                 type="text"
                 bind:value={acceptanceMessage}
-                placeholder="Thank you! / Thanks for the trade!"
+                placeholder={i18n.t.exchange.messagePlaceholder}
                 class="input-text w-full"
                 maxlength="100"
               />
@@ -527,14 +541,16 @@
               <a
                 href="/"
                 class="px-4 py-2 text-gray-500 hover:text-gray-700 self-center"
-                >Cancel</a
+                >{i18n.t.common.cancel}</a
               >
               <button
                 onclick={handleAccept}
                 disabled={processing || selectedStickers.size === 0}
                 class="btn-secondary"
               >
-                {processing ? "Exchanging..." : "Exchange Stickers!"}
+                {processing
+                  ? i18n.t.exchange.exchanging
+                  : i18n.t.exchange.exchangeAction}
               </button>
             </div>
           </div>
@@ -542,16 +558,17 @@
       {:else}
         <!-- Invalid Offer -->
         <div class="bg-white p-8 rounded-2xl shadow-xl max-w-md text-center">
-          <h2 class="text-xl font-bold text-red-500 mb-4">Invalid Link</h2>
+          <h2 class="text-xl font-bold text-red-500 mb-4">
+            {i18n.t.exchange.invalidLink}
+          </h2>
           <p class="text-gray-600 mb-6">
-            The exchange link is invalid, expired, or the user did not make an
-            offer for you.
+            {i18n.t.exchange.invalidMessage}
           </p>
           <a
             href="/exchange"
             class="bg-gray-100 text-gray-700 font-bold py-2 px-6 rounded-lg hover:bg-gray-200"
           >
-            Start New Exchange
+            {i18n.t.exchange.startNew}
           </a>
         </div>
       {/if}
@@ -560,7 +577,7 @@
       <div
         class="w-full max-w-4xl card-glass-strong p-8 relative border-2 border-white"
       >
-        <h2 class="text-xl font-bold mb-4">Start New Exchange</h2>
+        <h2 class="text-xl font-bold mb-4">{i18n.t.exchange.startNew}</h2>
 
         <!-- 1. Select Partner -->
         <div class="mb-6 relative z-10">
@@ -573,7 +590,7 @@
                 : 'border-transparent text-gray-500 hover:text-gray-700'}"
               onclick={() => (activeTab = "recommend")}
             >
-              Recommended
+              {i18n.t.exchange.recommendTab}
             </button>
             <button
               class="px-4 py-2 font-medium transition-colors border-b-2 {activeTab ===
@@ -582,14 +599,14 @@
                 : 'border-transparent text-gray-500 hover:text-gray-700'}"
               onclick={() => (activeTab = "search")}
             >
-              Search
+              {i18n.t.exchange.searchTab}
             </button>
           </div>
 
           {#if activeTab === "recommend"}
             <div class="mb-4">
               <h3 class="text-sm font-bold text-gray-700 mb-2">
-                Recommended Users
+                {i18n.t.exchange.recommendedUsers}
               </h3>
               {#if recommendationsLoading}
                 <div class="flex justify-center p-4">
@@ -598,7 +615,9 @@
                   ></div>
                 </div>
               {:else if recommendedUsers.length === 0}
-                <p class="text-gray-500 text-sm">No recommendations found.</p>
+                <p class="text-gray-500 text-sm">
+                  {i18n.t.exchange.noRecommendations}
+                </p>
               {:else}
                 <div
                   class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3"
@@ -636,20 +655,20 @@
 
           {#if activeTab === "search"}
             <label class="block text-sm font-medium text-gray-700 mb-1"
-              >Partner Handle</label
+              >{i18n.t.exchange.partnerLabel}</label
             >
             <div class="flex gap-2">
               <input
                 value={partnerHandle}
                 oninput={handleInput}
-                placeholder="Search user e.g. suibari"
+                placeholder={i18n.t.exchange.partnerPlaceholder}
                 class="flex-1 input-text"
               />
               <button
                 onclick={resolvePartner}
                 class="bg-gray-100 hover:bg-gray-200 px-4 py-2 rounded-lg font-medium text-gray-700"
               >
-                Check
+                {i18n.t.exchange.check}
               </button>
             </div>
 
@@ -688,7 +707,10 @@
               {resolveError}
             </p>{/if}
           {#if partnerDid}<p class="text-green-600 text-sm mt-1">
-              Selected: {partnerHandle}
+              {i18n.t.exchange.selectedPartner.replace(
+                "{handle}",
+                partnerHandle,
+              )}
             </p>{/if}
         </div>
 
@@ -696,7 +718,10 @@
         {#if partnerDid}
           <div class="mb-6">
             <label class="block text-sm font-medium text-gray-700 mb-2"
-              >Select Stickers to Offer ({selectedStickers.size})</label
+              >{i18n.t.exchange.selectStickersToOffer.replace(
+                "{n}",
+                selectedStickers.size.toString(),
+              )}</label
             >
             {#if myStickers.length === 0}
               <p class="text-gray-500 italic">
@@ -735,7 +760,9 @@
                       class="p-2 text-center text-xs text-gray-500 truncate border-t border-gray-50"
                     >
                       {sticker.name ||
-                        `${sticker.profile?.displayName || sticker.profile?.handle || "Unknown"}のシール`}
+                        (i18n.lang === "ja"
+                          ? `${sticker.profile?.displayName || sticker.profile?.handle || "だれか"}のシール`
+                          : `${sticker.profile?.displayName || sticker.profile?.handle || "Unknown"}'s sticker`)}
                     </div>
                   </div>
                 {/each}
@@ -745,12 +772,12 @@
 
           <div class="mb-4">
             <label class="block text-sm font-medium text-gray-700 mb-1"
-              >Add a Message (Optional)</label
+              >{i18n.t.exchange.messageLabel}</label
             >
             <input
               type="text"
               bind:value={proposalMessage}
-              placeholder="Let's trade! / I love your stickers!"
+              placeholder={i18n.t.exchange.messagePlaceholder}
               class="input-text w-full"
               maxlength="100"
             />
@@ -765,7 +792,7 @@
                 bind:checked={mentionOnBluesky}
                 class="rounded text-primary focus:ring-primary"
               />
-              Mention on Bluesky
+              {i18n.t.exchange.mentionOnBluesky}
             </label>
             <label
               class="flex items-center gap-2 cursor-pointer text-sm text-gray-500"
@@ -775,7 +802,7 @@
                 bind:checked={saveSettings}
                 class="rounded text-gray-500 focus:ring-gray-400"
               />
-              Save Settings
+              {i18n.t.exchange.saveSettings}
             </label>
           </div>
 
@@ -785,7 +812,9 @@
               disabled={processing || selectedStickers.size === 0}
               class="btn-secondary"
             >
-              {processing ? "Sending..." : "Create Offer Post"}
+              {processing
+                ? i18n.t.exchange.sending
+                : i18n.t.exchange.createOffer}
             </button>
           </div>
         {/if}
