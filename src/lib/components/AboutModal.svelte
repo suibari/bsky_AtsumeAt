@@ -1,5 +1,6 @@
 <script lang="ts">
   import { fade, scale } from "svelte/transition";
+  import { i18n } from "$lib/i18n.svelte";
 
   let { onClose } = $props<{ onClose: () => void }>();
 </script>
@@ -21,11 +22,11 @@
     <div
       class="px-8 py-6 border-b border-primary/10 flex justify-between items-center bg-transparent"
     >
-      <h2 class="text-2xl font-bold text-gray-700">About AtsumeAt</h2>
+      <h2 class="text-2xl font-bold text-gray-700">{i18n.t.about.title}</h2>
       <button
         onclick={onClose}
         class="p-2 -mr-2 text-gray-400 hover:text-gray-600 rounded-full hover:bg-gray-100 transition"
-        aria-label="Close"
+        aria-label={i18n.t.common.back}
       >
         <svg
           xmlns="http://www.w3.org/2000/svg"
@@ -45,35 +46,85 @@
     <!-- Content -->
     <div class="p-8 overflow-y-auto prose prose-sm text-gray-600">
       <p class="text-lg text-center font-medium text-gray-700 mb-6">
-        AtsumeAt (あつめあっと) is a sticker collecting and exchanging app built
-        on the AT Protocol (Bluesky).
-      </p>
-      <p>
-        Every user gets their own unique sticker based on their profile. You can
-        collect other users' stickers by exchanging with them!
+        {i18n.t.about.description}
       </p>
 
-      <h3 class="text-gray-800 font-bold mt-4 mb-2">How to Play</h3>
-      <ul class="list-disc pl-5 space-y-1">
-        <li>
-          <strong class="text-primary">Create:</strong> Customize your own sticker
-          in the "Create Sticker" tab.
+      <h3 class="text-gray-800 font-bold mt-4 mb-2">
+        {i18n.t.about.howToPlay}
+      </h3>
+      <ul class="list-none pl-0 space-y-4">
+        <li class="flex gap-3">
+          <div
+            class="flex-shrink-0 w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center text-primary font-bold"
+          >
+            1
+          </div>
+          <div>
+            <strong class="text-primary block text-base"
+              >{i18n.t.about.step1}</strong
+            >
+            <span class="text-sm">{i18n.t.about.step1Desc}</span>
+          </div>
         </li>
-        <li>
-          <strong class="text-primary">Exchange:</strong> Find other users and propose
-          an exchange to get their sticker.
+        <li class="flex gap-3">
+          <div
+            class="flex-shrink-0 w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center text-primary font-bold"
+          >
+            2
+          </div>
+          <div>
+            <strong class="text-primary block text-base"
+              >{i18n.t.about.step2}</strong
+            >
+            <span class="text-sm">{i18n.t.about.step2Desc}</span>
+          </div>
         </li>
-        <li>
-          <strong class="text-primary">Collect:</strong> Build your Sticker Book
-          with stickers from friends and the community.
+        <li class="flex gap-3">
+          <div
+            class="flex-shrink-0 w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center text-primary font-bold"
+          >
+            3
+          </div>
+          <div>
+            <strong class="text-primary block text-base"
+              >{i18n.t.about.step3}</strong
+            >
+            <span class="text-sm">{i18n.t.about.step3Desc}</span>
+          </div>
+        </li>
+        <li class="flex gap-3">
+          <div
+            class="flex-shrink-0 w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center text-primary font-bold"
+          >
+            4
+          </div>
+          <div>
+            <strong class="text-primary block text-base"
+              >{i18n.t.about.step4}</strong
+            >
+            <span class="text-sm">{i18n.t.about.step4Desc}</span>
+          </div>
         </li>
       </ul>
 
-      <h3 class="text-gray-800 font-bold mt-4 mb-2">Credits</h3>
-      <p>Created by Suibari.</p>
-
-      <div class="mt-8 text-center text-xs text-gray-400">
-        Version 0.1.0 Beta
+      <h3 class="text-gray-800 font-bold mt-8 mb-2">{i18n.t.about.links}</h3>
+      <div class="flex flex-col gap-2">
+        <a
+          href="https://bsky.app/profile/suibari.com"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="text-primary hover:underline flex items-center gap-2"
+        >
+          Bluesky (@suibari.com)
+        </a>
+        <a
+          href="https://github.com/suibari/bsky_AtsumeAt"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="text-primary hover:underline flex items-center gap-2"
+        >
+          GitHub (Source Code)
+        </a>
       </div>
     </div>
 
@@ -83,7 +134,7 @@
         onclick={onClose}
         class="px-6 py-2 bg-white border-2 border-gray-200 rounded-full text-sm font-bold text-gray-700 hover:bg-gray-50 hover:border-gray-300 focus:outline-none transition"
       >
-        Close
+        {i18n.t.common.ok}
       </button>
     </div>
   </div>

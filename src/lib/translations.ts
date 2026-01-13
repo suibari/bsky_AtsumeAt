@@ -113,6 +113,20 @@ export const translations = {
       posted: "Blueskyに投稿しました！",
       failed: "投稿に失敗しました。もう一度試してみてください。",
       defaultPostText: "シール帳をデコりました！ ✨ #あつめあっと #AtsumeAt",
+    },
+    about: {
+      title: "あつめあっとについて",
+      description: "あつめあっと (AtsumeAt) は、AT Protocol (Bluesky) を利用したデジタルシール・コレクション＆交換アプリです。",
+      howToPlay: "あそびかた",
+      step1: "作って",
+      step1Desc: "自分だけのオリジナルシールを作ろう",
+      step2: "交換して",
+      step2Desc: "誰かのシールと交換を申し込もう",
+      step3: "集めて",
+      step3Desc: "シール帳をたくさんのシールでいっぱいにしよう",
+      step4: "シェア",
+      step4Desc: "デコったシール帳をみんなにお披露目しよう",
+      links: "リンク",
     }
   },
   en: {
@@ -229,6 +243,20 @@ export const translations = {
       posted: "Posted to Bluesky!",
       failed: "Failed to share. Please try again.",
       defaultPostText: "Check out my sticker collection! ✨ #AtsumeAt #あつめあっと",
+    },
+    about: {
+      title: "About AtsumeAt",
+      description: "AtsumeAt is a digital sticker collecting and exchanging app built on the AT Protocol (Bluesky).",
+      howToPlay: "How to Play",
+      step1: "Create",
+      step1Desc: "Make your own original stickers.",
+      step2: "Exchange",
+      step2Desc: "Propose an exchange to get other people's stickers.",
+      step3: "Collect",
+      step3Desc: "Fill your sticker book with many stickers.",
+      step4: "Share",
+      step4Desc: "Decorate and share your sticker book with everyone.",
+      links: "Links",
     }
   }
 };
