@@ -576,6 +576,16 @@ export async function fetchStickersForTransaction(agent: Agent, t: Transaction, 
                 s.image = `https://cdn.bsky.app/img/feed_fullsize/plain/${partnerDid}/${link}@jpeg`;
               }
             }
+
+            // Verify Seal for Incoming Offer Stickers
+            // NOTE: We use the partner's DID as the repo owner (subject to change if it's a stolen sticker, verifySeal handles it)
+            const { verifySeal } = await import('./signatures');
+            const verification = await verifySeal(s, partnerDid, agent);
+            if (!verification.isValid) {
+              console.warn(`[Exchange] Invalid sticker seal detected for ${sUri}: ${verification.reason}`);
+              return null; // Skip invalid stickers
+            }
+
             return s;
           }
           return null;

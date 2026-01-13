@@ -64,6 +64,7 @@ export async function verifySeal(sticker: Sticker, ownerDid: string, agent: Agen
 
   try {
     const payload = JSON.parse(sticker.signedPayload);
+    const info = payload.info || payload; // Support both nested info or flat legacy
 
     // 1. Check Owner (Anti-Theft)
     if (payload.sub !== ownerDid) {
@@ -79,7 +80,37 @@ export async function verifySeal(sticker: Sticker, ownerDid: string, agent: Agen
       return { isValid: false, isTampered: true, isStolen: false, reason: `Unknown Issuer: ${payload.iss}` };
     }
 
-    // 3. Verify Signature
+    // 3. Strict Field Matching (Anti-Tampering)
+    const mismatches: string[] = [];
+
+    // Check fields if they exist in the signed info
+    if (info.model && sticker.model !== info.model) mismatches.push(`model (Record: ${sticker.model}, Signed: ${info.model})`);
+    if (info.obtainedFrom && sticker.obtainedFrom !== info.obtainedFrom) mismatches.push(`obtainedFrom (Record: ${sticker.obtainedFrom}, Signed: ${info.obtainedFrom})`);
+
+    // originalOwner vs originalCreator compatibility
+    const signedCreator = info.originalCreator || info.originalOwner;
+    if (signedCreator && sticker.originalOwner !== signedCreator) mismatches.push(`originalOwner (Record: ${sticker.originalOwner}, Signed: ${signedCreator})`);
+
+    if (info.name && sticker.name !== info.name) mismatches.push(`name (Record: ${sticker.name}, Signed: ${info.name})`);
+    if (info.message && sticker.message !== info.message) mismatches.push(`message (Record: ${sticker.message}, Signed: ${info.message})`);
+
+    // Image URL Match (Complex because of BlobRef translation, but let's check if signed value exists)
+    // If the signed image is a URL, it should match the (potentially already translated) sticker.image
+    if (info.image && typeof info.image === 'string' && sticker.image !== info.image) {
+      // NOTE: Sometimes sticker.image is still a BlobRef before processing, but getUserStickers processes it before calling verifySeal.
+      // If it's a string, we compare.
+      if (typeof sticker.image === 'string') {
+        mismatches.push(`image (Record: ${sticker.image}, Signed: ${info.image})`);
+      }
+    }
+
+    if (mismatches.length > 0) {
+      const reason = `Field mismatch: ${mismatches.join(', ')}`;
+      console.warn(`[Seal-Tamper] ${reason}`, { uri: (sticker as any).uri });
+      return { isValid: false, isTampered: true, isStolen: false, reason };
+    }
+
+    // 4. Verify Signature
     const key = await getIssuerPublicKey(payload.iss);
     if (!key) {
       return { isValid: false, isTampered: true, isStolen: false, reason: "Could not resolve Issuer Key" };
