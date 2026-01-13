@@ -9,6 +9,7 @@
     deleteSticker,
     type LikeState,
   } from "$lib/stickers";
+  import { publicAgent } from "$lib/atproto";
   import StickerCanvas from "./StickerCanvas.svelte";
   import { fade } from "svelte/transition";
 
@@ -20,6 +21,11 @@
   let stickers = $state<StickerWithProfile[]>([]);
   let likeStates = $state<Map<string, LikeState>>(new Map());
   let loading = $state(true);
+  let currentUserProfile = $state<{
+    avatar?: string;
+    handle?: string;
+    displayName?: string;
+  } | null>(null);
 
   // Computed Title
   let displayTitle = $derived(
@@ -32,6 +38,16 @@
     const didToLoad = targetDid || agent.assertDid;
     if (didToLoad) {
       await loadStickers(didToLoad);
+    }
+
+    // Load self profile for optimistic UI
+    if (agent.assertDid) {
+      try {
+        const res = await publicAgent.getProfile({ actor: agent.assertDid });
+        currentUserProfile = res.data;
+      } catch (e) {
+        console.warn("Failed to load self profile", e);
+      }
     }
   });
 
@@ -70,16 +86,26 @@
 
     // Create new optimistic state
     const optimistic: LikeState = {
-      count: wasLiked ? currentCount - 1 : currentCount + 1,
+      count: wasLiked ? Math.max(0, currentCount - 1) : currentCount + 1,
       isLiked: !wasLiked,
-      likers: current?.likers || [], // Managing likers list optimistically is hard, let's just keep it stable or maybe add self?
-      uri: current?.uri, // If unliking, we will clear this later. If liking, we get it later.
+      likers: current?.likers ? [...current.likers] : [],
+      uri: current?.uri, // Will be updated with real URI on success if liking
     };
 
-    if (!wasLiked && agent.assertDid) {
-      // Add self to likers optimistically
-      // Fetch self profile? Or just dummy
-      // We will just let fetch handle it eventually, but immediate update is better
+    // Update likers list optimistically
+    const myDid = agent.assertDid;
+    if (myDid) {
+      if (!wasLiked) {
+        // Add self
+        optimistic.likers.unshift({
+          did: myDid,
+          avatar: currentUserProfile?.avatar,
+          handle: currentUserProfile?.handle,
+        });
+      } else {
+        // Remove self
+        optimistic.likers = optimistic.likers.filter((l) => l.did !== myDid);
+      }
     }
 
     likeStates.set(uri, optimistic);
@@ -87,9 +113,16 @@
 
     try {
       const newLikeUri = await toggleStickerLike(agent, sticker, current?.uri);
-      // Reload state to be sure
-      const freshState = await loadStickerLikeState(agent, sticker.uri);
-      likeStates.set(uri, freshState);
+
+      // Update with final state (mainly to set the URI for future unlikes)
+      const finalState: LikeState = {
+        ...optimistic,
+        uri: newLikeUri,
+        // If we successfully liked, ensure we have the URI.
+        // If unliked, newLikeUri is undefined, which is correct.
+      };
+
+      likeStates.set(uri, finalState);
       likeStates = new Map(likeStates);
     } catch (e) {
       console.error("Like failed", e);
