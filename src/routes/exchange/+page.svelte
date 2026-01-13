@@ -357,14 +357,8 @@
                       <div
                         class="p-1 text-center text-xs text-gray-500 truncate border-t border-gray-50"
                       >
-                        {#if sticker.imageType === "custom"}
-                          {sticker.name ||
-                            `${sticker.profile?.displayName || sticker.profile?.handle || "Unknown"}のシール`}
-                        {:else}
-                          {sticker.profile?.displayName ||
-                            sticker.profile?.handle ||
-                            "Unknown"}のシール
-                        {/if}
+                        {sticker.name ||
+                          `${sticker.profile?.displayName || sticker.profile?.handle || "Unknown"}のシール`}
                       </div>
                     </div>
                   {/each}
@@ -511,7 +505,8 @@
                     <div
                       class="p-2 text-center text-xs text-gray-500 truncate border-t border-gray-50"
                     >
-                      {sticker.profile?.displayName || "Unknown"}
+                      {sticker.name ||
+                        `${sticker.profile?.displayName || sticker.profile?.handle || "Unknown"}のシール`}
                     </div>
                   </div>
                 {/each}
