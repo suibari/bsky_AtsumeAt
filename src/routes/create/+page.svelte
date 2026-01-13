@@ -39,10 +39,38 @@
   function handleFileSelect(e: Event) {
     const file = (e.target as HTMLInputElement).files?.[0];
     if (file) {
-      imageUrl = URL.createObjectURL(file);
-      // Reset crop
-      scale = 1;
-      position = { x: 0, y: 0 };
+      loadImage(file);
+    }
+  }
+
+  function loadImage(file: File) {
+    if (!file.type.startsWith("image/")) return;
+
+    imageUrl = URL.createObjectURL(file);
+    // Reset crop
+    scale = 1;
+    position = { x: 0, y: 0 };
+  }
+
+  // File Drop Handling
+  let isFileHovering = $state(false);
+
+  function onFileDragOver(e: DragEvent) {
+    e.preventDefault();
+    isFileHovering = true;
+  }
+
+  function onFileDragLeave(e: DragEvent) {
+    e.preventDefault();
+    isFileHovering = false;
+  }
+
+  function onFileDrop(e: DragEvent) {
+    e.preventDefault();
+    isFileHovering = false;
+    const file = e.dataTransfer?.files?.[0];
+    if (file) {
+      loadImage(file);
     }
   }
 
@@ -264,11 +292,19 @@
     >
       {#if !imageUrl}
         <div
-          class="w-full h-64 border-2 border-dashed border-gray-300 rounded-lg flex flex-col items-center justify-center bg-gray-50 cursor-pointer hover:bg-gray-100 transition-colors"
+          class="w-full h-64 border-2 border-dashed {isFileHovering
+            ? 'border-primary bg-primary/10'
+            : 'border-gray-300 bg-gray-50'} rounded-lg flex flex-col items-center justify-center cursor-pointer hover:bg-gray-100 transition-colors"
           onclick={() => fileInput?.click()}
+          ondragover={onFileDragOver}
+          ondragleave={onFileDragLeave}
+          ondrop={onFileDrop}
+          role="button"
+          tabindex="0"
+          onkeydown={(e) => e.key === "Enter" && fileInput?.click()}
         >
           <span class="text-4xl mb-2">📷</span>
-          <span class="text-gray-500">Select Image</span>
+          <span class="text-gray-500">Select Image or Drop Here</span>
           <input
             bind:this={fileInput}
             type="file"
