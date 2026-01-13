@@ -35,18 +35,15 @@ export async function ensureHubRef(agent: Agent, userDid: string) {
 
 // Interface for Constellation response
 interface LinkRecord {
-  cid: string;
-  uri: string;
-  value: any;
-  author: {
-    did: string;
-  };
+  did: string;
+  collection: string;
+  rkey: string;
 }
 
 export async function getHubUsers(agent: Agent) {
   const hubDid = await getHubDid(agent);
   const subject = encodeURIComponent(`at://${hubDid}/app.bsky.actor.profile/self`);
-  const source = encodeURIComponent(`${CONFIG_COLLECTION}:.hubRef`);
+  const source = encodeURIComponent(`${CONFIG_COLLECTION}:hubRef`);
 
   const url = `https://constellation.microcosm.blue/xrpc/blue.microcosm.links.getBacklinks?subject=${subject}&source=${source}`;
 
@@ -54,7 +51,7 @@ export async function getHubUsers(agent: Agent) {
     const res = await fetch(url);
     if (!res.ok) throw new Error('Constellation API error');
     const data = await res.json();
-    return (data.frames || data.links || []) as LinkRecord[];
+    return (data.records || []) as LinkRecord[];
   } catch (e) {
     console.error('Failed to get hub users', e);
     return [];

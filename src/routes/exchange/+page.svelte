@@ -3,12 +3,17 @@
   import { onMount } from "svelte";
   import { getClient, getPdsEndpoint, publicAgent } from "$lib/atproto";
   import { Agent } from "@atproto/api";
-  import type { ProfileViewBasic } from "@atproto/api/dist/client/types/app/bsky/actor/defs";
+  import type {
+    ProfileView,
+    ProfileViewBasic,
+    ProfileViewDetailed,
+  } from "@atproto/api/dist/client/types/app/bsky/actor/defs";
   import {
     acceptExchange,
     createExchangePost,
     fetchStickersForTransaction,
   } from "$lib/exchange";
+  import { getHubUsers } from "$lib/hub"; // Import getHubUsers
   import { getUserStickers, type StickerWithProfile } from "$lib/stickers";
   import {
     STICKER_COLLECTION,
@@ -43,6 +48,14 @@
   let showDropdown = $state(false);
   let searchTimeout: ReturnType<typeof setTimeout>;
 
+  // Valid Tabs
+  type Tab = "recommend" | "search";
+  let activeTab = $state<Tab>("recommend");
+  let recommendedUsers = $state<
+    (ProfileViewBasic | ProfileView | ProfileViewDetailed)[]
+  >([]);
+  let recommendationsLoading = $state(false);
+
   // Settings
   let mentionOnBluesky = $state(true);
   let saveSettings = $state(false);
@@ -76,7 +89,119 @@
       }
     }
     loading = false;
+    // Initial fetch for recommendations if user is logged in
+    if (agent && agent.assertDid && !targetUserParam) {
+      void fetchRecommendations();
+    }
   });
+
+  async function fetchRecommendations() {
+    if (!agent || !agent.assertDid) return;
+    recommendationsLoading = true;
+    try {
+      // 1. Fetch Follows (Paginated, up to 2000)
+      const follows: (ProfileView | ProfileViewBasic)[] = [];
+      let cursor: string | undefined;
+      let count = 0;
+      const MAX_FOLLOWS = 2000;
+
+      while (count < MAX_FOLLOWS) {
+        const res = await publicAgent.getFollows({
+          actor: agent.assertDid,
+          limit: 100, // Max per request usually
+          cursor,
+        });
+        follows.push(...res.data.follows);
+        count += res.data.follows.length;
+        cursor = res.data.cursor;
+        if (!cursor) break;
+      }
+
+      // 2. Fetch App Users (Hub)
+      // This returns links, we need to extract DIDs
+      const hubLinks = await getHubUsers(agent);
+      const appUserDids = new Set<string>();
+      for (const link of hubLinks) {
+        // link.did is the user who created the config record pointing to hub
+        if (link.did) {
+          appUserDids.add(link.did);
+        }
+      }
+
+      // 3. Categorize & Prioritize
+      const p1: (ProfileViewBasic | ProfileView | ProfileViewDetailed)[] = []; // Follows && App Users
+      const p2: (ProfileViewBasic | ProfileView | ProfileViewDetailed)[] = []; // Other App Users
+      const p3: (ProfileViewBasic | ProfileView | ProfileViewDetailed)[] = []; // Other Follows
+
+      // Process Follows first (we have their profiles)
+      for (const f of follows) {
+        if (appUserDids.has(f.did)) {
+          p1.push(f);
+        } else {
+          p3.push(f);
+        }
+      }
+
+      // Process Other App Users (Need to see who is NOT in follows)
+      // We only possess DIDs for these, so we might need to fetch profiles if we select them.
+      // Optimisation: Only fetch profiles if we need to fill the list.
+      const followDids = new Set(follows.map((f) => f.did));
+      const otherAppUserDids = Array.from(appUserDids).filter(
+        (did) => !followDids.has(did) && did !== agent?.assertDid,
+      );
+
+      // Randomize helpers
+      const shuffle = (array: any[]) => array.sort(() => Math.random() - 0.5);
+
+      shuffle(p1);
+      shuffle(p3);
+      // We don't have profiles for p2 yet, just DIDs.
+      // shuffle(otherAppUserDids); // Shuffle DIDs directly
+
+      const finalSelection: (
+        | ProfileViewBasic
+        | ProfileView
+        | ProfileViewDetailed
+      )[] = [];
+
+      // Fill from P1
+      finalSelection.push(...p1.slice(0, 6));
+
+      // Fill from P2 (Other App Users) if needed
+      if (finalSelection.length < 6) {
+        const needed = 6 - finalSelection.length;
+        // Shuffle and take needed DIDs
+        const p2DidsToFetch = otherAppUserDids
+          .sort(() => Math.random() - 0.5)
+          .slice(0, needed);
+
+        if (p2DidsToFetch.length > 0) {
+          try {
+            // Batch fetch profiles? getProfiles takes 25 max usually
+            const res = await publicAgent.getProfiles({
+              actors: p2DidsToFetch,
+            });
+            const p2Profiles = res.data.profiles;
+            finalSelection.push(...p2Profiles);
+          } catch (e) {
+            console.warn("Failed to fetch app user profiles", e);
+          }
+        }
+      }
+
+      // Fill from P3 (Other Follows) if needed
+      if (finalSelection.length < 6) {
+        const needed = 6 - finalSelection.length;
+        finalSelection.push(...p3.slice(0, needed));
+      }
+
+      recommendedUsers = finalSelection.slice(0, 6);
+    } catch (e) {
+      console.error("Failed to fetch recommendations", e);
+    } finally {
+      recommendationsLoading = false;
+    }
+  }
 
   async function verifyIncomingOffer(did: string) {
     if (!agent || !agent.assertDid) return;
@@ -161,7 +286,9 @@
     }, 300);
   }
 
-  function selectUser(user: ProfileViewBasic) {
+  function selectUser(
+    user: ProfileViewBasic | ProfileView | ProfileViewDetailed,
+  ) {
     partnerHandle = user.handle;
     partnerDid = user.did;
     showDropdown = false;
@@ -437,52 +564,124 @@
 
         <!-- 1. Select Partner -->
         <div class="mb-6 relative z-10">
-          <label class="block text-sm font-medium text-gray-700 mb-1"
-            >Partner Handle</label
-          >
-          <div class="flex gap-2">
-            <input
-              value={partnerHandle}
-              oninput={handleInput}
-              placeholder="Search user e.g. suibari"
-              class="flex-1 input-text"
-            />
+          <!-- Tabs -->
+          <div class="flex gap-4 mb-4 border-b border-gray-200">
             <button
-              onclick={resolvePartner}
-              class="bg-gray-100 hover:bg-gray-200 px-4 py-2 rounded-lg font-medium text-gray-700"
+              class="px-4 py-2 font-medium transition-colors border-b-2 {activeTab ===
+              'recommend'
+                ? 'border-primary text-primary'
+                : 'border-transparent text-gray-500 hover:text-gray-700'}"
+              onclick={() => (activeTab = "recommend")}
             >
-              Check
+              Recommended
+            </button>
+            <button
+              class="px-4 py-2 font-medium transition-colors border-b-2 {activeTab ===
+              'search'
+                ? 'border-primary text-primary'
+                : 'border-transparent text-gray-500 hover:text-gray-700'}"
+              onclick={() => (activeTab = "search")}
+            >
+              Search
             </button>
           </div>
 
-          <!-- Typeahead Results -->
-          {#if showDropdown && searchResults.length > 0}
-            <div
-              class="absolute top-FULL left-0 w-full bg-white border border-gray-200 rounded-lg shadow-xl mt-1 max-h-60 overflow-y-auto"
-            >
-              {#each searchResults as user}
-                <button
-                  class="w-full text-left px-4 py-2 hover:bg-gray-50 flex items-center gap-2 border-b last:border-b-0"
-                  onclick={() => selectUser(user)}
+          {#if activeTab === "recommend"}
+            <div class="mb-4">
+              <h3 class="text-sm font-bold text-gray-700 mb-2">
+                Recommended Users
+              </h3>
+              {#if recommendationsLoading}
+                <div class="flex justify-center p-4">
+                  <div
+                    class="animate-spin h-6 w-6 border-2 border-primary border-t-transparent rounded-full"
+                  ></div>
+                </div>
+              {:else if recommendedUsers.length === 0}
+                <p class="text-gray-500 text-sm">No recommendations found.</p>
+              {:else}
+                <div
+                  class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3"
                 >
-                  {#if user.avatar}
-                    <img
-                      src={user.avatar}
-                      alt={user.handle}
-                      class="w-6 h-6 rounded-full"
-                    />
-                  {:else}
-                    <div class="w-6 h-6 rounded-full bg-gray-200"></div>
-                  {/if}
-                  <div>
-                    <div class="font-bold text-sm">
-                      {user.displayName || user.handle}
-                    </div>
-                    <div class="text-xs text-gray-500">@{user.handle}</div>
-                  </div>
-                </button>
-              {/each}
+                  {#each recommendedUsers as user}
+                    <button
+                      class="flex items-center gap-3 p-3 rounded-xl border border-gray-100 bg-white hover:bg-gray-50 hover:border-primary/30 transition-all text-left group"
+                      onclick={() => selectUser(user)}
+                    >
+                      {#if user.avatar}
+                        <img
+                          src={user.avatar}
+                          alt={user.handle}
+                          class="w-10 h-10 rounded-full bg-gray-200 object-cover"
+                        />
+                      {:else}
+                        <div class="w-10 h-10 rounded-full bg-gray-200"></div>
+                      {/if}
+                      <div class="flex-1 min-w-0">
+                        <div
+                          class="font-bold text-gray-800 text-sm truncate group-hover:text-primary transition-colors"
+                        >
+                          {user.displayName || user.handle}
+                        </div>
+                        <div class="text-xs text-gray-500 truncate">
+                          @{user.handle}
+                        </div>
+                      </div>
+                    </button>
+                  {/each}
+                </div>
+              {/if}
             </div>
+          {/if}
+
+          {#if activeTab === "search"}
+            <label class="block text-sm font-medium text-gray-700 mb-1"
+              >Partner Handle</label
+            >
+            <div class="flex gap-2">
+              <input
+                value={partnerHandle}
+                oninput={handleInput}
+                placeholder="Search user e.g. suibari"
+                class="flex-1 input-text"
+              />
+              <button
+                onclick={resolvePartner}
+                class="bg-gray-100 hover:bg-gray-200 px-4 py-2 rounded-lg font-medium text-gray-700"
+              >
+                Check
+              </button>
+            </div>
+
+            <!-- Typeahead Results -->
+            {#if showDropdown && searchResults.length > 0}
+              <div
+                class="absolute top-FULL left-0 w-full bg-white border border-gray-200 rounded-lg shadow-xl mt-1 max-h-60 overflow-y-auto z-50"
+              >
+                {#each searchResults as user}
+                  <button
+                    class="w-full text-left px-4 py-2 hover:bg-gray-50 flex items-center gap-2 border-b last:border-b-0"
+                    onclick={() => selectUser(user)}
+                  >
+                    {#if user.avatar}
+                      <img
+                        src={user.avatar}
+                        alt={user.handle}
+                        class="w-6 h-6 rounded-full"
+                      />
+                    {:else}
+                      <div class="w-6 h-6 rounded-full bg-gray-200"></div>
+                    {/if}
+                    <div>
+                      <div class="font-bold text-sm">
+                        {user.displayName || user.handle}
+                      </div>
+                      <div class="text-xs text-gray-500">@{user.handle}</div>
+                    </div>
+                  </button>
+                {/each}
+              </div>
+            {/if}
           {/if}
 
           {#if resolveError}<p class="text-red-500 text-sm mt-1">
