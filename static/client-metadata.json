@@ -5,7 +5,7 @@
   "redirect_uris": [
     "https://atsumeat.suibari.com/"
   ],
-  "scope": "atproto blob:*/* repo:blue.atsumeat.sticker repo:blue.atsumeat.config repo:blue.atsumeat.transaction repo:blue.atsumeat.stickerLike repo:app.bsky.feed.post?action=create",
+  "scope": "atproto blob:*/* repo:com.suibari.atsumeat.sticker repo:com.suibari.atsumeat.config repo:com.suibari.atsumeat.transaction repo:com.suibari.atsumeat.stickerLike repo:app.bsky.feed.post?action=create",
   "grant_types": [
     "authorization_code",
     "refresh_token"

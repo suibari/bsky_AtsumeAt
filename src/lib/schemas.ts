@@ -1,7 +1,7 @@
-export const STICKER_COLLECTION = 'blue.atsumeat.sticker';
-export const CONFIG_COLLECTION = 'blue.atsumeat.config';
-export const TRANSACTION_COLLECTION = 'blue.atsumeat.transaction';
-export const STICKER_LIKE_COLLECTION = 'blue.atsumeat.stickerLike';
+export const STICKER_COLLECTION = 'com.suibari.atsumeat.sticker';
+export const CONFIG_COLLECTION = 'com.suibari.atsumeat.config';
+export const TRANSACTION_COLLECTION = 'com.suibari.atsumeat.transaction';
+export const STICKER_LIKE_COLLECTION = 'com.suibari.atsumeat.stickerLike';
 
 import { BlobRef } from '@atproto/api';
 

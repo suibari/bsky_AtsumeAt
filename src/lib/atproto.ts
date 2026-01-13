@@ -6,7 +6,7 @@ export const publicAgent = new AtpAgent('https://public.api.bsky.app');
 
 export let client: BrowserOAuthClient | null = null;
 
-const SCOPE = 'atproto blob:*/* repo:blue.atsumeat.sticker repo:blue.atsumeat.config repo:blue.atsumeat.transaction repo:blue.atsumeat.stickerLike repo:app.bsky.feed.post?action=create';
+const SCOPE = 'atproto blob:*/* repo:com.suibari.atsumeat.sticker repo:com.suibari.atsumeat.config repo:com.suibari.atsumeat.transaction repo:com.suibari.atsumeat.stickerLike repo:app.bsky.feed.post?action=create';
 
 export function getClient() {
   if (typeof window === 'undefined') return null;
