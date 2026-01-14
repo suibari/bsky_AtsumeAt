@@ -3,6 +3,7 @@ import { TRANSACTION_COLLECTION, STICKER_COLLECTION, type Transaction, type Stic
 import { type StickerWithProfile, getAllStickerRecords } from './stickers';
 import { requestSignature } from './signatures';
 import { getPdsEndpoint, publicAgent } from './atproto';
+import { i18n } from './i18n.svelte';
 
 export async function createExchangePost(agent: Agent, targetHandle: string, targetDid: string, offeredStickers: StickerWithProfile[], withPost: boolean = true, message?: string) {
   const origin = window.location.origin;
@@ -29,7 +30,10 @@ export async function createExchangePost(agent: Agent, targetHandle: string, tar
   if (withPost) {
     const stickerCount = offeredStickers.length;
 
-    const text = `Let's exchange stickers @${targetHandle}! offering ${stickerCount} sticker${stickerCount > 1 ? 's' : ''} 🍬 #AtsumeAt`;
+    const text = i18n.t.exchange.offerPost
+      .replace('{handle}', targetHandle)
+      .replace('{n}', stickerCount.toString())
+      .replace('{s}', stickerCount > 1 ? 's' : '');
 
     const rt = new RichText({ text });
     await rt.detectFacets(agent);
@@ -41,8 +45,8 @@ export async function createExchangePost(agent: Agent, targetHandle: string, tar
         $type: 'app.bsky.embed.external',
         external: {
           uri: `${origin}/exchange?user=${myDid}`,
-          title: 'Exchange Stickers',
-          description: 'Click to accept the sticker exchange!',
+          title: i18n.t.exchange.embedTitle,
+          description: i18n.t.exchange.embedDescription,
         }
       }
     });

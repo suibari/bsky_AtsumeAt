@@ -83,6 +83,9 @@ export const translations = {
       saveSettings: "設定を保存する",
       sending: "送信中...",
       createOffer: "交換におさそいする",
+      offerPost: "@{handle} さん、シール交換しませんか？ {n}枚のシールを提示しています 🍬 #あつめあっと #AtsumeAt",
+      embedTitle: "シール交換のお誘い",
+      embedDescription: "リンクをクリックしてシールの交換を承認してね！",
     },
     notifications: {
       title: "通知",
@@ -223,6 +226,9 @@ export const translations = {
       saveSettings: "Save Settings",
       sending: "Sending...",
       createOffer: "Create Offer Post",
+      offerPost: "Let's exchange stickers @{handle}! offering {n} sticker{s} 🍬 #AtsumeAt",
+      embedTitle: "Exchange Stickers",
+      embedDescription: "Click to accept the sticker exchange!",
     },
     notifications: {
       title: "Notifications",

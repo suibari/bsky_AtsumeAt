@@ -21,9 +21,9 @@
     TRANSACTION_COLLECTION,
     type Transaction,
   } from "$lib/schemas";
-  import Landing from "$lib/components/Landing.svelte";
   import StickerCanvas from "$lib/components/StickerCanvas.svelte";
   import { i18n } from "$lib/i18n.svelte";
+  import SignInForm from "$lib/components/SignInForm.svelte";
 
   let agent = $state<Agent | null>(null);
   let targetUserParam = $derived($page.url.searchParams.get("user"));
@@ -397,12 +397,14 @@
         class="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mt-20"
       ></div>
     {:else if !agent}
-      <div class="card-glass max-w-md text-center p-8">
-        <h2 class="text-2xl font-bold mb-4">
+      <div class="card-glass max-w-md w-full text-center p-8 mt-10">
+        <h2 class="text-2xl font-bold mb-2">
           {i18n.t.exchange.signInRequired}
         </h2>
-        <p class="mb-6 text-gray-600">{i18n.t.exchange.signInMessage}</p>
-        <Landing />
+        <p class="mb-8 text-gray-600 text-sm">
+          {i18n.t.exchange.signInMessage}
+        </p>
+        <SignInForm />
       </div>
     {:else if targetUserParam}
       <!-- ACCEPT MODE -->
