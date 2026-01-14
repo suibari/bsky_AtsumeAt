@@ -6,20 +6,24 @@ import { ensureHubRef } from './hub';
 
 export type StickerWithProfile = Sticker & {
   profile?: {
+    did: string;
     avatar?: string;
     displayName?: string;
     handle: string;
   };
   giverProfile?: {
+    did: string;
     displayName?: string;
     handle: string;
   };
   originalOwnerProfile?: {
+    did: string;
     displayName?: string;
     handle: string;
   };
   verification?: SealVerificationResult; // Added verification status
   uri: string; // Record URI for updates
+  cid: string; // Record CID
 };
 
 export async function initStickers(agent: Agent, userDid: string, onStatus?: (msg: string) => void): Promise<boolean> {
@@ -86,10 +90,23 @@ export async function initStickers(agent: Agent, userDid: string, onStatus?: (ms
 }
 
 export async function getUserStickers(agent: Agent, userDid: string): Promise<StickerWithProfile[]> {
+  // 1. Resolve DID (if handle)
+  let did = userDid;
+  if (did && !did.startsWith('did:')) {
+    try {
+      console.log(`Resolving handle: ${did}`);
+      const res = await publicAgent.resolveHandle({ handle: did });
+      did = res.data.did;
+      console.log(`Resolved to: ${did}`);
+    } catch (e) {
+      console.warn('Failed to resolve handle', did, e);
+    }
+  }
+
   // 1. Resolve PDS
   let pdsAgent = agent;
   try {
-    const pdsUrl = await getPdsEndpoint(userDid);
+    const pdsUrl = await getPdsEndpoint(did);
     if (pdsUrl) {
       // Use specific PDS agent
       pdsAgent = new Agent(pdsUrl);
@@ -104,7 +121,7 @@ export async function getUserStickers(agent: Agent, userDid: string): Promise<St
 
   do {
     const res = await pdsAgent.com.atproto.repo.listRecords({
-      repo: userDid,
+      repo: did,
       collection: STICKER_COLLECTION,
       limit: 100,
       cursor
@@ -118,9 +135,13 @@ export async function getUserStickers(agent: Agent, userDid: string): Promise<St
       if (!raw.originalOwner && raw.owner) raw.originalOwner = raw.owner;
       // If image missing but we have old 'model' logic, we might need to fix it, but let's assume image exists or we handle it later
 
+      // Ensure URI uses DID
+      const uri = `at://${did}/${STICKER_COLLECTION}/${r.uri.split('/').pop()}`;
+
       return {
         ...(raw as Sticker),
-        uri: r.uri,
+        uri,
+        cid: r.cid,
         profile: undefined
       };
     });
@@ -174,6 +195,7 @@ export async function getUserStickers(agent: Agent, userDid: string): Promise<St
     if (s.subjectDid && profilesMap.has(s.subjectDid)) {
       const p = profilesMap.get(s.subjectDid);
       s.profile = {
+        did: p.did,
         handle: p.handle,
         displayName: p.displayName,
         avatar: p.avatar
@@ -182,12 +204,12 @@ export async function getUserStickers(agent: Agent, userDid: string): Promise<St
     // Giver Profile
     if (s.obtainedFrom && profilesMap.has(s.obtainedFrom)) {
       const p = profilesMap.get(s.obtainedFrom);
-      s.giverProfile = { handle: p.handle, displayName: p.displayName };
+      s.giverProfile = { did: p.did, handle: p.handle, displayName: p.displayName };
     }
     // Original Owner Profile (Issuer)
     if (s.originalOwner && profilesMap.has(s.originalOwner)) {
       const p = profilesMap.get(s.originalOwner);
-      s.originalOwnerProfile = { handle: p.handle, displayName: p.displayName };
+      s.originalOwnerProfile = { did: p.did, handle: p.handle, displayName: p.displayName };
     }
 
     // Image Handling
@@ -197,7 +219,7 @@ export async function getUserStickers(agent: Agent, userDid: string): Promise<St
     } else if (typeof s.image === 'object' && (s.image as any).ref) {
       // BlobRef -> CDN URL
       // Format: https://cdn.bsky.app/img/feed_fullsize/plain/{did}/{link}@jpeg
-      const blobDid = s.originalOwner || userDid;
+      const blobDid = s.originalOwner || did;
       const ref = (s.image as any).ref;
       // Handle standard CID object or IPLD object { $link: "..." }
       const link = ref.$link ? ref.$link : ref.toString();
@@ -257,42 +279,44 @@ export interface LikeState {
   targetUri?: string; // The URI of the sticker that is actually liked (Original or Self)
 }
 
+// Cache for resolved target URIs to ensure consistency across pages
+const resolutionCache = new Map<string, { uri: string, cid: string }>();
+
 // Helper: Resolve the "True" Target for Liking (The Original Sticker)
 async function resolveLikeTarget(agent: Agent, sticker: StickerWithProfile): Promise<{ uri: string, cid: string }> {
-  // 1. If I am the original owner, the target is ME (this sticker).
-  // Note: sticker.originalOwner should be set. If not, fallback to subject/owner.
-  const originalOwner = sticker.originalOwner || sticker.subjectDid;
+  // Use cache if available
+  if (resolutionCache.has(sticker.uri)) {
+    return resolutionCache.get(sticker.uri)!;
+  }
 
-  // If the record itself is owned by the original owner, it IS the original.
+  const originalOwner = sticker.originalOwner || sticker.subjectDid;
   const { repo } = getRepoAndRkey(sticker.uri);
+
+  console.log(`[Like-Resolve] Resolving for ${sticker.uri} (model: ${sticker.model})`);
+  console.log(`[Like-Resolve] repo: ${repo}, originalOwner: ${originalOwner}`);
+
+  // 1. If I am the original owner, the target is ME (this sticker).
   if (repo === originalOwner) {
-    // I am looking at the original!
-    // We need the CID. If not present in object, we might need to fetch it.
-    let cid = (sticker as any).cid;
-    if (!cid) {
-      cid = await fetchCid(agent, sticker.uri);
-    }
-    return { uri: sticker.uri, cid };
+    const res = { uri: sticker.uri, cid: sticker.cid };
+    resolutionCache.set(sticker.uri, res);
+    console.log(`[Like-Resolve] Already on original: ${res.uri}`);
+    return res;
   }
 
   // 2. I am looking at a COPY. I need to find the Original in the Issuer's Repo.
-  // We match by 'model'.
-  // Optimization: If no model (legacy?), we can't safely link. Fallback to this sticker.
-  if (!sticker.model || sticker.model === 'default') {
-    console.log("No unique model ID to link back to original. Liking local copy.");
-    // Fallback
-    let cid = (sticker as any).cid;
-    if (!cid) cid = await fetchCid(agent, sticker.uri);
-    return { uri: sticker.uri, cid };
+  if (!sticker.model) {
+    console.log("[Like-Resolve] No model ID. Liking local copy.");
+    const res = { uri: sticker.uri, cid: sticker.cid };
+    resolutionCache.set(sticker.uri, res);
+    return res;
   }
 
   try {
-    // Find sticker in OriginalOwner's repo with same model
-    // Simple scan for now (assuming user doesn't have thousands of created stickers yet)
-    // TODO: optimization - backend index or caching?
     let pdsAgent = agent;
     const pdsUrl = await getPdsEndpoint(originalOwner!);
     if (pdsUrl) pdsAgent = new Agent(pdsUrl);
+
+    console.log(`[Like-Resolve] Searching ${originalOwner}'s PDS for model ${sticker.model}...`);
 
     let cursor;
     do {
@@ -304,23 +328,35 @@ async function resolveLikeTarget(agent: Agent, sticker: StickerWithProfile): Pro
       });
       cursor = res.data.cursor;
       for (const r of res.data.records) {
-        const val = r.value as Sticker;
-        if (val.model === sticker.model) {
+        const val = r.value as any;
+        // Match Model AND Subject (especially important for 'default' stickers)
+        // Note: migrated subjectDid/originalOwner field handling
+        const valSubject = val.subjectDid || val.owner;
+        const valOriginal = val.originalOwner || val.owner;
+
+        if (val.model === sticker.model &&
+          valSubject === sticker.subjectDid &&
+          valOriginal === sticker.originalOwner) {
           // Found the original!
-          return { uri: r.uri, cid: r.cid };
+          // Force use originalOwner DID in URI
+          const originalUri = `at://${originalOwner}/${STICKER_COLLECTION}/${r.uri.split('/').pop()}`;
+          const finalRes = { uri: originalUri, cid: r.cid };
+          resolutionCache.set(sticker.uri, finalRes);
+          console.log(`[Like-Resolve] Found original: ${finalRes.uri}`);
+          return finalRes;
         }
       }
     } while (cursor);
 
-    console.warn("Original sticker not found in issuer's repo. Fallback to local copy.");
+    console.warn("[Like-Resolve] Original sticker not found in issuer's repo. Fallback to local copy.");
   } catch (e) {
-    console.warn("Failed to resolve original sticker", e);
+    console.warn("[Like-Resolve] Failed to resolve original sticker", e);
   }
 
   // Fallback: This sticker
-  let cid = (sticker as any).cid;
-  if (!cid) cid = await fetchCid(agent, sticker.uri);
-  return { uri: sticker.uri, cid };
+  const fallbackRes = { uri: sticker.uri, cid: sticker.cid };
+  resolutionCache.set(sticker.uri, fallbackRes);
+  return fallbackRes;
 }
 
 async function fetchCid(agent: Agent, uri: string): Promise<string> {
@@ -462,7 +498,7 @@ export async function loadStickerLikeState(agent: Agent, sticker: StickerWithPro
   const originalOwner = sticker.originalOwner || sticker.subjectDid;
   const { repo } = getRepoAndRkey(sticker.uri);
 
-  if (repo !== originalOwner && sticker.model && sticker.model !== 'default') {
+  if (repo !== originalOwner && sticker.model) {
     // We SHOULD resolve.
     const resolved = await resolveLikeTarget(agent, sticker);
     targetUri = resolved.uri;

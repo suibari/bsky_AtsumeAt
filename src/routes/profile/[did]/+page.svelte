@@ -134,7 +134,7 @@
           )}
         </h2>
         {#if agent}
-          <StickerBook {agent} targetDid={did} />
+          <StickerBook {agent} targetDid={profile.did} />
         {/if}
       </div>
     {:else}
