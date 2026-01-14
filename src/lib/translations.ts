@@ -86,6 +86,9 @@ export const translations = {
       offerPost: "@{handle} さん、シール交換しませんか？ {n}枚のシールを提示しています 🍬 #あつめあっと #AtsumeAt",
       embedTitle: "シール交換のお誘い",
       embedDescription: "リンクをクリックしてシールの交換を承認してね！",
+      checkingExchanges: "交換状況を確認中...",
+      checkingWithPartner: "{name} さんとの交換を確認中...",
+      receivedFromServer: "{name} さんからシールが届きました！",
     },
     notifications: {
       title: "通知",
@@ -229,6 +232,9 @@ export const translations = {
       offerPost: "Let's exchange stickers @{handle}! offering {n} sticker{s} 🍬 #AtsumeAt",
       embedTitle: "Exchange Stickers",
       embedDescription: "Click to accept the sticker exchange!",
+      checkingExchanges: "Checking for pending exchanges...",
+      checkingWithPartner: "Checking exchange with {name}...",
+      receivedFromServer: "Received sticker from {name}!",
     },
     notifications: {
       title: "Notifications",

@@ -199,7 +199,7 @@ export async function resolvePendingExchanges(agent: Agent, onStatus?: (msg: str
   const myDid = agent.assertDid;
   if (!myDid) return;
 
-  if (onStatus) onStatus("Checking for pending exchanges...");
+  if (onStatus) onStatus(i18n.t.exchange.checkingExchanges);
 
   // Resolve PDS
   let pdsAgent = agent;
@@ -249,14 +249,14 @@ export async function resolvePendingExchanges(agent: Agent, onStatus?: (msg: str
         const profile = await publicAgent.getProfile({ actor: partnerDid });
         partnerName = profile.data.displayName || profile.data.handle || partnerDid;
       } catch (e) { }
-      onStatus(`Checking exchange with ${partnerName}...`);
+      onStatus(i18n.t.exchange.checkingWithPartner.replace('{name}', partnerName));
     }
 
     // PASS URI
     const claimed = await checkInverseExchange(agent, partnerDid, offer.uri);
 
     if (claimed) {
-      if (onStatus) onStatus(`Received sticker from ${partnerName}!`);
+      if (onStatus) onStatus(i18n.t.exchange.receivedFromServer.replace('{name}', partnerName));
       await new Promise(r => setTimeout(r, 1000));
 
       // 3. Update MY transaction to completed
