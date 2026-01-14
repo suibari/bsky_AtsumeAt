@@ -33,6 +33,7 @@
   let processing = $state(false);
   let incomingStickers = $state<Sticker[]>([]);
   let incomingMessage = $state<string | undefined>(undefined);
+  let offererProfile = $state<ProfileViewDetailed | null>(null);
 
   // Accept Mode State
   let successAccept = $state(false);
@@ -251,6 +252,14 @@
         if (t.message) {
           incomingMessage = t.message;
         }
+
+        // Fetch Offerer Profile
+        try {
+          const profileRes = await publicAgent.getProfile({ actor: did });
+          offererProfile = profileRes.data;
+        } catch (e) {
+          console.warn("Failed to fetch offerer profile", e);
+        }
       }
     } catch (e) {
       console.error("Failed to verify offer", e);
@@ -434,7 +443,9 @@
               {i18n.t.exchange.incomingTitle}
             </h2>
             <p class="text-gray-600 mb-6">
-              {targetUserParam}
+              {offererProfile?.displayName ||
+                offererProfile?.handle ||
+                targetUserParam}
               {i18n.t.exchange.wantsToSwap}
             </p>
 
