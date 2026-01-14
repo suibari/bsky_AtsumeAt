@@ -1,6 +1,7 @@
 <script lang="ts">
   import { signIn } from "$lib/atproto";
   import { i18n } from "$lib/i18n.svelte";
+  import ActorTypeahead from "./ActorTypeahead.svelte";
 
   let handle = $state("");
   let loading = $state(false);
@@ -30,12 +31,10 @@
 </script>
 
 <div class="flex flex-col space-y-4">
-  <input
-    type="text"
+  <ActorTypeahead
     bind:value={handle}
     placeholder={i18n.t.landing.handlePlaceholder}
-    class="input-text w-full"
-    onkeydown={(e) => e.key === "Enter" && handleLogin()}
+    onEnter={handleLogin}
   />
 
   <button

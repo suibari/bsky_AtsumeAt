@@ -24,6 +24,7 @@
   import StickerCanvas from "$lib/components/StickerCanvas.svelte";
   import { i18n } from "$lib/i18n.svelte";
   import SignInForm from "$lib/components/SignInForm.svelte";
+  import ActorTypeahead from "$lib/components/ActorTypeahead.svelte";
 
   let agent = $state<Agent | null>(null);
   let targetUserParam = $derived($page.url.searchParams.get("user"));
@@ -46,9 +47,6 @@
   let selectedStickers = $state<Set<string>>(new Set()); // URIs
   let proposalMessage = $state("");
   let resolveError = $state("");
-  let searchResults = $state<ProfileViewBasic[]>([]);
-  let showDropdown = $state(false);
-  let searchTimeout: ReturnType<typeof setTimeout>;
 
   // Valid Tabs
   type Tab = "recommend" | "search";
@@ -269,47 +267,17 @@
     }
   }
 
-  function handleInput(e: Event) {
-    const value = (e.target as HTMLInputElement).value;
-    partnerHandle = value;
-    partnerDid = null; // Reset selection
-    resolveError = "";
-    showDropdown = true;
-
-    clearTimeout(searchTimeout);
-    if (!value) {
-      searchResults = [];
-      return;
-    }
-
-    searchTimeout = setTimeout(async () => {
-      if (!agent) return;
-      try {
-        const res = await publicAgent.searchActorsTypeahead({
-          term: value,
-          limit: 5,
-        });
-        searchResults = res.data.actors;
-      } catch (e) {
-        console.error(e);
-      }
-    }, 300);
-  }
-
   function selectUser(
     user: ProfileViewBasic | ProfileView | ProfileViewDetailed,
   ) {
     partnerHandle = user.handle;
     partnerDid = user.did;
-    showDropdown = false;
-    searchResults = [];
   }
 
   // Check Partner Handle (Manual fallback)
   async function resolvePartner() {
     if (!agent || !partnerHandle) return;
     resolveError = "";
-    showDropdown = false;
     try {
       const res = await agent.resolveHandle({ handle: partnerHandle });
       partnerDid = res.data.did;
@@ -538,10 +506,13 @@
             </div>
 
             <div class="mb-6 text-left">
-              <label class="block text-sm font-medium text-gray-700 mb-1"
+              <label
+                for="acceptanceMessage"
+                class="block text-sm font-medium text-gray-700 mb-1"
                 >{i18n.t.exchange.messageLabel}</label
               >
               <input
+                id="acceptanceMessage"
                 type="text"
                 bind:value={acceptanceMessage}
                 placeholder={i18n.t.exchange.messagePlaceholder}
@@ -667,15 +638,22 @@
           {/if}
 
           {#if activeTab === "search"}
-            <label class="block text-sm font-medium text-gray-700 mb-1"
+            <label
+              for="partnerHandle"
+              class="block text-sm font-medium text-gray-700 mb-1"
               >{i18n.t.exchange.partnerLabel}</label
             >
             <div class="flex gap-2">
-              <input
-                value={partnerHandle}
-                oninput={handleInput}
+              <ActorTypeahead
+                id="partnerHandle"
+                bind:value={partnerHandle}
+                onSelect={(user) => {
+                  partnerDid = user.did;
+                  resolveError = "";
+                }}
+                onEnter={resolvePartner}
                 placeholder={i18n.t.exchange.partnerPlaceholder}
-                class="flex-1 input-text"
+                className="flex-1"
               />
               <button
                 onclick={resolvePartner}
@@ -684,36 +662,6 @@
                 {i18n.t.exchange.check}
               </button>
             </div>
-
-            <!-- Typeahead Results -->
-            {#if showDropdown && searchResults.length > 0}
-              <div
-                class="absolute top-FULL left-0 w-full bg-white border border-gray-200 rounded-lg shadow-xl mt-1 max-h-60 overflow-y-auto z-50"
-              >
-                {#each searchResults as user}
-                  <button
-                    class="w-full text-left px-4 py-2 hover:bg-gray-50 flex items-center gap-2 border-b last:border-b-0"
-                    onclick={() => selectUser(user)}
-                  >
-                    {#if user.avatar}
-                      <img
-                        src={user.avatar}
-                        alt={user.handle}
-                        class="w-6 h-6 rounded-full"
-                      />
-                    {:else}
-                      <div class="w-6 h-6 rounded-full bg-gray-200"></div>
-                    {/if}
-                    <div>
-                      <div class="font-bold text-sm">
-                        {user.displayName || user.handle}
-                      </div>
-                      <div class="text-xs text-gray-500">@{user.handle}</div>
-                    </div>
-                  </button>
-                {/each}
-              </div>
-            {/if}
           {/if}
 
           {#if resolveError}<p class="text-red-500 text-sm mt-1">
@@ -730,12 +678,12 @@
         <!-- 2. Select Stickers -->
         {#if partnerDid}
           <div class="mb-6">
-            <label class="block text-sm font-medium text-gray-700 mb-2"
-              >{i18n.t.exchange.selectStickersToOffer.replace(
+            <h3 class="block text-sm font-bold text-gray-700 mb-2">
+              {i18n.t.exchange.selectStickersToOffer.replace(
                 "{n}",
                 selectedStickers.size.toString(),
-              )}</label
-            >
+              )}
+            </h3>
             {#if myStickers.length === 0}
               <p class="text-gray-500 italic">
                 You assume to have stickers, but you have none...
@@ -784,10 +732,13 @@
           </div>
 
           <div class="mb-4">
-            <label class="block text-sm font-medium text-gray-700 mb-1"
+            <label
+              for="proposalMessage"
+              class="block text-sm font-medium text-gray-700 mb-1"
               >{i18n.t.exchange.messageLabel}</label
             >
             <input
+              id="proposalMessage"
               type="text"
               bind:value={proposalMessage}
               placeholder={i18n.t.exchange.messagePlaceholder}
