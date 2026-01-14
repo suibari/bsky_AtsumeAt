@@ -2,11 +2,11 @@ export const translations = {
   ja: {
     appName: "あつめあっと",
     landing: {
-      tagline: "Bluesky デジタルシール交換アプリ",
+      tagline: "デジタルシール交換・コレクションアプリ",
       signIn: "はじめる",
       handlePlaceholder: "Blueskyのハンドル (例: user.bsky.social)",
       signInWithBluesky: "Blueskyでログイン",
-      connectMessage: "アカウントを連携して、シールあつめを始めましょう！",
+      connectMessage: "Blueskyでサインインして、シールあつめを始めましょう！",
     },
     settings: {
       title: "設定",
@@ -23,6 +23,7 @@ export const translations = {
       create: "シールを作る",
       exchange: "交換する",
       share: "シェア",
+      info: "あそびかた",
       about: "このアプリについて",
       settings: "設定",
       signOut: "ログアウト",
@@ -46,7 +47,7 @@ export const translations = {
       failed: "シールの作成に失敗しました。もう一度試してください。",
     },
     exchange: {
-      title: "交換センター",
+      title: "シール交換",
       backToBook: "シール帳に戻る",
       signInRequired: "ログインしてね",
       signInMessage: "シールを交換するにはログインが必要です！",
@@ -111,11 +112,11 @@ export const translations = {
       postToBluesky: "Blueskyに投稿する",
       posting: "投稿しています...",
       posted: "Blueskyに投稿しました！",
-      failed: "投稿に失敗しました。もう一度試してみてください。",
+      failed: "投稿に失敗しました。もう一度試してください。",
       defaultPostText: "シール帳をデコりました！ ✨ #あつめあっと #AtsumeAt",
     },
-    about: {
-      title: "あつめあっとについて",
+    info: {
+      title: "あそびかた",
       description: "あつめあっと (AtsumeAt) は、AT Protocol (Bluesky) を利用したデジタルシール・コレクション＆交換アプリです。",
       howToPlay: "あそびかた",
       step1: "作って",
@@ -126,13 +127,22 @@ export const translations = {
       step3Desc: "シール帳をたくさんのシールでいっぱいにしよう",
       step4: "シェア",
       step4Desc: "デコったシール帳をみんなにお披露目しよう",
+    },
+    about: {
+      title: "あつめあっとについて",
+      aboutTitle: "あつめあっとについて",
+      aboutText: "あつめあっと（以下、本アプリ）は すいばり 個人が趣味で開発しています。\n本アプリは専用のサーバーは持たず、認証情報はユーザーの端末に保存され、日記データはユーザーのPDSに保存されます。\n個人開発のため手厚いサポートはできず、突如サービスを終了する可能性があります。\nただし、シールデータはユーザーのPDSに置くため、サービスが終了してもデータそのものは消えません。",
+      creationTitle: "シール作成について",
+      creationText: "シールデータはPDSに置かれる以上、Blueskyのポストと同等の公開情報です。\n著作権の問題がある画像、プライベートな画像や他人に迷惑が掛かる画像は記載しないでください。",
+      otherTitle: "その他",
+      otherText: "このページに記載される文章は予告なく変更することがあります。",
       links: "リンク",
     }
   },
   en: {
     appName: "AtsumeAt",
     landing: {
-      tagline: "Avatar Sticker Exchange on Bluesky",
+      tagline: "Digital Sticker Exchange App",
       signIn: "Sign In",
       handlePlaceholder: "Bluesky handle (e.g. user.bsky.social)",
       signInWithBluesky: "Sign In with Bluesky",
@@ -153,6 +163,7 @@ export const translations = {
       create: "Create Sticker",
       exchange: "Exchange",
       share: "Share",
+      info: "How to Play",
       about: "About",
       settings: "Settings",
       signOut: "Sign Out",
@@ -244,8 +255,8 @@ export const translations = {
       failed: "Failed to share. Please try again.",
       defaultPostText: "Check out my sticker collection! ✨ #AtsumeAt #あつめあっと",
     },
-    about: {
-      title: "About AtsumeAt",
+    info: {
+      title: "How to Play",
       description: "AtsumeAt is a digital sticker collecting and exchanging app built on the AT Protocol (Bluesky).",
       howToPlay: "How to Play",
       step1: "Create",
@@ -256,6 +267,15 @@ export const translations = {
       step3Desc: "Fill your sticker book with many stickers.",
       step4: "Share",
       step4Desc: "Decorate and share your sticker book with everyone.",
+    },
+    about: {
+      title: "About AtsumeAt",
+      aboutTitle: "About AtsumeAt",
+      aboutText: "AtsumeAt (hereinafter referred to as \"this app\") is developed by suibari as a hobby.\nThis app does not have its own server; authentication information is stored on the user's device, and diary data is saved to the user's PDS.\nBecause it is an individual project, extensive support cannot be provided, and the service may terminate suddenly.\nHowever, since sticker data is placed on the user's PDS, the data itself will not disappear even if the service ends.",
+      creationTitle: "About Sticker Creation",
+      creationText: "Since sticker data is placed on the PDS, it is public information equivalent to a Bluesky post.\nPlease do not include images that have copyright issues, private images, or images that may cause trouble for others.",
+      otherTitle: "Others",
+      otherText: "The text on this page is subject to change without notice.",
       links: "Links",
     }
   }

@@ -2,9 +2,11 @@
   import { signIn } from "$lib/atproto";
   import { i18n } from "$lib/i18n.svelte";
   import LanguageSwitcher from "./LanguageSwitcher.svelte";
+  import AboutModal from "./AboutModal.svelte";
 
   let handle = $state("");
   let loading = $state(false);
+  let showAbout = $state(false);
 
   async function handleLogin() {
     if (!handle) return;
@@ -68,7 +70,17 @@
     </div>
   </div>
 
-  <div class="py-8">
+  <div class="py-8 flex flex-col items-center gap-4">
+    <button
+      onclick={() => (showAbout = true)}
+      class="text-sm text-gray-500 hover:text-primary transition-colors font-medium"
+    >
+      {i18n.t.header.about}
+    </button>
     <LanguageSwitcher />
   </div>
+
+  {#if showAbout}
+    <AboutModal onClose={() => (showAbout = false)} />
+  {/if}
 </div>

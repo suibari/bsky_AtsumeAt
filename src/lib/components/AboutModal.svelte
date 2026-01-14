@@ -45,67 +45,23 @@
 
     <!-- Content -->
     <div class="p-8 overflow-y-auto prose prose-sm text-gray-600">
-      <p class="text-lg text-center font-medium text-gray-700 mb-6">
-        {i18n.t.about.description}
+      <p class="text-sm mb-6 whitespace-pre-wrap">
+        {i18n.t.about.aboutText}
       </p>
 
       <h3 class="text-gray-800 font-bold mt-4 mb-2">
-        {i18n.t.about.howToPlay}
+        {i18n.t.about.creationTitle}
       </h3>
-      <ul class="list-none pl-0 space-y-4">
-        <li class="flex gap-3">
-          <div
-            class="flex-shrink-0 w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center text-primary font-bold"
-          >
-            1
-          </div>
-          <div>
-            <strong class="text-primary block text-base"
-              >{i18n.t.about.step1}</strong
-            >
-            <span class="text-sm">{i18n.t.about.step1Desc}</span>
-          </div>
-        </li>
-        <li class="flex gap-3">
-          <div
-            class="flex-shrink-0 w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center text-primary font-bold"
-          >
-            2
-          </div>
-          <div>
-            <strong class="text-primary block text-base"
-              >{i18n.t.about.step2}</strong
-            >
-            <span class="text-sm">{i18n.t.about.step2Desc}</span>
-          </div>
-        </li>
-        <li class="flex gap-3">
-          <div
-            class="flex-shrink-0 w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center text-primary font-bold"
-          >
-            3
-          </div>
-          <div>
-            <strong class="text-primary block text-base"
-              >{i18n.t.about.step3}</strong
-            >
-            <span class="text-sm">{i18n.t.about.step3Desc}</span>
-          </div>
-        </li>
-        <li class="flex gap-3">
-          <div
-            class="flex-shrink-0 w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center text-primary font-bold"
-          >
-            4
-          </div>
-          <div>
-            <strong class="text-primary block text-base"
-              >{i18n.t.about.step4}</strong
-            >
-            <span class="text-sm">{i18n.t.about.step4Desc}</span>
-          </div>
-        </li>
-      </ul>
+      <p class="text-sm mb-6 whitespace-pre-wrap">
+        {i18n.t.about.creationText}
+      </p>
+
+      <h3 class="text-gray-800 font-bold mt-4 mb-2">
+        {i18n.t.about.otherTitle}
+      </h3>
+      <p class="text-sm mb-6 whitespace-pre-wrap">
+        {i18n.t.about.otherText}
+      </p>
 
       <h3 class="text-gray-800 font-bold mt-8 mb-2">{i18n.t.about.links}</h3>
       <div class="flex flex-col gap-2">
@@ -115,7 +71,7 @@
           rel="noopener noreferrer"
           class="text-primary hover:underline flex items-center gap-2"
         >
-          Bluesky (@suibari.com)
+          すいばり (@suibari.com)
         </a>
         <a
           href="https://github.com/suibari/bsky_AtsumeAt"
