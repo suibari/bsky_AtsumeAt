@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount, onDestroy } from "svelte";
   import { getClient, publicAgent } from "$lib/atproto";
-  import { Agent } from "@atproto/api";
+  import { Agent, RichText } from "@atproto/api";
   import { getUserStickers, type StickerWithProfile } from "$lib/stickers";
   import StickerThumb from "./StickerThumb.svelte";
   import html2canvas from "html2canvas";
@@ -310,11 +310,21 @@
         { encoding: "image/jpeg" },
       );
 
+      const rt = new RichText({ text: postText });
+      await rt.detectFacets(agent);
+
       await agent.post({
-        text: postText,
+        text: rt.text,
+        facets: rt.facets,
         embed: {
           $type: "app.bsky.embed.images",
-          images: [{ alt: "My Sticker Collection", image: data.blob }],
+          images: [
+            {
+              alt: "My Sticker Collection",
+              image: data.blob,
+              aspectRatio: { width: 400, height: 600 },
+            },
+          ],
         },
       });
 
