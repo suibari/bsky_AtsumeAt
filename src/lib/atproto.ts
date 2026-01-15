@@ -16,8 +16,12 @@ export function getClient() {
   const origin = window.location.origin;
   // Simple detection for dev/local (custom domain or localhost)
   const isLocal = origin.includes('localhost') || origin.includes('127.0.0.1');
+  const isPreview = origin === 'https://develop.bsky-atsumeat.pages.dev';
 
   let client_id = `${origin}/client-metadata.json`;
+  if (isPreview) {
+    client_id = `${origin}/client-metadata-preview.json`;
+  }
   const redirect_uri = `${origin}/`;
 
   if (isLocal) {
