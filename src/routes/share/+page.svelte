@@ -290,7 +290,7 @@
 
     if (canvas) {
       canvas.discardActiveObject();
-      canvas.requestRenderAll();
+      canvas.renderAll();
     }
 
     try {
