@@ -28,6 +28,13 @@ export const translations = {
       settings: "設定",
       signOut: "ログアウト",
     },
+    stickerBook: {
+      myStickers: "自分のシール",
+      sortBy: "並び替え",
+      sortObtained: "入手日順",
+      sortMinter: "発行者順",
+      sortLikes: "いいね順",
+    },
     common: {
       loading: "読み込み中...",
       back: "戻る",
@@ -192,6 +199,13 @@ export const translations = {
       about: "About",
       settings: "Settings",
       signOut: "Sign Out",
+    },
+    stickerBook: {
+      myStickers: "My Stickers",
+      sortBy: "Sort by",
+      sortObtained: "Date Obtained",
+      sortMinter: "By Minter",
+      sortLikes: "Most Liked",
     },
     common: {
       loading: "Loading...",
