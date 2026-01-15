@@ -120,6 +120,8 @@ export const translations = {
       posted: "Blueskyに投稿しました！",
       failed: "投稿に失敗しました。もう一度試してください。",
       defaultPostText: "シール帳をデコりました！ ✨ #あつめあっと #AtsumeAt",
+      altDefault: "{name}のシール帳",
+      myCollection: "私のシール帳",
     },
     info: {
       title: "あそびかた",
@@ -266,6 +268,8 @@ export const translations = {
       posted: "Posted to Bluesky!",
       failed: "Failed to share. Please try again.",
       defaultPostText: "Check out my sticker collection! ✨ #AtsumeAt #あつめあっと",
+      altDefault: "{name}'s Sticker Collection",
+      myCollection: "My Sticker Collection",
     },
     info: {
       title: "How to Play",

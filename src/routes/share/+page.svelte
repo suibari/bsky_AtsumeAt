@@ -2,6 +2,7 @@
   import { onMount, onDestroy } from "svelte";
   import { getClient, publicAgent } from "$lib/atproto";
   import { Agent, RichText } from "@atproto/api";
+  import type { ProfileViewDetailed } from "@atproto/api/dist/client/types/app/bsky/actor/defs";
   import { getUserStickers, type StickerWithProfile } from "$lib/stickers";
   import StickerThumb from "./StickerThumb.svelte";
   import html2canvas from "html2canvas";
@@ -17,6 +18,8 @@
   let processing = $state(false);
   let isPenMode = $state(false);
   let postText = $state(i18n.t.share.defaultPostText);
+  let altText = $state("");
+  let currentUserProfile = $state<ProfileViewDetailed | null>(null);
   let showToast = $state(false);
 
   // Fabric modules loaded dynamically
@@ -31,9 +34,17 @@
         agent = new Agent(res.session);
         // Load stickers
         try {
-          stickers = await getUserStickers(agent, agent.assertDid!);
+          const [stickersRes, profileRes] = await Promise.all([
+            getUserStickers(agent, agent.assertDid!),
+            publicAgent.getProfile({ actor: agent.assertDid! }),
+          ]);
+          stickers = stickersRes;
+          currentUserProfile = profileRes.data;
+          const name =
+            currentUserProfile.displayName || currentUserProfile.handle;
+          altText = i18n.t.share.altDefault.replace("{name}", name);
         } catch (e) {
-          console.error("Failed to load stickers", e);
+          console.error("Failed to load data", e);
         }
       }
     }
@@ -313,6 +324,8 @@
       const rt = new RichText({ text: postText });
       await rt.detectFacets(agent);
 
+      const defaultAlt = i18n.t.share.myCollection;
+
       await agent.post({
         text: rt.text,
         facets: rt.facets,
@@ -320,7 +333,7 @@
           $type: "app.bsky.embed.images",
           images: [
             {
-              alt: "My Sticker Collection",
+              alt: altText || defaultAlt,
               image: data.blob,
               aspectRatio: { width: 400, height: 600 },
             },
@@ -447,7 +460,28 @@
 
       <!-- Footer Post Controls -->
       <div class="p-4 bg-gray-50 border-t border-gray-100 rounded-b-2xl">
+        <label
+          for="alt-text"
+          class="block mb-2 text-xs font-bold text-gray-500 uppercase tracking-wider"
+        >
+          ALT Text
+        </label>
+        <input
+          id="alt-text"
+          type="text"
+          bind:value={altText}
+          class="w-full p-2 mb-3 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none"
+          placeholder={i18n.t.share.myCollection}
+        />
+
+        <label
+          for="post-text"
+          class="block mb-2 text-xs font-bold text-gray-500 uppercase tracking-wider"
+        >
+          Post Text
+        </label>
         <textarea
+          id="post-text"
           bind:value={postText}
           class="w-full h-20 p-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none resize-none mb-3"
         ></textarea>
@@ -479,4 +513,3 @@
     </div>
   {/if}
 </div>
-```
