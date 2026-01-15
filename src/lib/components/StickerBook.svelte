@@ -28,19 +28,21 @@
     displayName?: string;
   } | null>(null);
 
+  import { browser } from "$app/environment";
+
   // Sorting
   type SortOrder = "obtained" | "minter" | "likes";
-  let sortOrder = $state<SortOrder>("obtained");
+  let sortOrder = $state<SortOrder>(
+    (browser &&
+      !targetDid &&
+      (localStorage.getItem("stickerSortOrder") as SortOrder)) ||
+      "obtained",
+  );
 
-  // Load Persisted Sort Order (Only if on Main Page - i.e. no targetDid)
-  $effect(() => {
-    if (!targetDid && agent.assertDid) {
-      const saved = localStorage.getItem("stickerSortOrder");
-      if (saved && ["obtained", "minter", "likes"].includes(saved)) {
-        sortOrder = saved as SortOrder;
-      }
-    }
-  });
+  // Validate loaded value
+  if (!["obtained", "minter", "likes"].includes(sortOrder)) {
+    sortOrder = "obtained";
+  }
 
   // Save Persisted Sort Order
   $effect(() => {
@@ -184,12 +186,25 @@
   }
 
   async function loadLikes() {
-    for (const s of stickers) {
-      loadStickerLikeState(agent, s).then((state) => {
-        likeStates.set(s.uri, state);
-        likeStates = new Map(likeStates);
-      });
-    }
+    const promises = stickers.map(async (s) => {
+      try {
+        const state = await loadStickerLikeState(agent, s);
+        return { uri: s.uri, state };
+      } catch (e) {
+        return null;
+      }
+    });
+
+    const results = await Promise.all(promises);
+
+    // Batch update
+    const newMap = new Map(likeStates);
+    results.forEach((res) => {
+      if (res) {
+        newMap.set(res.uri, res.state);
+      }
+    });
+    likeStates = newMap;
   }
 
   async function handleLike(sticker: StickerWithProfile, e: Event) {
