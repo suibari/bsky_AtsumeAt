@@ -224,40 +224,53 @@
 
     // 3. Query Repo for Offer
     try {
-      const res = await pdsAgent.com.atproto.repo.listRecords({
-        repo: did, // Now hitting the correct PDS
-        collection: TRANSACTION_COLLECTION,
-        limit: 10,
-      });
+      let cursor: string | undefined;
+      let count = 0;
+      const MAX_SEARCH = 300; // Search up to 300 recent transactions
 
-      // We must reconstruct the Agent if valid because pdsAgent might be unauthed?
-      // Actually we just need to verify the record exists.
+      while (count < MAX_SEARCH) {
+        const res = await pdsAgent.com.atproto.repo.listRecords({
+          repo: did, // Now hitting the correct PDS
+          collection: TRANSACTION_COLLECTION,
+          limit: 100,
+          cursor,
+        });
 
-      const offer = res.data.records.find((r) => {
-        const t = r.value as unknown as Transaction;
-        // Verify target matches ME (My Agent's DID)
-        return t.partner === agent!.assertDid && t.status === "offered";
-      });
+        const foundOffer = res.data.records.find((r) => {
+          const t = r.value as unknown as Transaction;
+          // Verify target matches ME (My Agent's DID)
+          return t.partner === agent!.assertDid && t.status === "offered";
+        });
 
-      if (offer) {
-        isValidOffer = true;
-        incomingStickers = await fetchStickersForTransaction(
-          agent!,
-          offer.value as unknown as Transaction,
-          did,
-        );
-        const t = offer.value as unknown as Transaction;
-        if (t.message) {
-          incomingMessage = t.message;
+        if (foundOffer) {
+          // Found it!
+          const offer = foundOffer; // Create local reference to break loop logic if I were using 'break' but I can just set it and break.
+
+          // Logic from original code block
+          isValidOffer = true;
+          incomingStickers = await fetchStickersForTransaction(
+            agent!,
+            offer.value as unknown as Transaction,
+            did,
+          );
+          const t = offer.value as unknown as Transaction;
+          if (t.message) {
+            incomingMessage = t.message;
+          }
+
+          // Fetch Offerer Profile
+          try {
+            const profileRes = await publicAgent.getProfile({ actor: did });
+            offererProfile = profileRes.data;
+          } catch (e) {
+            console.warn("Failed to fetch offerer profile", e);
+          }
+          break; // Stop searching
         }
 
-        // Fetch Offerer Profile
-        try {
-          const profileRes = await publicAgent.getProfile({ actor: did });
-          offererProfile = profileRes.data;
-        } catch (e) {
-          console.warn("Failed to fetch offerer profile", e);
-        }
+        cursor = res.data.cursor;
+        count += res.data.records.length;
+        if (!cursor) break;
       }
     } catch (e) {
       console.error("Failed to verify offer", e);
