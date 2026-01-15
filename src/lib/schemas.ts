@@ -35,7 +35,7 @@ export interface Transaction {
   stickerIn: string[]; // CIDs or IDs
   stickerOut: string[]; // CIDs or IDs
   message?: string; // Optional exchange message
-  status: 'offered' | 'completed';
+  status: 'offered' | 'completed' | 'rejected';
   refPartner?: string; // URI of partner's profile (for Constellation)
   refTransaction?: string; // URI of the referencing transaction (e.g., the Offer)
   createdAt: string;

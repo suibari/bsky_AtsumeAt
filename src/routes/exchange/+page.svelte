@@ -10,6 +10,7 @@
   } from "@atproto/api/dist/client/types/app/bsky/actor/defs";
   import {
     acceptExchange,
+    rejectExchange,
     createExchangePost,
     fetchStickersForTransaction,
   } from "$lib/exchange";
@@ -38,6 +39,7 @@
 
   // Accept Mode State
   let successAccept = $state(false);
+  let successReject = $state(false);
   let acceptanceMessage = $state("");
 
   // Initiate Mode State
@@ -370,6 +372,23 @@
       processing = false;
     }
   }
+
+  // Handle Reject
+  async function handleReject() {
+    if (!agent || !targetUserParam) return;
+    if (!confirm(i18n.t.exchange.rejectConfirm)) return;
+
+    processing = true;
+    try {
+      await rejectExchange(agent, targetUserParam);
+      successReject = true;
+    } catch (e) {
+      console.error("Rejection failed", e);
+      alert("Failed to reject exchange. See console.");
+    } finally {
+      processing = false;
+    }
+  }
 </script>
 
 <div class="min-h-screen bg-surface">
@@ -413,6 +432,16 @@
             </h2>
             <p class="text-gray-600 mb-8">
               {i18n.t.exchange.acceptedMessage}
+            </p>
+            <a href="/" class="btn-primary">{i18n.t.exchange.viewBook}</a>
+          </div>
+        {:else if successReject}
+          <div class="bg-white p-8 rounded-2xl shadow-xl text-center max-w-md">
+            <h2 class="text-3xl font-bold text-gray-500 mb-4">
+              {i18n.t.exchange.rejectedTitle}
+            </h2>
+            <p class="text-gray-600 mb-8">
+              {i18n.t.exchange.rejectedMessage}
             </p>
             <a href="/" class="btn-primary">{i18n.t.exchange.viewBook}</a>
           </div>
@@ -540,6 +569,15 @@
                 class="px-4 py-2 text-gray-500 hover:text-gray-700 self-center"
                 >{i18n.t.common.cancel}</a
               >
+              <button
+                onclick={handleReject}
+                disabled={processing}
+                class="px-4 py-2 text-red-500 hover:text-red-700 font-bold"
+              >
+                {processing
+                  ? i18n.t.exchange.rejecting
+                  : i18n.t.exchange.rejectAction}
+              </button>
               <button
                 onclick={handleAccept}
                 disabled={processing || selectedStickers.size === 0}
