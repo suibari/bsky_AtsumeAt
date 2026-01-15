@@ -29,6 +29,7 @@
 
   let agent = $state<Agent | null>(null);
   let targetUserParam = $derived($page.url.searchParams.get("user"));
+  let partnerParam = $derived($page.url.searchParams.get("partner"));
   let loading = $state(true);
   let verifying = $state(false);
   let isValidOffer = $state(false);
@@ -87,6 +88,10 @@
         // Verify Offer if targetUserParam exists
         if (targetUserParam) {
           await verifyIncomingOffer(targetUserParam);
+        } else if (partnerParam) {
+          activeTab = "search";
+          partnerHandle = partnerParam;
+          await resolvePartner();
         }
       }
     }

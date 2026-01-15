@@ -120,6 +120,7 @@ export const translations = {
       userStickers: "{name}さんのシール",
       notFound: "プロフィールが見つかりませんでした。",
       backHome: "ホームに戻る",
+      exchange: "シール交換",
     },
     share: {
       title: "シール帳をシェア",
@@ -284,6 +285,7 @@ export const translations = {
       userStickers: "{name}'s Stickers",
       notFound: "Profile not found.",
       backHome: "Back Home",
+      exchange: "Exchange Stickers",
     },
     share: {
       title: "Sticker Deco",

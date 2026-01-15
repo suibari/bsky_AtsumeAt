@@ -11,6 +11,7 @@
   import { i18n } from "$lib/i18n.svelte";
 
   let agent = $state<Agent | null>(null);
+  let currentDid = $state<string | null>(null);
   let profile = $state<ProfileViewDetailed | null>(null);
   let loadingProfile = $state(true);
 
@@ -22,6 +23,7 @@
       const res = await c.init();
       if (res && res.session) {
         agent = new Agent(res.session);
+        currentDid = res.session.did;
         await loadProfile();
       } else {
         goto("/");
@@ -121,6 +123,19 @@
               </div>
             </div>
           </div>
+
+          <!-- Exchange Button -->
+          {#if currentDid && currentDid !== profile.did}
+            <div class="mt-6">
+              <a
+                href={`/exchange?partner=${profile.handle}`}
+                class="btn-secondary inline-flex items-center gap-2"
+              >
+                <span>🍬</span>
+                {i18n.t.profile.exchange}
+              </a>
+            </div>
+          {/if}
         </div>
       </div>
 
