@@ -94,10 +94,10 @@ export async function getUserStickers(agent: Agent, userDid: string): Promise<St
   let did = userDid;
   if (did && !did.startsWith('did:')) {
     try {
-      console.log(`Resolving handle: ${did}`);
+      // console.log(`Resolving handle: ${did}`);
       const res = await publicAgent.resolveHandle({ handle: did });
       did = res.data.did;
-      console.log(`Resolved to: ${did}`);
+      // console.log(`Resolved to: ${did}`);
     } catch (e) {
       console.warn('Failed to resolve handle', did, e);
     }
@@ -292,20 +292,20 @@ async function resolveLikeTarget(agent: Agent, sticker: StickerWithProfile): Pro
   const originalOwner = sticker.originalOwner || sticker.subjectDid;
   const { repo } = getRepoAndRkey(sticker.uri);
 
-  console.log(`[Like-Resolve] Resolving for ${sticker.uri} (model: ${sticker.model})`);
-  console.log(`[Like-Resolve] repo: ${repo}, originalOwner: ${originalOwner}`);
+  // console.log(`[Like-Resolve] Resolving for ${sticker.uri} (model: ${sticker.model})`);
+  // console.log(`[Like-Resolve] repo: ${repo}, originalOwner: ${originalOwner}`);
 
   // 1. If I am the original owner, the target is ME (this sticker).
   if (repo === originalOwner) {
     const res = { uri: sticker.uri, cid: sticker.cid };
     resolutionCache.set(sticker.uri, res);
-    console.log(`[Like-Resolve] Already on original: ${res.uri}`);
+    // console.log(`[Like-Resolve] Already on original: ${res.uri}`);
     return res;
   }
 
   // 2. I am looking at a COPY. I need to find the Original in the Issuer's Repo.
   if (!sticker.model) {
-    console.log("[Like-Resolve] No model ID. Liking local copy.");
+    // console.log("[Like-Resolve] No model ID. Liking local copy.");
     const res = { uri: sticker.uri, cid: sticker.cid };
     resolutionCache.set(sticker.uri, res);
     return res;
@@ -316,7 +316,7 @@ async function resolveLikeTarget(agent: Agent, sticker: StickerWithProfile): Pro
     const pdsUrl = await getPdsEndpoint(originalOwner!);
     if (pdsUrl) pdsAgent = new Agent(pdsUrl);
 
-    console.log(`[Like-Resolve] Searching ${originalOwner}'s PDS for model ${sticker.model}...`);
+    // console.log(`[Like-Resolve] Searching ${originalOwner}'s PDS for model ${sticker.model}...`);
 
     let cursor;
     do {
@@ -342,7 +342,7 @@ async function resolveLikeTarget(agent: Agent, sticker: StickerWithProfile): Pro
           const originalUri = `at://${originalOwner}/${STICKER_COLLECTION}/${r.uri.split('/').pop()}`;
           const finalRes = { uri: originalUri, cid: r.cid };
           resolutionCache.set(sticker.uri, finalRes);
-          console.log(`[Like-Resolve] Found original: ${finalRes.uri}`);
+          // console.log(`[Like-Resolve] Found original: ${finalRes.uri}`);
           return finalRes;
         }
       }

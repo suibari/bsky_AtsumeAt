@@ -142,10 +142,10 @@ export async function acceptExchange(agent: Agent, partnerDid: string, stickersT
 
       let sigData: { signature?: string, signedPayload?: string } = {};
       try {
-        console.log("Requesting signature for exchange sticker:", infoPayload);
+        // console.log("Requesting signature for exchange sticker:", infoPayload);
         // We sign that we obtained this info from 'partnerDid'
         const res = await requestSignature(myDid, { info: infoPayload });
-        console.log("Signature response:", res);
+        // console.log("Signature response:", res);
         if (res) sigData = res;
       } catch (e) { console.error("Signing failed in exchange", e); }
 
@@ -483,13 +483,13 @@ export async function checkIncomingOffers(agent: Agent): Promise<IncomingOffer[]
         const pdsUrl = await getPdsEndpoint(authorDid);
         if (pdsUrl) {
           const directUrl = `${pdsUrl}/xrpc/com.atproto.repo.getRecord?repo=${authorDid}&collection=${TRANSACTION_COLLECTION}&rkey=${rkey}`;
-          console.log("Fetching from PDS Direct:", directUrl);
+          // console.log("Fetching from PDS Direct:", directUrl);
           const res = await fetch(directUrl);
           if (res.ok) {
             const data = await res.json();
             t = data.value as unknown as Transaction;
             uri = data.uri || `at://${authorDid}/${TRANSACTION_COLLECTION}/${rkey}`;
-            console.log("Fetched record from PDS Direct:", t);
+            // console.log("Fetched record from PDS Direct:", t);
             fetched = true;
           }
         }
@@ -520,7 +520,6 @@ export async function checkIncomingOffers(agent: Agent): Promise<IncomingOffer[]
         console.log("Skipping already responded offer:", uri);
         return;
       }
-
 
       // Fetch Profile
       let p;
