@@ -45,6 +45,15 @@ export const translations = {
       namePlaceholder: "シールのなまえをつけよう",
       creating: "シールを作っています...",
       failed: "シールの作成に失敗しました。もう一度試してください。",
+      tabs: {
+        file: "ファイルから",
+        post: "ポストから",
+      },
+      picker: {
+        noImages: "画像が見つかりませんでした。",
+        loadMore: "もっと読み込む",
+        select: "選択する",
+      },
     },
     exchange: {
       title: "シール交換",
@@ -200,6 +209,15 @@ export const translations = {
       namePlaceholder: "Give it a name",
       creating: "Creating sticker...",
       failed: "Failed to create sticker. Please try again.",
+      tabs: {
+        file: "From File",
+        post: "From Posts",
+      },
+      picker: {
+        noImages: "No images found.",
+        loadMore: "Load More",
+        select: "Select",
+      },
     },
     exchange: {
       title: "Exchange Center",
