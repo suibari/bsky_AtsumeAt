@@ -42,16 +42,36 @@ interface LinkRecord {
 
 export async function getHubUsers(agent: Agent) {
   const hubDid = await getHubDid(agent);
-  const subject = encodeURIComponent(`at://${hubDid}/app.bsky.actor.profile/self`);
-  const source = encodeURIComponent(`${CONFIG_COLLECTION}:hubRef`);
+  const subject = `at://${hubDid}/app.bsky.actor.profile/self`;
+  const source = `${CONFIG_COLLECTION}:hubRef`;
 
-  const url = `https://constellation.microcosm.blue/xrpc/blue.microcosm.links.getBacklinks?subject=${subject}&source=${source}`;
+  const records: LinkRecord[] = [];
+  let cursor: string | undefined;
 
   try {
-    const res = await fetch(url);
-    if (!res.ok) throw new Error('Constellation API error');
-    const data = await res.json();
-    return (data.records || []) as LinkRecord[];
+    do {
+      const params = new URLSearchParams({
+        subject,
+        source,
+        limit: '100'
+      });
+      if (cursor) {
+        params.set('cursor', cursor);
+      }
+
+      const url = `https://constellation.microcosm.blue/xrpc/blue.microcosm.links.getBacklinks?${params.toString()}`;
+
+      const res = await fetch(url);
+      if (!res.ok) throw new Error('Constellation API error');
+      const data = await res.json();
+
+      if (data.records) {
+        records.push(...(data.records as LinkRecord[]));
+      }
+      cursor = data.cursor;
+    } while (cursor);
+
+    return records;
   } catch (e) {
     console.error('Failed to get hub users', e);
     return [];
