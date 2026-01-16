@@ -106,6 +106,19 @@
     if (!agent || !agent.assertDid) return;
     recommendationsLoading = true;
     try {
+      // 0. Identify Owned DIDs (Sticker Creators) from valid stickers
+      // We only want to recommend people whose stickers we DO NOT have yet.
+      const ownedDids = new Set<string>();
+      // myStickers are already fetched in onMount
+      for (const s of myStickers) {
+        // Use subjectDid as the "Main" identifier of the sticker's person
+        if (s.subjectDid) ownedDids.add(s.subjectDid);
+
+        // Also exclude original owner if different?
+        // User requirements say "that person's sticker unowned".
+        // Usually 'subjectDid' is the person.
+      }
+
       // 1. Fetch Follows (Paginated, up to 2000)
       const follows: (ProfileView | ProfileViewBasic)[] = [];
       let cursor: string | undefined;
@@ -136,34 +149,43 @@
       }
 
       // 3. Categorize & Prioritize
-      const p1: (ProfileViewBasic | ProfileView | ProfileViewDetailed)[] = []; // Follows && App Users
-      const p2: (ProfileViewBasic | ProfileView | ProfileViewDetailed)[] = []; // Other App Users
-      const p3: (ProfileViewBasic | ProfileView | ProfileViewDetailed)[] = []; // Other Follows
+      // Group 1: Follow & AppUser & !Owned
+      // Group 2: Follow & !AppUser & !Owned
+      // Group 3: !Follow & AppUser & !Owned
 
-      // Process Follows first (we have their profiles)
+      const g1: (ProfileViewBasic | ProfileView | ProfileViewDetailed)[] = [];
+      const g2: (ProfileViewBasic | ProfileView | ProfileViewDetailed)[] = [];
+
+      const followDids = new Set<string>();
+
       for (const f of follows) {
+        followDids.add(f.did);
+        if (ownedDids.has(f.did)) continue; // Owned -> Skip
+
         if (appUserDids.has(f.did)) {
-          p1.push(f);
+          g1.push(f);
         } else {
-          p3.push(f);
+          g2.push(f);
         }
       }
 
-      // Process Other App Users (Need to see who is NOT in follows)
-      // We only possess DIDs for these, so we might need to fetch profiles if we select them.
-      // Optimisation: Only fetch profiles if we need to fill the list.
-      const followDids = new Set(follows.map((f) => f.did));
-      const otherAppUserDids = Array.from(appUserDids).filter(
-        (did) => !followDids.has(did) && did !== agent?.assertDid,
-      );
+      const g3Dids: string[] = [];
+      for (const did of appUserDids) {
+        if (
+          !followDids.has(did) &&
+          !ownedDids.has(did) &&
+          did !== agent.assertDid
+        ) {
+          g3Dids.push(did);
+        }
+      }
 
       // Randomize helpers
       const shuffle = (array: any[]) => array.sort(() => Math.random() - 0.5);
 
-      shuffle(p1);
-      shuffle(p3);
-      // We don't have profiles for p2 yet, just DIDs.
-      // shuffle(otherAppUserDids); // Shuffle DIDs directly
+      shuffle(g1);
+      shuffle(g2);
+      shuffle(g3Dids);
 
       const finalSelection: (
         | ProfileViewBasic
@@ -171,35 +193,31 @@
         | ProfileViewDetailed
       )[] = [];
 
-      // Fill from P1
-      finalSelection.push(...p1.slice(0, 6));
+      // Fill from G1
+      finalSelection.push(...g1.slice(0, 6));
 
-      // Fill from P2 (Other App Users) if needed
+      // Fill from G2
       if (finalSelection.length < 6) {
         const needed = 6 - finalSelection.length;
-        // Shuffle and take needed DIDs
-        const p2DidsToFetch = otherAppUserDids
-          .sort(() => Math.random() - 0.5)
-          .slice(0, needed);
+        finalSelection.push(...g2.slice(0, needed));
+      }
 
-        if (p2DidsToFetch.length > 0) {
+      // Fill from G3
+      if (finalSelection.length < 6) {
+        const needed = 6 - finalSelection.length;
+        const g3ToFetch = g3Dids.slice(0, needed);
+
+        if (g3ToFetch.length > 0) {
           try {
-            // Batch fetch profiles? getProfiles takes 25 max usually
             const res = await publicAgent.getProfiles({
-              actors: p2DidsToFetch,
+              actors: g3ToFetch,
             });
-            const p2Profiles = res.data.profiles;
-            finalSelection.push(...p2Profiles);
+            const g3Profiles = res.data.profiles;
+            finalSelection.push(...g3Profiles);
           } catch (e) {
             console.warn("Failed to fetch app user profiles", e);
           }
         }
-      }
-
-      // Fill from P3 (Other Follows) if needed
-      if (finalSelection.length < 6) {
-        const needed = 6 - finalSelection.length;
-        finalSelection.push(...p3.slice(0, needed));
       }
 
       recommendedUsers = finalSelection.slice(0, 6);
