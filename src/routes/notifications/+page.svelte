@@ -32,8 +32,6 @@
   async function loadOffers() {
     if (!agent) return;
     offers = await checkIncomingOffers(agent);
-    // Mark as read (update timestamp)
-    localStorage.setItem("lastCheckedNotificationAt", new Date().toISOString());
   }
 
   async function handleAccept(offer: IncomingOffer) {
