@@ -101,7 +101,7 @@
 {:else if agent && view === "book"}
   <div class="min-h-screen bg-surface">
     <header
-      class="bg-white/80 backdrop-blur-md shadow-sm border-b border-primary/20 z-20 sticky top-0"
+      class="bg-white/80 backdrop-blur-md shadow-sm border-b border-primary/20 z-50 sticky top-0"
     >
       <div
         class="max-w-6xl mx-auto p-4 flex justify-between items-center relative"

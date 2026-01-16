@@ -329,7 +329,7 @@
         {#if group.title}
           <div class="relative">
             <h4
-              class="text-lg font-bold text-gray-600 sticky top-[72px] z-10 bg-surface/90 backdrop-blur pb-2 pt-4 border-b border-primary/10"
+              class="text-lg font-bold text-gray-600 sticky top-[72px] z-30 bg-surface/90 backdrop-blur pb-2 pt-4 border-b border-primary/10"
             >
               {group.title}
               <span class="text-xs font-medium text-gray-400 ml-2"

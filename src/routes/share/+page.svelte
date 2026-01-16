@@ -429,7 +429,7 @@
 
     <!-- Sticker Drawer (Side/Bottom) -->
     <div
-      class="w-full md:w-80 h-96 md:h-[600px] bg-white/80 backdrop-blur rounded-2xl border-2 border-primary/20 shadow-xl flex flex-col z-20"
+      class="w-full md:w-80 h-[600px] bg-white/80 backdrop-blur rounded-2xl border-2 border-primary/20 shadow-xl flex flex-col z-20"
     >
       <div
         class="p-4 border-b border-gray-100 flex justify-between items-center"
