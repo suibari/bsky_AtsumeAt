@@ -46,9 +46,9 @@
 
     processing = offer.partnerDid;
     try {
-      await rejectExchange(agent, offer.partnerDid);
+      await rejectExchange(agent, offer.partnerDid, offer.uri);
       // Remove from list
-      offers = offers.filter((o) => o.partnerDid !== offer.partnerDid);
+      offers = offers.filter((o) => o.uri !== offer.uri);
       message = i18n.t.exchange.rejectedTitle;
       setTimeout(() => (message = null), 3000);
     } catch (e) {

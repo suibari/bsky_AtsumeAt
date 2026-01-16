@@ -206,7 +206,7 @@ export async function acceptExchange(agent: Agent, partnerDid: string, stickersT
   }
 }
 
-export async function rejectExchange(agent: Agent, partnerDid: string) {
+export async function rejectExchange(agent: Agent, partnerDid: string, offerUri?: string) {
   const myDid = agent.assertDid;
   if (!myDid) return;
 
@@ -218,25 +218,48 @@ export async function rejectExchange(agent: Agent, partnerDid: string) {
       pdsAgent = new Agent(pdsUrl);
     }
 
-    let cursor;
     let validOffer: { uri: string, value: unknown } | undefined;
 
-    do {
-      const partnerOffers = await pdsAgent.com.atproto.repo.listRecords({
-        repo: partnerDid,
-        collection: TRANSACTION_COLLECTION,
-        limit: 100,
-        cursor,
-      });
-      cursor = partnerOffers.data.cursor;
+    if (offerUri) {
+      // Target specific offer
+      const rkey = offerUri.split('/').pop();
+      if (rkey) {
+        try {
+          const res = await pdsAgent.com.atproto.repo.getRecord({
+            repo: partnerDid,
+            collection: TRANSACTION_COLLECTION,
+            rkey
+          });
+          const t = res.data.value as unknown as Transaction;
+          if (t.partner === myDid && t.status === 'offered') {
+            validOffer = { uri: offerUri, value: res.data.value };
+          }
+        } catch (e) {
+          console.warn(`Failed to verify specific offer ${offerUri}`, e);
+        }
+      }
+    }
 
-      validOffer = partnerOffers.data.records.find(r => {
-        const t = r.value as unknown as Transaction;
-        return t.partner === myDid && t.status === 'offered';
-      });
+    // Fallback: Find ANY active offer (Backwards compatibility or if specific verify failed)
+    if (!validOffer) {
+      let cursor;
+      do {
+        const partnerOffers = await pdsAgent.com.atproto.repo.listRecords({
+          repo: partnerDid,
+          collection: TRANSACTION_COLLECTION,
+          limit: 100,
+          cursor,
+        });
+        cursor = partnerOffers.data.cursor;
 
-      if (validOffer) break;
-    } while (cursor);
+        validOffer = partnerOffers.data.records.find(r => {
+          const t = r.value as unknown as Transaction;
+          return t.partner === myDid && t.status === 'offered';
+        });
+
+        if (validOffer) break;
+      } while (cursor);
+    }
 
     if (!validOffer) {
       throw new Error("No active exchange offer found from this user.");
