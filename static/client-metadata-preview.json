@@ -1,0 +1,19 @@
+{
+  "client_id": "https://develop.bsky-atsumeat.pages.dev/client-metadata-preview.json",
+  "client_name": "AtsumeAt (Preview)",
+  "client_uri": "https://develop.bsky-atsumeat.pages.dev",
+  "redirect_uris": [
+    "https://develop.bsky-atsumeat.pages.dev/"
+  ],
+  "scope": "atproto blob:*/* repo:com.suibari.atsumeat.sticker repo:com.suibari.atsumeat.config repo:com.suibari.atsumeat.transaction repo:com.suibari.atsumeat.stickerLike repo:app.bsky.feed.post?action=create",
+  "grant_types": [
+    "authorization_code",
+    "refresh_token"
+  ],
+  "response_types": [
+    "code"
+  ],
+  "token_endpoint_auth_method": "none",
+  "application_type": "web",
+  "dpop_bound_access_tokens": true
+}

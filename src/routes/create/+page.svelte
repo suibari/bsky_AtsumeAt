@@ -6,11 +6,16 @@
   import { STICKER_COLLECTION, type Sticker } from "$lib/schemas";
   import { i18n } from "$lib/i18n.svelte";
 
+  import PdsImagePicker from "$lib/components/PdsImagePicker.svelte";
+
   let agent = $state<Agent | null>(null);
   let fileInput = $state<HTMLInputElement>();
   let imageUrl = $state<string | null>(null);
   let name = $state("");
   let processing = $state(false);
+
+  // Tab State
+  let activeTab = $state<"file" | "post">("post");
 
   // Crop State
   let cropContainer = $state<HTMLDivElement>();
@@ -47,8 +52,20 @@
   function loadImage(file: File) {
     if (!file.type.startsWith("image/")) return;
 
+    if (imageUrl && imageUrl.startsWith("blob:")) {
+      URL.revokeObjectURL(imageUrl);
+    }
     imageUrl = URL.createObjectURL(file);
     // Reset crop
+    scale = 1;
+    position = { x: 0, y: 0 };
+  }
+
+  function selectPdsImage(url: string) {
+    if (imageUrl && imageUrl.startsWith("blob:")) {
+      URL.revokeObjectURL(imageUrl);
+    }
+    imageUrl = url;
     scale = 1;
     position = { x: 0, y: 0 };
   }
@@ -59,6 +76,7 @@
   function onFileDragOver(e: DragEvent) {
     e.preventDefault();
     isFileHovering = true;
+    activeTab = "file"; // Auto switch on drag
   }
 
   function onFileDragLeave(e: DragEvent) {
@@ -174,6 +192,10 @@
       const natW = imageElement.naturalWidth;
       const natH = imageElement.naturalHeight;
 
+      if (natW === 0 || natH === 0) {
+        throw new Error("Image not loaded");
+      }
+
       // Rendered dims
       // We apply scale to the image.
       // The offset (position) is in pixels relative to the container center or top-left?
@@ -194,7 +216,13 @@
       ctx.translate(position.x * outputScale, position.y * outputScale);
       ctx.scale(scale * outputScale, scale * outputScale);
       // Draw image centered
-      ctx.drawImage(imageElement, -natW / 2, -natH / 2);
+      try {
+        ctx.drawImage(imageElement, -natW / 2, -natH / 2);
+      } catch (err) {
+        // Handle SecurityError if crossOrigin is not respected (rare with anonymous but possible)
+        console.error("Canvas draw failed (CORS?)", err);
+        throw new Error("Image security error");
+      }
       ctx.restore();
 
       // 2. To Blob
@@ -294,28 +322,57 @@
       class="w-full max-w-3xl bg-white rounded-xl shadow p-6 flex flex-col items-center"
     >
       {#if !imageUrl}
-        <div
-          class="w-full h-64 border-2 border-dashed {isFileHovering
-            ? 'border-primary bg-primary/10'
-            : 'border-gray-300 bg-gray-50'} rounded-lg flex flex-col items-center justify-center cursor-pointer hover:bg-gray-100 transition-colors"
-          onclick={() => fileInput?.click()}
-          ondragover={onFileDragOver}
-          ondragleave={onFileDragLeave}
-          ondrop={onFileDrop}
-          role="button"
-          tabindex="0"
-          onkeydown={(e) => e.key === "Enter" && fileInput?.click()}
-        >
-          <span class="text-4xl mb-2">📷</span>
-          <span class="text-gray-500">{i18n.t.create.selectImage}</span>
-          <input
-            bind:this={fileInput}
-            type="file"
-            accept="image/*"
-            class="hidden"
-            onchange={handleFileSelect}
-          />
+        <!-- Tab Navigation -->
+        <div class="w-full flex border-b border-gray-200 mb-6">
+          <button
+            class="flex-1 py-3 text-center font-medium border-b-2 transition-colors {activeTab ===
+            'post'
+              ? 'border-primary text-primary'
+              : 'border-transparent text-gray-500 hover:text-gray-700'}"
+            onclick={() => (activeTab = "post")}
+          >
+            {i18n.t.create.tabs?.post ?? "From Posts"}
+          </button>
+          <button
+            class="flex-1 py-3 text-center font-medium border-b-2 transition-colors {activeTab ===
+            'file'
+              ? 'border-primary text-primary'
+              : 'border-transparent text-gray-500 hover:text-gray-700'}"
+            onclick={() => (activeTab = "file")}
+          >
+            {i18n.t.create.tabs?.file ?? "From File"}
+          </button>
         </div>
+
+        {#if activeTab === "file"}
+          <div
+            class="w-full h-64 border-2 border-dashed {isFileHovering
+              ? 'border-primary bg-primary/10'
+              : 'border-gray-300 bg-gray-50'} rounded-lg flex flex-col items-center justify-center cursor-pointer hover:bg-gray-100 transition-colors"
+            onclick={() => fileInput?.click()}
+            ondragover={onFileDragOver}
+            ondragleave={onFileDragLeave}
+            ondrop={onFileDrop}
+            role="button"
+            tabindex="0"
+            onkeydown={(e) => e.key === "Enter" && fileInput?.click()}
+          >
+            <span class="text-4xl mb-2">📷</span>
+            <span class="text-gray-500">{i18n.t.create.selectImage}</span>
+            <input
+              bind:this={fileInput}
+              type="file"
+              accept="image/*"
+              class="hidden"
+              onchange={handleFileSelect}
+            />
+          </div>
+        {:else}
+          <!-- PDS Picker -->
+          {#if agent}
+            <PdsImagePicker {agent} onSelect={selectPdsImage} />
+          {/if}
+        {/if}
       {:else}
         <!-- Crop Area -->
         <div
@@ -336,6 +393,7 @@
             bind:this={imageElement}
             src={imageUrl}
             alt="Work"
+            crossorigin="anonymous"
             class="absolute max-w-none origin-center pointer-events-none"
             style="transform: translate(-50%, -50%) translate({position.x}px, {position.y}px) scale({scale}); left: 50%; top: 50%;"
           />

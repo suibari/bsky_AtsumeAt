@@ -66,16 +66,26 @@ export async function acceptExchange(agent: Agent, partnerDid: string, stickersT
       pdsAgent = new Agent(pdsUrl);
     }
 
-    const partnerOffers = await pdsAgent.com.atproto.repo.listRecords({
-      repo: partnerDid,
-      collection: TRANSACTION_COLLECTION,
-      limit: 20,
-    });
+    let cursor;
+    let validOffer: { uri: string, value: unknown } | undefined;
 
-    const validOffer = partnerOffers.data.records.find(r => {
-      const t = r.value as unknown as Transaction;
-      return t.partner === myDid && t.status === 'offered';
-    });
+    // Pagination loop to find the offer
+    do {
+      const partnerOffers = await pdsAgent.com.atproto.repo.listRecords({
+        repo: partnerDid,
+        collection: TRANSACTION_COLLECTION,
+        limit: 100,
+        cursor
+      });
+      cursor = partnerOffers.data.cursor;
+
+      validOffer = partnerOffers.data.records.find(r => {
+        const t = r.value as unknown as Transaction;
+        return t.partner === myDid && t.status === 'offered';
+      });
+
+      if (validOffer) break;
+    } while (cursor);
 
     if (!validOffer) {
       throw new Error("No active exchange offer found from this user.");
@@ -195,6 +205,64 @@ export async function acceptExchange(agent: Agent, partnerDid: string, stickersT
   }
 }
 
+export async function rejectExchange(agent: Agent, partnerDid: string) {
+  const myDid = agent.assertDid;
+  if (!myDid) return;
+
+  // 0. Verify VALID Offer exists in Partner's Repo
+  let pdsAgent = agent;
+  try {
+    const pdsUrl = await getPdsEndpoint(partnerDid);
+    if (pdsUrl) {
+      pdsAgent = new Agent(pdsUrl);
+    }
+
+    let cursor;
+    let validOffer: { uri: string, value: unknown } | undefined;
+
+    do {
+      const partnerOffers = await pdsAgent.com.atproto.repo.listRecords({
+        repo: partnerDid,
+        collection: TRANSACTION_COLLECTION,
+        limit: 100,
+        cursor,
+      });
+      cursor = partnerOffers.data.cursor;
+
+      validOffer = partnerOffers.data.records.find(r => {
+        const t = r.value as unknown as Transaction;
+        return t.partner === myDid && t.status === 'offered';
+      });
+
+      if (validOffer) break;
+    } while (cursor);
+
+    if (!validOffer) {
+      throw new Error("No active exchange offer found from this user.");
+    }
+
+    // 1. Create Transaction (Rejected)
+    await agent.com.atproto.repo.createRecord({
+      repo: myDid,
+      collection: TRANSACTION_COLLECTION,
+      record: {
+        $type: TRANSACTION_COLLECTION,
+        partner: partnerDid,
+        stickerIn: [], // No stickers received
+        stickerOut: [], // No stickers given
+        message: "",
+        status: 'rejected',
+        refTransaction: validOffer.uri,
+        createdAt: new Date().toISOString()
+      }
+    });
+
+  } catch (e) {
+    console.error("Rejection failed", e);
+    throw new Error("Could not reject exchange offer.");
+  }
+}
+
 export async function resolvePendingExchanges(agent: Agent, onStatus?: (msg: string) => void) {
   const myDid = agent.assertDid;
   if (!myDid) return;
@@ -226,7 +294,7 @@ export async function resolvePendingExchanges(agent: Agent, onStatus?: (msg: str
     const res = await pdsAgent.com.atproto.repo.listRecords({
       repo: myDid,
       collection: TRANSACTION_COLLECTION,
-      limit: 50,
+      limit: 100,
       cursor
     });
     cursor = res.data.cursor;
@@ -252,10 +320,9 @@ export async function resolvePendingExchanges(agent: Agent, onStatus?: (msg: str
       onStatus(i18n.t.exchange.checkingWithPartner.replace('{name}', partnerName));
     }
 
-    // PASS URI
     const claimed = await checkInverseExchange(agent, partnerDid, offer.uri);
 
-    if (claimed) {
+    if (claimed === 'completed') {
       if (onStatus) onStatus(i18n.t.exchange.receivedFromServer.replace('{name}', partnerName));
       await new Promise(r => setTimeout(r, 1000));
 
@@ -273,11 +340,30 @@ export async function resolvePendingExchanges(agent: Agent, onStatus?: (msg: str
           }
         });
       }
+    } else if (claimed === 'rejected') {
+      // User requested NO notification for rejection
+      // if (onStatus) onStatus(i18n.t.exchange.rejectedByPartner.replace('{name}', partnerName));
+      // await new Promise(r => setTimeout(r, 1000));
+
+      // Update MY transaction to rejected
+      const rkey = offer.uri.split('/').pop();
+      if (rkey) {
+        await agent.com.atproto.repo.putRecord({
+          repo: myDid,
+          collection: TRANSACTION_COLLECTION,
+          rkey: rkey,
+          record: {
+            ...offer.value,
+            status: 'rejected',
+            updatedAt: new Date().toISOString()
+          }
+        });
+      }
     }
   }
 }
 
-export async function checkInverseExchange(agent: Agent, partnerDid: string, offerUri: string): Promise<boolean> {
+export async function checkInverseExchange(agent: Agent, partnerDid: string, offerUri: string): Promise<'completed' | 'rejected' | false> {
   const myDid = agent.assertDid;
   if (!myDid) return false;
 
@@ -289,27 +375,39 @@ export async function checkInverseExchange(agent: Agent, partnerDid: string, off
     }
 
     // We need to find B's transaction that references A's offerUri.
-    // Since we can't query by field easily without an AppView, we must list and filter.
+    let cursor;
+    let txRecord: { value: unknown } | undefined;
 
-    const res = await pdsAgent.com.atproto.repo.listRecords({
-      repo: partnerDid,
-      collection: TRANSACTION_COLLECTION,
-      limit: 20
-    });
+    do {
+      const res = await pdsAgent.com.atproto.repo.listRecords({
+        repo: partnerDid,
+        collection: TRANSACTION_COLLECTION,
+        limit: 100,
+        cursor
+      });
+      cursor = res.data.cursor;
 
-    // Find transaction where ref matches offerUri and status is completed
-    const txRecord = res.data.records.find(r => {
-      const t = r.value as unknown as Transaction;
-      return t.status === 'completed' && t.refTransaction === offerUri;
-    });
+      // Find transaction where ref matches offerUri and status is completed OR rejected
+      txRecord = res.data.records.find(r => {
+        const t = r.value as unknown as Transaction;
+        return (t.status === 'completed' || t.status === 'rejected') && t.refTransaction === offerUri;
+      });
+
+      if (txRecord) break;
+    } while (cursor);
 
     if (!txRecord) return false;
     const tx = txRecord.value as unknown as Transaction;
+
+    if (tx.status === 'rejected') {
+      return 'rejected';
+    }
+
     const incomingUris = tx.stickerOut;
     const incomingMessage = tx.message; // Get acceptance message
 
     // If no stickers to receive, effectively we are done?
-    if (!incomingUris || incomingUris.length === 0) return true; // Mark as done even if empty?
+    if (!incomingUris || incomingUris.length === 0) return 'completed'; // Mark as done even if empty?
 
     let addedCount = 0;
 
@@ -397,7 +495,7 @@ export async function checkInverseExchange(agent: Agent, partnerDid: string, off
     }
 
     // If we processed stickers (added or skipped duplicates), we considered it success
-    return addedCount > 0;
+    return addedCount > 0 ? 'completed' : false;
 
   } catch (e) {
     console.warn('Check inverse failed', e);
@@ -443,17 +541,23 @@ export async function checkIncomingOffers(agent: Agent): Promise<IncomingOffer[]
   // Optimize: Fetch my recent transactions to filter out already-responded offers
   const myRespondedOfferUris = new Set<string>();
   try {
-    const myRes = await agent.com.atproto.repo.listRecords({
-      repo: agent.assertDid!,
-      collection: TRANSACTION_COLLECTION,
-      limit: 50
-    });
-    for (const r of myRes.data.records) {
-      const t = r.value as unknown as Transaction;
-      if (t.refTransaction) {
-        myRespondedOfferUris.add(t.refTransaction);
+    let cursor;
+    do {
+      const myRes = await agent.com.atproto.repo.listRecords({
+        repo: agent.assertDid!,
+        collection: TRANSACTION_COLLECTION,
+        limit: 100,
+        cursor
+      });
+      cursor = myRes.data.cursor;
+
+      for (const r of myRes.data.records) {
+        const t = r.value as unknown as Transaction;
+        if (t.refTransaction) {
+          myRespondedOfferUris.add(t.refTransaction);
+        }
       }
-    }
+    } while (cursor);
   } catch (e) {
     console.warn("Failed to fetch my transactions", e);
   }

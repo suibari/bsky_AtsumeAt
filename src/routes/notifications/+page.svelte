@@ -2,7 +2,11 @@
   import { onMount, onDestroy } from "svelte";
   import { getClient } from "$lib/atproto";
   import { Agent } from "@atproto/api";
-  import { checkIncomingOffers, type IncomingOffer } from "$lib/exchange";
+  import {
+    checkIncomingOffers,
+    rejectExchange,
+    type IncomingOffer,
+  } from "$lib/exchange";
   import { i18n } from "$lib/i18n.svelte";
   import StickerCanvas from "$lib/components/StickerCanvas.svelte";
   import { fade, slide } from "svelte/transition";
@@ -36,6 +40,25 @@
     if (!agent) return;
     // Redirect to Exchange page with partner's DID
     window.location.href = `/exchange?user=${offer.partnerDid}`;
+  }
+
+  async function handleReject(offer: IncomingOffer) {
+    if (!agent) return;
+    if (!confirm(i18n.t.exchange.rejectConfirm)) return;
+
+    processing = offer.partnerDid;
+    try {
+      await rejectExchange(agent, offer.partnerDid);
+      // Remove from list
+      offers = offers.filter((o) => o.partnerDid !== offer.partnerDid);
+      message = i18n.t.exchange.rejectedTitle;
+      setTimeout(() => (message = null), 3000);
+    } catch (e) {
+      console.error("Rejection failed", e);
+      alert("Failed to reject. See console.");
+    } finally {
+      processing = null;
+    }
   }
 </script>
 
@@ -99,12 +122,24 @@
               </div>
             </div>
 
-            <button
-              onclick={() => handleAccept(offer)}
-              class="bg-secondary text-white px-6 py-2 rounded-full text-sm font-bold shadow-sm hover:shadow-md transition-shadow"
-            >
-              {i18n.t.notifications.accept}
-            </button>
+            <div class="flex gap-2">
+              <button
+                onclick={() => handleReject(offer)}
+                disabled={processing === offer.partnerDid}
+                class="bg-gray-100 text-red-500 px-6 py-2 rounded-full text-sm font-bold shadow-sm hover:shadow-md transition-shadow hover:bg-gray-200"
+              >
+                {processing === offer.partnerDid
+                  ? i18n.t.exchange.rejecting
+                  : i18n.t.exchange.reject}
+              </button>
+              <button
+                onclick={() => handleAccept(offer)}
+                disabled={processing === offer.partnerDid}
+                class="bg-secondary text-white px-6 py-2 rounded-full text-sm font-bold shadow-sm hover:shadow-md transition-shadow"
+              >
+                {i18n.t.notifications.accept}
+              </button>
+            </div>
           </div>
         {/each}
       </div>

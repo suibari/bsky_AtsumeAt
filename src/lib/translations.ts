@@ -28,6 +28,13 @@ export const translations = {
       settings: "設定",
       signOut: "ログアウト",
     },
+    stickerBook: {
+      myStickers: "自分のシール",
+      sortBy: "並び替え",
+      sortObtained: "入手日順",
+      sortMinter: "発行者順",
+      sortLikes: "いいね順",
+    },
     common: {
       loading: "読み込み中...",
       back: "戻る",
@@ -45,6 +52,15 @@ export const translations = {
       namePlaceholder: "シールのなまえをつけよう",
       creating: "シールを作っています...",
       failed: "シールの作成に失敗しました。もう一度試してください。",
+      tabs: {
+        file: "ファイルから",
+        post: "ポストから",
+      },
+      picker: {
+        noImages: "画像が見つかりませんでした。",
+        loadMore: "もっと読み込む",
+        select: "選択する",
+      },
     },
     exchange: {
       title: "シール交換",
@@ -89,6 +105,13 @@ export const translations = {
       checkingExchanges: "交換状況を確認中...",
       checkingWithPartner: "{name} さんとの交換を確認中...",
       receivedFromServer: "{name} さんからシールが届きました！",
+      reject: "拒否する",
+      rejectConfirm: "本当にこの交換を拒否しますか？",
+      rejectedTitle: "交換を拒否しました",
+      rejectedMessage: "交換のおさそいを拒否しました。",
+      rejectedByPartner: "{name} さんに交換を断られました。",
+      rejecting: "拒否しています...",
+      rejectAction: "拒否する",
     },
     notifications: {
       title: "通知",
@@ -104,6 +127,7 @@ export const translations = {
       userStickers: "{name}さんのシール",
       notFound: "プロフィールが見つかりませんでした。",
       backHome: "ホームに戻る",
+      exchange: "シール交換",
     },
     share: {
       title: "シール帳をシェア",
@@ -176,6 +200,13 @@ export const translations = {
       settings: "Settings",
       signOut: "Sign Out",
     },
+    stickerBook: {
+      myStickers: "My Stickers",
+      sortBy: "Sort by",
+      sortObtained: "Date Obtained",
+      sortMinter: "By Minter",
+      sortLikes: "Most Liked",
+    },
     common: {
       loading: "Loading...",
       back: "Back",
@@ -193,6 +224,15 @@ export const translations = {
       namePlaceholder: "Give it a name",
       creating: "Creating sticker...",
       failed: "Failed to create sticker. Please try again.",
+      tabs: {
+        file: "From File",
+        post: "From Posts",
+      },
+      picker: {
+        noImages: "No images found.",
+        loadMore: "Load More",
+        select: "Select",
+      },
     },
     exchange: {
       title: "Exchange Center",
@@ -237,6 +277,13 @@ export const translations = {
       checkingExchanges: "Checking for pending exchanges...",
       checkingWithPartner: "Checking exchange with {name}...",
       receivedFromServer: "Received sticker from {name}!",
+      reject: "Reject",
+      rejectConfirm: "Are you sure you want to reject this exchange?",
+      rejectedTitle: "Exchange Rejected",
+      rejectedMessage: "You have rejected the exchange offer.",
+      rejectedByPartner: "{name} has rejected the exchange.",
+      rejecting: "Rejecting...",
+      rejectAction: "Reject",
     },
     notifications: {
       title: "Notifications",
@@ -252,6 +299,7 @@ export const translations = {
       userStickers: "{name}'s Stickers",
       notFound: "Profile not found.",
       backHome: "Back Home",
+      exchange: "Exchange Stickers",
     },
     share: {
       title: "Sticker Deco",
