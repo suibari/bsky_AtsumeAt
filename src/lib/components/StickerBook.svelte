@@ -7,11 +7,13 @@
     loadStickerLikeState,
     toggleStickerLike,
     deleteSticker,
+    updateSticker,
     type LikeState,
   } from "$lib/stickers";
   import { publicAgent } from "$lib/atproto";
   import { i18n } from "$lib/i18n.svelte";
   import StickerCanvas from "./StickerCanvas.svelte";
+  import StickerViewerModal from "./StickerViewerModal.svelte";
   import { fade } from "svelte/transition";
 
   let {
@@ -51,6 +53,30 @@
     }
   });
 
+  // Tagging State
+  let selectedSticker = $state<StickerWithProfile | null>(null);
+  let selectedTag = $state<string | null>(null);
+
+  // Computed Tags
+  let allTags = $derived.by(() => {
+    const map = new Map<string, number>();
+    stickers.forEach((s) => {
+      (s.tags || []).forEach((t) => {
+        map.set(t, (map.get(t) || 0) + 1);
+      });
+    });
+    // Sort by count desc
+    return Array.from(map.entries())
+      .map(([tag, count]) => ({ tag, count }))
+      .sort((a, b) => b.count - a.count);
+  });
+
+  // Filtered Stickers
+  let filteredStickers = $derived.by(() => {
+    if (!selectedTag) return stickers;
+    return stickers.filter((s) => (s.tags || []).includes(selectedTag!));
+  });
+
   interface StickerGroup {
     title?: string;
     stickers: StickerWithProfile[];
@@ -58,7 +84,7 @@
 
   let groups = $derived.by(() => {
     // Clone array to sort
-    const items = [...stickers];
+    const items = [...filteredStickers];
     const grouped: StickerGroup[] = [];
 
     if (sortOrder === "obtained") {
@@ -277,6 +303,29 @@
       alert("Failed to delete sticker");
     }
   }
+
+  async function handleUpdate(
+    sticker: StickerWithProfile,
+    updates: Partial<StickerWithProfile>,
+  ) {
+    try {
+      await updateSticker(agent, sticker.uri, updates);
+
+      // Optimistic / Local Update
+      const idx = stickers.findIndex((s) => s.uri === sticker.uri);
+      if (idx !== -1) {
+        stickers[idx] = { ...stickers[idx], ...updates };
+
+        // Also update selectedSticker if it matches
+        if (selectedSticker?.uri === sticker.uri) {
+          selectedSticker = stickers[idx];
+        }
+      }
+    } catch (e) {
+      console.error("Update failed", e);
+      throw e;
+    }
+  }
 </script>
 
 <div class="space-y-8">
@@ -324,6 +373,34 @@
       </div>
     </div>
 
+    <!-- Tag Filter Bar (Only if we have tags) -->
+    {#if allTags.length > 0}
+      <div
+        class="flex overflow-x-auto gap-2 pb-2 scrollbar-hide -mx-2 px-2 mask-linear"
+      >
+        <button
+          class="px-3 py-1 rounded-full text-xs font-semibold whitespace-nowrap transition-colors {selectedTag ===
+          null
+            ? 'bg-primary text-white'
+            : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}"
+          onclick={() => (selectedTag = null)}
+        >
+          ALL
+        </button>
+        {#each allTags as { tag, count }}
+          <button
+            class="px-3 py-1 rounded-full text-xs font-semibold whitespace-nowrap transition-colors {selectedTag ===
+            tag
+              ? 'bg-primary text-white'
+              : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}"
+            onclick={() => (selectedTag = tag)}
+          >
+            #{tag} <span class="opacity-60 text-[10px] ml-0.5">({count})</span>
+          </button>
+        {/each}
+      </div>
+    {/if}
+
     <div class="space-y-8">
       {#each groups as group}
         {#if group.title}
@@ -343,7 +420,14 @@
           class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4"
         >
           {#each group.stickers as sticker (sticker.uri)}
-            <div class="sticker-card-interactive">
+            <div
+              class="sticker-card-interactive cursor-pointer hover:scale-[1.02] transition-transform"
+              role="button"
+              tabindex="0"
+              onclick={() => (selectedSticker = sticker)}
+              onkeydown={(e) =>
+                e.key === "Enter" && (selectedSticker = sticker)}
+            >
               <!-- 3D Sticker -->
               <div class="aspect-square w-full mb-2 max-w-[160px] mx-auto">
                 <StickerCanvas
@@ -516,4 +600,12 @@
       {/each}
     </div>
   {/if}
+
+  <StickerViewerModal
+    sticker={selectedSticker}
+    {agent}
+    isOpen={!!selectedSticker}
+    onclose={() => (selectedSticker = null)}
+    onupdate={handleUpdate}
+  />
 </div>
