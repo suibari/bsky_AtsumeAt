@@ -33,6 +33,19 @@ class I18nManager {
   get t(): TranslationKey {
     return translations[this.#lang];
   }
+
+  resolve(path: string): string {
+    const keys = path.split('.');
+    let current: any = this.t;
+    for (const key of keys) {
+      if (current && typeof current === 'object' && key in current) {
+        current = current[key];
+      } else {
+        return path; // Fallback to key
+      }
+    }
+    return typeof current === 'string' ? current : path;
+  }
 }
 
 export const i18n = new I18nManager();

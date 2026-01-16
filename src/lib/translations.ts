@@ -169,6 +169,26 @@ export const translations = {
       otherTitle: "その他",
       otherText: "このページに記載される文章は予告なく変更することがあります。",
       links: "リンク",
+    },
+    achievements: {
+      created: {
+        1: "かけだしクリエイター",
+        10: "ステッカー量産体制",
+        50: "神絵師",
+        100: "伝説の創造主",
+      },
+      exchange: {
+        1: "はじめての交換会",
+        10: "シールトレーダー",
+        50: "絆の錬金術師",
+        100: "青空をつなぐコレクター",
+      },
+      likes: {
+        10: "親指戦士",
+        100: "LOVEマシーン",
+        500: "尊さの守護神",
+        1000: "無限のいいね黄金回転",
+      }
     }
   },
   en: {
@@ -341,6 +361,26 @@ export const translations = {
       otherTitle: "Others",
       otherText: "The text on this page is subject to change without notice.",
       links: "Links",
+    },
+    achievements: {
+      created: {
+        1: "Fledgling Creator",
+        10: "Mass Production Mode",
+        50: "God Tier Artist",
+        100: "Legendary Creator",
+      },
+      exchange: {
+        1: "First Exchange",
+        10: "Sticker Trader",
+        50: "Bond Alchemist",
+        100: "Sky Connector",
+      },
+      likes: {
+        10: "Thumb Warrior",
+        100: "Love Machine",
+        500: "Guardian of Preciousness",
+        1000: "Infinite Golden Rotation",
+      }
     }
   }
 };
