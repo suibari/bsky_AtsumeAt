@@ -2,9 +2,14 @@
   import { onMount, onDestroy } from "svelte";
   import { getDominantColor } from "$lib/color";
 
-  let { avatarUrl = "", staticAngle = false } = $props<{
+  let {
+    avatarUrl = "",
+    staticAngle = false,
+    allowVerticalRotation = false,
+  } = $props<{
     avatarUrl?: string; // Expect a full URL or blob
     staticAngle?: boolean;
+    allowVerticalRotation?: boolean;
   }>();
 
   let container: HTMLDivElement;
@@ -27,7 +32,12 @@
     isDragging = true;
     lastX = "touches" in e ? e.touches[0].clientX : e.clientX;
     lastY = "touches" in e ? e.touches[0].clientY : e.clientY;
-    // Removed e.preventDefault() to allow browser to handle vertical scroll if pan-y is set
+
+    // If vertical rotation is allowed (e.g. in Modal), we want to seize the touch event
+    // to prevent scrolling while rotating
+    if (allowVerticalRotation && "touches" in e && e.cancelable) {
+      e.preventDefault();
+    }
   }
 
   function onPointerMove(e: MouseEvent | TouchEvent) {
@@ -43,12 +53,15 @@
     // Apply rotation
     rotY += deltaX * 0.5; // Sensitivity
 
-    if (!isTouch) {
-      // Only allow X-axis dragging (tilting up/down) on Mouse
-      // On touch, we want vertical movement to scroll the page
+    if (!isTouch || allowVerticalRotation) {
+      // Only allow X-axis dragging (tilting up/down) on Mouse OR if explicitly allowed (Modal)
       rotX -= deltaY * 0.5;
       // Clamp X
       rotX = Math.max(-60, Math.min(60, rotX));
+
+      if (isTouch && allowVerticalRotation && e.cancelable) {
+        e.preventDefault();
+      }
     }
 
     lastX = x;
@@ -124,7 +137,9 @@
 </script>
 
 <div
-  class="scene relative w-full h-full cursor-grab active:cursor-grabbing touch-pan-y"
+  class="scene relative w-full h-full cursor-grab active:cursor-grabbing {allowVerticalRotation
+    ? 'touch-none'
+    : 'touch-pan-y'}"
   onmousedown={onPointerDown}
   onmousemove={onPointerMove}
   ontouchstart={onPointerDown}

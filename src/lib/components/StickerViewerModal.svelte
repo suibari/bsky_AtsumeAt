@@ -132,6 +132,7 @@
         >
           <StickerCanvas
             avatarUrl={typeof sticker.image === "string" ? sticker.image : ""}
+            allowVerticalRotation={true}
           />
           <div
             class="absolute bottom-2 left-1/2 -translate-x-1/2 text-xs text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"
