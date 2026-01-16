@@ -9,6 +9,7 @@ export interface Sticker {
   $type: typeof STICKER_COLLECTION;
   name?: string; // Name of the sticker
   message?: string; // Optional sticker message
+  tags?: string[]; // User-defined tags for organization
   image: string | BlobRef; // Avatar URL or BlobRef
   imageType?: 'avatar' | 'custom';
   subjectDid?: string; // DID of the user depicted (if applicable)

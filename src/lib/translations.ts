@@ -35,8 +35,13 @@ export const translations = {
       sortMinter: "発行者順",
       sortLikes: "いいね順",
     },
+    stickerViewer: {
+      editDetails: "編集",
+      saveChanges: "保存",
+    },
     common: {
       loading: "読み込み中...",
+      saving: "保存中...",
       back: "戻る",
       cancel: "キャンセル",
       ok: "OK",
@@ -227,8 +232,13 @@ export const translations = {
       sortMinter: "By Minter",
       sortLikes: "Most Liked",
     },
+    stickerViewer: {
+      editDetails: "Edit Details",
+      saveChanges: "Save Changes",
+    },
     common: {
       loading: "Loading...",
+      saving: "Saving...",
       back: "Back",
       cancel: "Cancel",
       ok: "OK",
