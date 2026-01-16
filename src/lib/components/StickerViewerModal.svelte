@@ -286,7 +286,7 @@
               class="px-4 py-2 text-gray-500 hover:text-gray-700 font-medium"
               disabled={isSaving}
             >
-              Cancel
+              {i18n.t.common.cancel}
             </button>
             <button
               onclick={handleSave}
@@ -297,9 +297,9 @@
                 <div
                   class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"
                 ></div>
-                Saving...
+                {i18n.t.common.saving}
               {:else}
-                Save Changes
+                {i18n.t.stickerViewer.saveChanges}
               {/if}
             </button>
           {:else}
@@ -312,7 +312,7 @@
               onclick={() => (isEditing = true)}
               class="px-6 py-2 bg-white border border-gray-200 text-gray-700 hover:bg-gray-50 hover:border-gray-300 rounded-full font-bold transition-all shadow-sm"
             >
-              Edit Details
+              {i18n.t.stickerViewer.editDetails}
             </button>
           {/if}
         </div>
