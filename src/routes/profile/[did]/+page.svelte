@@ -117,9 +117,9 @@
             {profile.displayName || profile.handle}
           </h2>
 
-          <AchievementBanner {achievements} />
-
           <p class="text-gray-500 font-medium">@{profile.handle}</p>
+
+          <AchievementBanner {achievements} />
 
           {#if profile.description}
             <p

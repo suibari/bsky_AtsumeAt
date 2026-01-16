@@ -6,14 +6,14 @@
 
   function getTierStyles(tier: number) {
     switch (tier) {
-      case 1: // Bronze/Start
-        return "bg-orange-50 text-orange-800 border-orange-200";
-      case 2: // Silver/Blue
-        return "bg-blue-50 text-blue-800 border-blue-200";
-      case 3: // Gold/Purple
-        return "bg-purple-50 text-purple-800 border-purple-200";
-      case 4: // Platinum/Rainbow/Gold
-        return "bg-gradient-to-r from-amber-100 to-yellow-100 text-amber-900 border-amber-300 shadow-sm";
+      case 1: // Mint Gradation (Fresh: Mint -> Teal)
+        return "bg-gradient-to-r from-emerald-100 to-teal-300 text-teal-900 border-teal-300";
+      case 2: // Sky Gradation (Cool: Sky -> Indigo)
+        return "bg-gradient-to-r from-sky-100 to-indigo-300 text-indigo-900 border-indigo-300";
+      case 3: // Pink Gradation (Sweet: Pink -> Rose)
+        return "bg-gradient-to-r from-pink-100 to-rose-300 text-rose-900 border-rose-300";
+      case 4: // Rainbow (Ultimate: Pink -> Yellow -> Sky)
+        return "bg-gradient-to-r from-pink-200 via-yellow-200 to-sky-300 text-purple-900 border-purple-300 shadow-md";
       default:
         return "bg-gray-50 text-gray-700 border-gray-200";
     }
