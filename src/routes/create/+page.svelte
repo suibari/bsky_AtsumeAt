@@ -288,8 +288,8 @@
         model: `cid:${cid}`,
         name: name || undefined,
         obtainedAt: new Date().toISOString(),
-        signature,
-        signedPayload,
+        signature: signature || "",
+        signedPayload: signedPayload || "",
       };
 
       await agent.com.atproto.repo.createRecord({

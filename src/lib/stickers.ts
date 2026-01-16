@@ -3,6 +3,7 @@ import { STICKER_COLLECTION, CONFIG_COLLECTION, type Sticker, STICKER_LIKE_COLLE
 import { getPdsEndpoint, publicAgent } from './atproto';
 import { type SealVerificationResult, verifySeal, requestSignature } from './signatures';
 import { ensureHubRef } from './hub';
+import { getBacklinks } from './constellation';
 
 export type StickerWithProfile = Sticker & {
   profile?: {
@@ -74,8 +75,8 @@ export async function initStickers(agent: Agent, userDid: string, onStatus?: (ms
     obtainedAt: new Date().toISOString(),
 
     // Add Signature
-    signature: sigData?.signature,
-    signedPayload: sigData?.signedPayload
+    signature: sigData?.signature || '',
+    signedPayload: sigData?.signedPayload || ''
   };
 
   await agent.com.atproto.repo.createRecord({
@@ -543,36 +544,9 @@ export async function deleteSticker(agent: Agent, stickerUri: string) {
 // 2. Fetch Likes for a Sticker (Using Constellation)
 // Returns: List of liker DIDs
 export async function getStickerLikes(agent: Agent, stickerUri: string): Promise<string[]> {
-  // Constellation query:
-  // subject = stickerUri
-  // source = "blue.atsumeat.stickerLike:.subject.uri" ?? Or just strict matching?
-  // Constellation usually indexes by subject.
-
-  // Subject: The Sticker URI (target)
-  const subject = encodeURIComponent(stickerUri);
-  // Source Collection filters (Only interested in likes)
-  // Constellation syntax for 'getBacklinks'
-  // Source Collection filters (Only interested in likes)
-  // Constellation syntax for 'getBacklinks': collection:.path.to.uri
-  const source = encodeURIComponent(`${STICKER_LIKE_COLLECTION}:subject.uri`);
-  // NOTE: Constellation expects 'source' to be collection, or specific path?
-  // Documentation says: source=collection
-
-  const url = `https://constellation.microcosm.blue/xrpc/blue.microcosm.links.getBacklinks?subject=${subject}&source=${source}`;
-
-  try {
-    const res = await fetch(url);
-    if (!res.ok) throw new Error('Constellation API error');
-    const data = await res.json();
-    const records = (data.records || []) as { did: string, collection: string, rkey: string }[];
-
-    // Extract authors (DIDs)
-    return records.map(r => r.did);
-
-  } catch (e) {
-    console.error('Failed to get sticker likes', e);
-    return [];
-  }
+  const source = `${STICKER_LIKE_COLLECTION}:subject.uri`;
+  const records = await getBacklinks(stickerUri, source);
+  return records.map(r => r.did);
 }
 
 // 3. Batch Fetch Like States for Multiple Stickers
@@ -599,18 +573,9 @@ export async function loadStickerLikeState(agent: Agent, sticker: StickerWithPro
   }
 
   // Re-impl for efficiency:
-  const subject = encodeURIComponent(targetUri);
-  const source = encodeURIComponent(`${STICKER_LIKE_COLLECTION}:subject.uri`);
-  const url = `https://constellation.microcosm.blue/xrpc/blue.microcosm.links.getBacklinks?subject=${subject}&source=${source}`;
-
-  let records: { did: string, collection: string, rkey: string }[] = [];
-  try {
-    const res = await fetch(url);
-    if (res.ok) {
-      const data = await res.json();
-      records = (data.records || []) as { did: string, collection: string, rkey: string }[];
-    }
-  } catch (e) { }
+  const source = `${STICKER_LIKE_COLLECTION}:subject.uri`;
+  const rawRecords = await getBacklinks(targetUri, source);
+  const records = rawRecords.map(r => ({ did: r.did, collection: r.collection, rkey: r.rkey }));
 
   const likers: { did: string; avatar?: string; handle?: string }[] = [];
 

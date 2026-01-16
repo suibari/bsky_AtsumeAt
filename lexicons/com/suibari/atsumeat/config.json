@@ -1,0 +1,22 @@
+{
+  "lexicon": 1,
+  "id": "com.suibari.atsumeat.config",
+  "defs": {
+    "main": {
+      "type": "record",
+      "key": "tid",
+      "record": {
+        "type": "object",
+        "required": [
+          "hubRef"
+        ],
+        "properties": {
+          "hubRef": {
+            "type": "string",
+            "format": "uri"
+          }
+        }
+      }
+    }
+  }
+}
