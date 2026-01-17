@@ -4,6 +4,7 @@
   "defs": {
     "main": {
       "type": "record",
+      "description": "Definition of a sticker",
       "key": "tid",
       "record": {
         "type": "object",
@@ -41,6 +42,7 @@
           },
           "imageType": {
             "type": "string",
+            "maxLength": 64,
             "knownValues": [
               "avatar",
               "custom"
@@ -74,10 +76,12 @@
           },
           "signature": {
             "type": "string",
+            "maxLength": 2048,
             "description": "Cryptographic signature from the server verifying the sticker's authenticity/provenance."
           },
           "signedPayload": {
             "type": "string",
+            "maxLength": 10000,
             "description": "The original JSON payload that was signed by the server."
           }
         }

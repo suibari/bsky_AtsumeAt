@@ -4,6 +4,7 @@
   "defs": {
     "main": {
       "type": "record",
+      "description": "Definition of a transaction",
       "key": "tid",
       "record": {
         "type": "object",
@@ -42,6 +43,7 @@
           },
           "status": {
             "type": "string",
+            "maxLength": 64,
             "knownValues": [
               "offered",
               "completed",

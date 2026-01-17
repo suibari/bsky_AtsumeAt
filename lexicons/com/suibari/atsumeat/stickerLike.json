@@ -4,6 +4,7 @@
   "defs": {
     "main": {
       "type": "record",
+      "description": "Definition of a like on a sticker",
       "key": "tid",
       "record": {
         "type": "object",
@@ -13,7 +14,8 @@
         ],
         "properties": {
           "subject": {
-            "type": "com.atproto.repo.strongRef"
+            "type": "ref",
+            "ref": "com.atproto.repo.strongRef"
           },
           "createdAt": {
             "type": "string",
