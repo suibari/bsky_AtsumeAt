@@ -34,6 +34,7 @@ export const translations = {
       sortObtained: "入手日順",
       sortMinter: "発行者順",
       sortLikes: "いいね順",
+      defaultName: "{name}のシール",
     },
     stickerViewer: {
       editDetails: "編集",
@@ -235,6 +236,7 @@ export const translations = {
       sortObtained: "Date Obtained",
       sortMinter: "By Minter",
       sortLikes: "Most Liked",
+      defaultName: "{name}'s Sticker",
     },
     stickerViewer: {
       editDetails: "Edit Details",

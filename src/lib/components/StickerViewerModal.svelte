@@ -153,8 +153,13 @@
           {:else}
             <h2 class="text-2xl font-bold text-gray-800">
               {sticker.name ||
-                (sticker.originalOwnerProfile?.displayName ||
-                  sticker.originalOwner) + "'s Sticker"}
+                i18n.t.stickerBook.defaultName.replace(
+                  "{name}",
+                  sticker.originalOwnerProfile?.displayName ||
+                    sticker.originalOwnerProfile?.handle ||
+                    sticker.originalOwner ||
+                    "Unknown",
+                )}
             </h2>
           {/if}
 

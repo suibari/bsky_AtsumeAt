@@ -444,11 +444,20 @@
                 <p class="font-bold text-gray-700 truncate text-sm">
                   {#if sticker.imageType === "custom"}
                     {sticker.name ||
-                      `${sticker.originalOwnerProfile?.displayName || sticker.originalOwnerProfile?.handle || sticker.originalOwner || "Unknown"}のシール`}
+                      i18n.t.stickerBook.defaultName.replace(
+                        "{name}",
+                        sticker.originalOwnerProfile?.displayName ||
+                          sticker.originalOwnerProfile?.handle ||
+                          sticker.originalOwner ||
+                          "Unknown",
+                      )}
                   {:else}
-                    {sticker.profile?.displayName ||
-                      sticker.profile?.handle ||
-                      "Unknown"}のシール
+                    {i18n.t.stickerBook.defaultName.replace(
+                      "{name}",
+                      sticker.profile?.displayName ||
+                        sticker.profile?.handle ||
+                        "Unknown",
+                    )}
                   {/if}
                 </p>
 
