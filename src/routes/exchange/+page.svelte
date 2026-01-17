@@ -778,9 +778,11 @@
         <!-- 1. Select Partner -->
         <div class="mb-6 relative z-10">
           <!-- Tabs -->
-          <div class="flex gap-4 mb-4 border-b border-gray-200">
+          <div
+            class="flex gap-4 mb-4 border-b border-gray-200 overflow-x-auto whitespace-nowrap"
+          >
             <button
-              class="px-4 py-2 font-medium transition-colors border-b-2 {activeTab ===
+              class="px-4 py-2 font-medium transition-colors border-b-2 flex-shrink-0 {activeTab ===
               'recommend'
                 ? 'border-primary text-primary'
                 : 'border-transparent text-gray-500 hover:text-gray-700'}"
@@ -789,7 +791,7 @@
               {i18n.t.exchange.recommendTab}
             </button>
             <button
-              class="px-4 py-2 font-medium transition-colors border-b-2 {activeTab ===
+              class="px-4 py-2 font-medium transition-colors border-b-2 flex-shrink-0 {activeTab ===
               'search'
                 ? 'border-primary text-primary'
                 : 'border-transparent text-gray-500 hover:text-gray-700'}"
@@ -798,7 +800,7 @@
               {i18n.t.exchange.searchTab}
             </button>
             <button
-              class="px-4 py-2 font-medium transition-colors border-b-2 {activeTab ===
+              class="px-4 py-2 font-medium transition-colors border-b-2 flex-shrink-0 {activeTab ===
               'easy'
                 ? 'border-primary text-primary'
                 : 'border-transparent text-gray-500 hover:text-gray-700'}"
@@ -807,7 +809,7 @@
               {i18n.t.exchange.easyExchangeTab}
             </button>
             <button
-              class="px-4 py-2 font-medium transition-colors border-b-2 {activeTab ===
+              class="px-4 py-2 font-medium transition-colors border-b-2 flex-shrink-0 {activeTab ===
               'withdraw'
                 ? 'border-primary text-primary'
                 : 'border-transparent text-gray-500 hover:text-gray-700'}"
@@ -1098,7 +1100,9 @@
           {#if resolveError}<p class="text-red-500 text-sm mt-1">
               {resolveError}
             </p>{/if}
-          {#if partnerDid}<p class="text-green-600 text-sm mt-1">
+          {#if partnerDid && activeTab !== "easy"}<p
+              class="text-green-600 text-sm mt-1"
+            >
               {i18n.t.exchange.selectedPartner.replace(
                 "{handle}",
                 partnerHandle,
@@ -1107,7 +1111,7 @@
         </div>
 
         <!-- 2. Select Stickers -->
-        {#if partnerDid || activeTab === "easy"}
+        {#if (partnerDid || activeTab === "easy") && !(activeTab === "easy" && matchedPartner)}
           <div class="mb-6">
             <h3 class="block text-sm font-bold text-gray-700 mb-2">
               {i18n.t.exchange.selectStickersToOffer.replace(
