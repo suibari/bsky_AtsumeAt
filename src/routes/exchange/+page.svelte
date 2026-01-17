@@ -890,14 +890,19 @@
 
               {#if findingPartner}
                 <div
-                  class="flex items-center justify-center p-8 bg-gray-50 rounded-xl"
+                  class="flex flex-col items-center justify-center p-8 bg-gray-50 rounded-xl"
                 >
-                  <div
-                    class="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full mr-3"
-                  ></div>
-                  <span class="text-primary font-bold"
-                    >{i18n.t.exchange.searchingPartner}</span
-                  >
+                  <div class="flex items-center mb-2">
+                    <div
+                      class="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full mr-3"
+                    ></div>
+                    <span class="text-primary font-bold"
+                      >{i18n.t.exchange.searchingPartner}</span
+                    >
+                  </div>
+                  <p class="text-xs text-gray-500">
+                    {i18n.t.exchange.easyExchangeWait}
+                  </p>
                 </div>
               {:else if matchedPartner}
                 <div

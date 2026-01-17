@@ -754,101 +754,137 @@ export async function findEasyExchangePartner(agent: Agent, offeredStickers: Sti
   // 1. Get all Hub Users
   const hubUsers = await getHubUsers(agent);
   const candidates = hubUsers.filter(u => u.did !== myDid && !excludeDids.includes(u.did));
-  // const candidates = hubUsers.filter(u => u.did === "did:plc:bgixv4syd64frk6mn2sy2tuq"); // debug
 
-  // Randomize to avoid always checking the same people first
+  // Randomize
   const shuffledCandidates = candidates.sort(() => Math.random() - 0.5);
   let fallbackMatch: MatchedPartner | undefined;
 
-  for (const user of shuffledCandidates.slice(0, 50)) {
-    // 2. Check their offers
+  // Concurrency Control
+  const CONCURRENCY_LIMIT = 10;
+  const SEARCH_LIMIT = 100;
+  const relevantCandidates = shuffledCandidates.slice(0, SEARCH_LIMIT);
+
+  let candidatesChecked = 0;
+  let activePromises: Promise<void>[] = [];
+  let foundPerfectMatch: MatchedPartner | null = null;
+
+  // Helper to process one candidate
+  const checkCandidate = async (user: { did: string }) => {
+    if (foundPerfectMatch) return; // Stop if already found
+
     let pdsAgent = agent;
     try {
       const pdsUrl = await getPdsEndpoint(user.did);
-      // Create unauthenticated agent
       if (pdsUrl) pdsAgent = new Agent(pdsUrl);
 
-      let cursor;
-      let matchingOffer: { value: Transaction } | undefined;
+      // Timeout for operations to prevent hanging
+      const timeoutMs = 5000;
+      const timeoutPromise = new Promise<null>((_, reject) => setTimeout(() => reject(new Error("Timeout")), timeoutMs));
 
-      // Limit search depth per user to avoid taking too long
-      let fetchCount = 0;
-      const MAX_FETCH = 50;
+      const checkPromise = (async () => {
+        let cursor;
+        let matchingOffer: { value: Transaction } | undefined;
+        let fetchCount = 0;
+        const MAX_FETCH = 50;
 
-      do {
-        const res = await pdsAgent.com.atproto.repo.listRecords({
-          repo: user.did,
-          collection: TRANSACTION_COLLECTION,
-          limit: 100,
-          cursor
-        });
-        cursor = res.data.cursor;
-        fetchCount += res.data.records.length;
+        // 1. Find matching offer
+        do {
+          const res = await pdsAgent.com.atproto.repo.listRecords({
+            repo: user.did,
+            collection: TRANSACTION_COLLECTION,
+            limit: 100,
+            cursor
+          });
+          cursor = res.data.cursor;
+          fetchCount += res.data.records.length;
 
-        matchingOffer = res.data.records.find(r => {
-          const t = r.value as unknown as Transaction;
-          return t.status === 'offered' &&
-            t.isEasyExchange === true &&
-            (!t.partner) && // Must be open
-            t.stickerOut && t.stickerOut.length === myOfferStickerCount;
-        }) as { value: Transaction } | undefined;
+          matchingOffer = res.data.records.find(r => {
+            const t = r.value as unknown as Transaction;
+            return t.status === 'offered' &&
+              t.isEasyExchange === true &&
+              (!t.partner) &&
+              t.stickerOut && t.stickerOut.length === myOfferStickerCount;
+          }) as { value: Transaction } | undefined;
 
-        if (matchingOffer) break;
-        if (fetchCount >= MAX_FETCH) break;
-      } while (cursor);
+          if (matchingOffer) break;
+          if (fetchCount >= MAX_FETCH) break;
+        } while (cursor);
 
-      if (matchingOffer) {
-        // console.log("Found matching offer for", user.did);
-        const t = matchingOffer.value;
-        const stickers = await fetchStickersForTransaction(agent, t, user.did);
+        if (matchingOffer) {
+          const t = matchingOffer.value;
+          const stickers = await fetchStickersForTransaction(agent, t, user.did);
 
-        const targetDid = user.did;
-        let partnerHasMySticker = true;
-        try {
-          const partnerStickers = await getAllStickerRecords(pdsAgent, targetDid);
-          // Check if partner has any of the stickers I am offering (by Model + Subject)
-          partnerHasMySticker = partnerStickers.some(p =>
-            offeredStickers.some(offered => {
-              const offeredSub = offered.subjectDid || (offered as any).owner;
-              const pSub = p.subjectDid || (p as any).owner;
-              return p.model === offered.model && pSub === offeredSub;
-            })
-          );
-        } catch { }
+          // 2. Check Ownership (Does partner need my stickers?)
+          const targetDid = user.did;
+          let partnerHasMySticker = true;
+          try {
+            // Optimisation: Limit sticker fetch or rely on partial check?
+            // We stick to getAllStickerRecords but maybe we should rely on a simpler check if possible.
+            // For now, let's just run it but wrapped in the timeout which applies to the whole function.
+            const partnerStickers = await getAllStickerRecords(pdsAgent, targetDid);
+            partnerHasMySticker = partnerStickers.some(p =>
+              offeredStickers.some(offered => {
+                const offeredSub = offered.subjectDid || (offered as any).owner;
+                const pSub = p.subjectDid || (p as any).owner;
+                return p.model === offered.model && pSub === offeredSub;
+              })
+            );
+          } catch { }
 
-        // Fetch Profile
-        let profile: MatchedPartner['profile'] | undefined;
-        try {
-          const pRes = await publicAgent.getProfile({ actor: user.did });
-          profile = {
-            displayName: pRes.data.displayName,
-            handle: pRes.data.handle,
-            avatar: pRes.data.avatar
+          // 3. Fetch Profile
+          let profile: MatchedPartner['profile'] | undefined;
+          try {
+            const pRes = await publicAgent.getProfile({ actor: user.did });
+            profile = {
+              displayName: pRes.data.displayName,
+              handle: pRes.data.handle,
+              avatar: pRes.data.avatar
+            };
+          } catch { }
+
+          const match: MatchedPartner = {
+            did: user.did,
+            offer: t,
+            stickers,
+            profile
           };
-        } catch { }
 
-        const match: MatchedPartner = {
-          did: user.did,
-          offer: t,
-          stickers,
-          profile
-        };
+          if (!partnerHasMySticker) {
+            foundPerfectMatch = match;
+            return;
+          }
 
-        if (!partnerHasMySticker) {
-          return match;
+          if (!fallbackMatch) {
+            fallbackMatch = match;
+          }
         }
+      })();
 
-        if (!fallbackMatch) {
-          fallbackMatch = match;
-        }
-      }
+      await Promise.race([checkPromise, timeoutPromise]);
 
     } catch (e) {
-      console.warn("Failed to check candidate", user.did, e);
+      // console.warn("Failed to check candidate (or timeout)", user.did, e);
+    }
+  };
+
+  // Execution Loop
+  for (const candidate of relevantCandidates) {
+    if (foundPerfectMatch) break;
+
+    const p = checkCandidate(candidate).finally(() => {
+      activePromises = activePromises.filter(ap => ap !== p);
+    });
+    activePromises.push(p);
+
+    if (activePromises.length >= CONCURRENCY_LIMIT) {
+      await Promise.race(activePromises);
     }
   }
 
-  return null;
+  // Wait for remaining
+  await Promise.all(activePromises);
+
+  return foundPerfectMatch || fallbackMatch || null;
 }
 
 export interface MyOpenOffer {
