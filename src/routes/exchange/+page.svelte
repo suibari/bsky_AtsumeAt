@@ -15,6 +15,9 @@
     fetchStickersForTransaction,
     findEasyExchangePartner,
     type MatchedPartner,
+    getMyOpenOffers,
+    withdrawExchangeOffer,
+    type MyOpenOffer,
   } from "$lib/exchange";
   import { getHubUsers } from "$lib/hub"; // Import getHubUsers
   import { getUserStickers, type StickerWithProfile } from "$lib/stickers";
@@ -59,8 +62,10 @@
   let excludeDids = $state<string[]>([]);
 
   // Valid Tabs
-  type Tab = "recommend" | "search" | "easy";
+  type Tab = "recommend" | "search" | "easy" | "withdraw";
   let activeTab = $state<Tab>("recommend");
+  let myOpenOffers = $state<MyOpenOffer[]>([]);
+  let loadingMyOffers = $state(false);
   let recommendedUsers = $state<
     (ProfileViewBasic | ProfileView | ProfileViewDetailed)[]
   >([]);
@@ -442,8 +447,7 @@
       // 1. Search for partner
       const found = await findEasyExchangePartner(
         agent,
-        count,
-        offeredIds,
+        stickersToSend,
         excludeDids,
       );
 
@@ -499,6 +503,40 @@
       startEasyExchange();
     }
   }
+
+  // Handle Withdraw
+  async function fetchMyOpenOffers() {
+    if (!agent) return;
+    loadingMyOffers = true;
+    try {
+      myOpenOffers = await getMyOpenOffers(agent);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      loadingMyOffers = false;
+    }
+  }
+
+  async function handleWithdraw(uri: string) {
+    if (!agent) return;
+    if (!confirm(i18n.t.exchange.withdrawConfirm)) return;
+
+    try {
+      await withdrawExchangeOffer(agent, uri);
+      // Optimistic update
+      myOpenOffers = myOpenOffers.filter((o) => o.uri !== uri);
+      alert(i18n.t.exchange.withdrawnMessage);
+    } catch (e) {
+      console.error(e);
+      alert("Failed to withdraw.");
+    }
+  }
+
+  $effect(() => {
+    if (activeTab === "withdraw" && agent) {
+      fetchMyOpenOffers();
+    }
+  });
 </script>
 
 <div class="min-h-screen bg-surface">
@@ -756,6 +794,15 @@
             >
               {i18n.t.exchange.easyExchangeTab}
             </button>
+            <button
+              class="px-4 py-2 font-medium transition-colors border-b-2 {activeTab ===
+              'withdraw'
+                ? 'border-primary text-primary'
+                : 'border-transparent text-gray-500 hover:text-gray-700'}"
+              onclick={() => (activeTab = "withdraw")}
+            >
+              {i18n.t.exchange.withdrawTab}
+            </button>
           </div>
 
           {#if activeTab === "recommend"}
@@ -906,6 +953,96 @@
                 <!-- Currently the UI flow is Top: Select Partner, Bottom: Select Stickers, Then: Action Button -->
 
                 <!-- We should update the Action Button logic at the bottom to handle easy exchange -->
+              {/if}
+            </div>
+          {/if}
+
+          {#if activeTab === "withdraw"}
+            <div class="mb-4">
+              {#if loadingMyOffers}
+                <div class="flex justify-center p-8">
+                  <div
+                    class="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full"
+                  ></div>
+                </div>
+              {:else if myOpenOffers.length === 0}
+                <div
+                  class="text-center p-8 text-gray-500 bg-gray-50 rounded-xl"
+                >
+                  {i18n.t.exchange.noOpenOffers}
+                </div>
+              {:else}
+                <div class="space-y-4">
+                  {#each myOpenOffers as offer}
+                    <div class="bg-white border rounded-xl p-4 shadow-sm">
+                      <div class="flex justify-between items-start mb-2">
+                        <div>
+                          <!-- Partner Info -->
+                          {#if offer.transaction.isEasyExchange && !offer.transaction.partner}
+                            <div
+                              class="flex items-center gap-2 text-primary font-bold"
+                            >
+                              <span class="text-xl">🎲</span>
+                              {i18n.t.exchange.easyExchangeLabel}
+                            </div>
+                          {:else if offer.partnerProfile}
+                            <div class="flex items-center gap-2">
+                              {#if offer.partnerProfile.avatar}
+                                <img
+                                  src={offer.partnerProfile.avatar}
+                                  alt=""
+                                  class="w-8 h-8 rounded-full bg-gray-200"
+                                />
+                              {:else}
+                                <div
+                                  class="w-8 h-8 rounded-full bg-gray-200"
+                                ></div>
+                              {/if}
+                              <div class="font-bold text-sm">
+                                {offer.partnerProfile.displayName ||
+                                  offer.partnerProfile.handle}
+                              </div>
+                            </div>
+                          {:else if offer.transaction.partner}
+                            <div class="font-bold text-sm text-gray-500">
+                              {offer.transaction.partner}
+                            </div>
+                          {:else}
+                            <div class="text-gray-500">Unknown Offer</div>
+                          {/if}
+
+                          <div class="text-xs text-gray-400 mt-1">
+                            {new Date(
+                              offer.transaction.createdAt,
+                            ).toLocaleString()}
+                          </div>
+                        </div>
+                        <button
+                          class="text-red-500 hover:text-red-700 text-sm font-bold border border-red-200 bg-red-50 hover:bg-red-100 px-3 py-1 rounded-lg transition-colors"
+                          onclick={() => handleWithdraw(offer.uri)}
+                        >
+                          {i18n.t.exchange.withdrawAction}
+                        </button>
+                      </div>
+
+                      <!-- Stickers -->
+                      <div
+                        class="flex gap-2 overflow-x-auto p-2 bg-gray-50 rounded-lg"
+                      >
+                        {#each offer.stickers as s}
+                          <div class="w-12 h-12 flex-shrink-0">
+                            <StickerCanvas
+                              avatarUrl={typeof s.image === "string"
+                                ? s.image
+                                : ""}
+                              staticAngle={true}
+                            />
+                          </div>
+                        {/each}
+                      </div>
+                    </div>
+                  {/each}
+                </div>
               {/if}
             </div>
           {/if}

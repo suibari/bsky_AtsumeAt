@@ -745,9 +745,11 @@ export interface MatchedPartner {
   };
 }
 
-export async function findEasyExchangePartner(agent: Agent, myOfferStickerCount: number, myOfferedStickerIds: string[], excludeDids: string[] = []): Promise<MatchedPartner | null> {
+export async function findEasyExchangePartner(agent: Agent, offeredStickers: StickerWithProfile[], excludeDids: string[] = []): Promise<MatchedPartner | null> {
   const myDid = agent.assertDid;
   if (!myDid) return null;
+
+  const myOfferStickerCount = offeredStickers.length;
 
   // 1. Get all Hub Users
   const hubUsers = await getHubUsers(agent);
@@ -800,23 +802,30 @@ export async function findEasyExchangePartner(agent: Agent, myOfferStickerCount:
         const t = matchingOffer.value;
         const stickers = await fetchStickersForTransaction(agent, t, user.did);
 
-        const u = user as any;
-        const targetDid = u.did as string;
-        const partnerStickers = await getAllStickerRecords(pdsAgent as any, targetDid as any);
-        const partnerHasMySticker = partnerStickers.some(s => myOfferedStickerIds.includes(String(s.uri)));
+        const targetDid = user.did;
+        let partnerHasMySticker = true;
+        try {
+          const partnerStickers = await getAllStickerRecords(pdsAgent, targetDid);
+          // Check if partner has any of the stickers I am offering (by Model + Subject)
+          partnerHasMySticker = partnerStickers.some(p =>
+            offeredStickers.some(offered => {
+              const offeredSub = offered.subjectDid || (offered as any).owner;
+              const pSub = p.subjectDid || (p as any).owner;
+              return p.model === offered.model && pSub === offeredSub;
+            })
+          );
+        } catch { }
 
         // Fetch Profile
         let profile: MatchedPartner['profile'] | undefined;
         try {
-          const pRes = await agent.getProfile({ actor: user.did });
+          const pRes = await publicAgent.getProfile({ actor: user.did });
           profile = {
             displayName: pRes.data.displayName,
             handle: pRes.data.handle,
             avatar: pRes.data.avatar
           };
-        } catch (e) {
-          console.warn("Failed to fetch profile for matched partner", e);
-        }
+        } catch { }
 
         const match: MatchedPartner = {
           did: user.did,
@@ -826,20 +835,100 @@ export async function findEasyExchangePartner(agent: Agent, myOfferStickerCount:
         };
 
         if (!partnerHasMySticker) {
-          // Priority match find!
           return match;
         }
 
-        // Keep as fallback
         if (!fallbackMatch) {
           fallbackMatch = match;
         }
       }
 
     } catch (e) {
-      console.warn("Failed to check user for easy exchange", user.did, e);
+      console.warn("Failed to check candidate", user.did, e);
     }
   }
 
-  return fallbackMatch || null;
+  return null;
 }
+
+export interface MyOpenOffer {
+  uri: string;
+  transaction: Transaction;
+  stickers: Sticker[];
+  partnerProfile?: {
+    displayName?: string;
+    handle: string;
+    avatar?: string;
+  };
+}
+
+export async function getMyOpenOffers(agent: Agent): Promise<MyOpenOffer[]> {
+  const myDid = agent.assertDid;
+  if (!myDid) return [];
+
+  const openOffers: MyOpenOffer[] = [];
+  let cursor;
+
+  try {
+    do {
+      const res = await agent.com.atproto.repo.listRecords({
+        repo: myDid,
+        collection: TRANSACTION_COLLECTION,
+        limit: 100,
+        cursor
+      });
+      cursor = res.data.cursor;
+
+      for (const r of res.data.records) {
+        const t = r.value as unknown as Transaction;
+        if (t.status === 'offered') {
+          // Identify Partner Profile for Display
+          let partnerProfile: { displayName?: string, handle: string, avatar?: string } | undefined;
+
+          if (t.partner) {
+            try {
+              const p = await publicAgent.getProfile({ actor: t.partner });
+              partnerProfile = {
+                displayName: p.data.displayName,
+                handle: p.data.handle,
+                avatar: p.data.avatar
+              };
+            } catch (e) {
+              partnerProfile = { handle: t.partner }; // Fallback
+            }
+          }
+
+          // Fetch My Own Stickers (that are offered)
+          // We use fetchStickersForTransaction but pointing to SELF (agent.assertDid)
+          const stickers = await fetchStickersForTransaction(agent, t, myDid);
+
+          openOffers.push({
+            uri: r.uri,
+            transaction: t,
+            stickers,
+            partnerProfile
+          });
+        }
+      }
+    } while (cursor);
+  } catch (e) {
+    console.error("Failed to fetch my open offers", e);
+  }
+
+  return openOffers;
+}
+
+export async function withdrawExchangeOffer(agent: Agent, offerUri: string) {
+  const myDid = agent.assertDid;
+  if (!myDid) return;
+
+  const rkey = offerUri.split('/').pop();
+  if (!rkey) return;
+
+  await agent.com.atproto.repo.deleteRecord({
+    repo: myDid,
+    collection: TRANSACTION_COLLECTION,
+    rkey
+  });
+}
+
