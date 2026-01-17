@@ -4,9 +4,10 @@ import { type StickerWithProfile, getAllStickerRecords } from './stickers';
 import { requestSignature } from './signatures';
 import { getPdsEndpoint, publicAgent } from './atproto';
 import { getBacklinks, type ConstellationRecord } from './constellation';
+import { getHubUsers } from './hub';
 import { i18n } from './i18n.svelte';
 
-export async function createExchangePost(agent: Agent, targetHandle: string, targetDid: string, offeredStickers: StickerWithProfile[], withPost: boolean = true, message?: string) {
+export async function createExchangePost(agent: Agent, targetHandle: string | null, targetDid: string | null, offeredStickers: StickerWithProfile[], withPost: boolean = true, message?: string, isEasyExchange: boolean = false) {
   const origin = window.location.origin;
   const myDid = agent.assertDid;
 
@@ -16,8 +17,9 @@ export async function createExchangePost(agent: Agent, targetHandle: string, tar
     collection: TRANSACTION_COLLECTION,
     record: {
       $type: TRANSACTION_COLLECTION,
-      partner: targetDid,
-      refPartner: `at://${targetDid}/app.bsky.actor.profile/self`, // Reference Profile URI for Constellation
+      partner: targetDid || undefined,
+      isEasyExchange: isEasyExchange,
+      refPartner: targetDid ? `at://${targetDid}/app.bsky.actor.profile/self` : undefined, // Reference Profile URI for Constellation
       stickerIn: [], // We don't know what we get yet
       stickerOut: offeredStickers.map(s => s.uri),
       message, // Save the proposal message
@@ -28,7 +30,7 @@ export async function createExchangePost(agent: Agent, targetHandle: string, tar
 
 
   // 2. Create text with mention (Optional)
-  if (withPost) {
+  if (withPost && targetHandle && !isEasyExchange) {
     const stickerCount = offeredStickers.length;
 
     const text = i18n.t.exchange.offerPost
@@ -82,7 +84,10 @@ export async function acceptExchange(agent: Agent, partnerDid: string, stickersT
 
       validOffer = partnerOffers.data.records.find(r => {
         const t = r.value as unknown as Transaction;
-        return t.partner === myDid && t.status === 'offered';
+        // Check if targeted to me OR if it is an Easy Exchange (open to anyone)
+        const isTargetedToMe = t.partner === myDid;
+        const isEasyEx = t.isEasyExchange === true && !t.partner;
+        return (isTargetedToMe || isEasyEx) && t.status === 'offered';
       });
 
       if (validOffer) break;
@@ -333,6 +338,7 @@ export async function resolvePendingExchanges(agent: Agent, onStatus?: (msg: str
   // 2. Check each partner
   for (const offer of myOffers) {
     const partnerDid = offer.value.partner;
+    if (!partnerDid) continue; // Skip offers without partner (Easy Exchange pending)
 
     let partnerName = partnerDid;
     if (onStatus) {
@@ -726,4 +732,114 @@ export async function fetchStickersForTransaction(agent: Agent, t: Transaction, 
     }
   }
   return stickers;
+}
+
+export interface MatchedPartner {
+  did: string;
+  offer: Transaction;
+  stickers: Sticker[];
+  profile?: {
+    displayName?: string;
+    handle: string;
+    avatar?: string;
+  };
+}
+
+export async function findEasyExchangePartner(agent: Agent, myOfferStickerCount: number, myOfferedStickerIds: string[], excludeDids: string[] = []): Promise<MatchedPartner | null> {
+  const myDid = agent.assertDid;
+  if (!myDid) return null;
+
+  // 1. Get all Hub Users
+  const hubUsers = await getHubUsers(agent);
+  const candidates = hubUsers.filter(u => u.did !== myDid && !excludeDids.includes(u.did));
+  // const candidates = hubUsers.filter(u => u.did === "did:plc:bgixv4syd64frk6mn2sy2tuq"); // debug
+
+  // Randomize to avoid always checking the same people first
+  const shuffledCandidates = candidates.sort(() => Math.random() - 0.5);
+  let fallbackMatch: MatchedPartner | undefined;
+
+  for (const user of shuffledCandidates.slice(0, 50)) {
+    // 2. Check their offers
+    let pdsAgent = agent;
+    try {
+      const pdsUrl = await getPdsEndpoint(user.did);
+      // Create unauthenticated agent
+      if (pdsUrl) pdsAgent = new Agent(pdsUrl);
+
+      let cursor;
+      let matchingOffer: { value: Transaction } | undefined;
+
+      // Limit search depth per user to avoid taking too long
+      let fetchCount = 0;
+      const MAX_FETCH = 50;
+
+      do {
+        const res = await pdsAgent.com.atproto.repo.listRecords({
+          repo: user.did,
+          collection: TRANSACTION_COLLECTION,
+          limit: 100,
+          cursor
+        });
+        cursor = res.data.cursor;
+        fetchCount += res.data.records.length;
+
+        matchingOffer = res.data.records.find(r => {
+          const t = r.value as unknown as Transaction;
+          return t.status === 'offered' &&
+            t.isEasyExchange === true &&
+            (!t.partner) && // Must be open
+            t.stickerOut && t.stickerOut.length === myOfferStickerCount;
+        }) as { value: Transaction } | undefined;
+
+        if (matchingOffer) break;
+        if (fetchCount >= MAX_FETCH) break;
+      } while (cursor);
+
+      if (matchingOffer) {
+        // console.log("Found matching offer for", user.did);
+        const t = matchingOffer.value;
+        const stickers = await fetchStickersForTransaction(agent, t, user.did);
+
+        const u = user as any;
+        const targetDid = u.did as string;
+        const partnerStickers = await getAllStickerRecords(pdsAgent as any, targetDid as any);
+        const partnerHasMySticker = partnerStickers.some(s => myOfferedStickerIds.includes(String(s.uri)));
+
+        // Fetch Profile
+        let profile: MatchedPartner['profile'] | undefined;
+        try {
+          const pRes = await agent.getProfile({ actor: user.did });
+          profile = {
+            displayName: pRes.data.displayName,
+            handle: pRes.data.handle,
+            avatar: pRes.data.avatar
+          };
+        } catch (e) {
+          console.warn("Failed to fetch profile for matched partner", e);
+        }
+
+        const match: MatchedPartner = {
+          did: user.did,
+          offer: t,
+          stickers,
+          profile
+        };
+
+        if (!partnerHasMySticker) {
+          // Priority match find!
+          return match;
+        }
+
+        // Keep as fallback
+        if (!fallbackMatch) {
+          fallbackMatch = match;
+        }
+      }
+
+    } catch (e) {
+      console.warn("Failed to check user for easy exchange", user.did, e);
+    }
+  }
+
+  return fallbackMatch || null;
 }

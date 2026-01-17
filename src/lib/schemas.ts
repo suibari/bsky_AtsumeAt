@@ -32,7 +32,8 @@ export interface Config {
 
 export interface Transaction {
   $type: typeof TRANSACTION_COLLECTION;
-  partner: string; // DID of exchange partner
+  partner?: string; // DID of exchange partner (Optional for Easy Exchange)
+  isEasyExchange?: boolean; // Flag for Easy Exchange
   stickerIn: string[]; // CIDs or IDs
   stickerOut: string[]; // CIDs or IDs
   message?: string; // Optional exchange message

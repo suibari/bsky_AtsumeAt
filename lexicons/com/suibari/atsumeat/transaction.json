@@ -9,7 +9,6 @@
       "record": {
         "type": "object",
         "required": [
-          "partner",
           "status",
           "createdAt"
         ],
@@ -18,6 +17,10 @@
             "type": "string",
             "format": "did",
             "description": "The DID of the exchange partner."
+          },
+          "isEasyExchange": {
+            "type": "boolean",
+            "description": "Flag to indicate if this is an Easy Exchange (random partner)."
           },
           "stickerIn": {
             "type": "array",

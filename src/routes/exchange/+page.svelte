@@ -13,6 +13,8 @@
     rejectExchange,
     createExchangePost,
     fetchStickersForTransaction,
+    findEasyExchangePartner,
+    type MatchedPartner,
   } from "$lib/exchange";
   import { getHubUsers } from "$lib/hub"; // Import getHubUsers
   import { getUserStickers, type StickerWithProfile } from "$lib/stickers";
@@ -51,8 +53,13 @@
   let proposalMessage = $state("");
   let resolveError = $state("");
 
+  // Easy Exchange State
+  let matchedPartner = $state<MatchedPartner | null>(null);
+  let findingPartner = $state(false);
+  let excludeDids = $state<string[]>([]);
+
   // Valid Tabs
-  type Tab = "recommend" | "search";
+  type Tab = "recommend" | "search" | "easy";
   let activeTab = $state<Tab>("recommend");
   let recommendedUsers = $state<
     (ProfileViewBasic | ProfileView | ProfileViewDetailed)[]
@@ -361,6 +368,7 @@
         stickersToSend,
         mentionOnBluesky, // Pass flag
         proposalMessage, // Pass message
+        false, // isEasyExchange = false
       );
       alert(i18n.t.exchange.offerSuccess);
       window.location.href = "/";
@@ -410,7 +418,85 @@
       console.error("Rejection failed", e);
       alert("Failed to reject exchange. See console.");
     } finally {
+    }
+  }
+
+  // Handle Easy Exchange
+  async function startEasyExchange() {
+    if (!agent) return;
+    if (selectedStickers.size === 0) {
+      alert(i18n.t.exchange.selectToGive.replace("{n}", "1"));
+      return;
+    }
+
+    findingPartner = true;
+    matchedPartner = null;
+
+    const count = selectedStickers.size;
+    const offeredIds = Array.from(selectedStickers);
+    const stickersToSend = myStickers.filter((s) =>
+      selectedStickers.has(s.uri),
+    );
+
+    try {
+      // 1. Search for partner
+      const found = await findEasyExchangePartner(
+        agent,
+        count,
+        offeredIds,
+        excludeDids,
+      );
+
+      if (found) {
+        matchedPartner = found;
+        partnerDid = found.did; // Set for acceptance context
+      } else {
+        // 2. No partner -> Create Pending
+        await createExchangePost(
+          agent,
+          null,
+          null,
+          stickersToSend,
+          false, // No post
+          undefined,
+          true, // isEasyExchange = true
+        );
+        alert(i18n.t.exchange.easyExchangePending);
+        window.location.href = "/";
+      }
+    } catch (e) {
+      console.error(e);
+      alert(i18n.t.exchange.failedToOffer);
+    } finally {
+      findingPartner = false;
+    }
+  }
+
+  async function acceptEasyExchange() {
+    if (!agent || !matchedPartner) return;
+    processingAction = "accept";
+    try {
+      await acceptExchange(
+        agent,
+        matchedPartner.did,
+        Array.from(selectedStickers),
+      );
+      successAccept = true;
+      alert(i18n.t.exchange.acceptedTitle);
+      window.location.href = "/";
+    } catch (e) {
+      console.error(e);
+      alert("Failed to exchange.");
+    } finally {
       processingAction = null;
+    }
+  }
+
+  function rejectEasyMatch() {
+    if (matchedPartner) {
+      excludeDids.push(matchedPartner.did);
+      matchedPartner = null;
+      startEasyExchange();
     }
   }
 </script>
@@ -661,6 +747,15 @@
             >
               {i18n.t.exchange.searchTab}
             </button>
+            <button
+              class="px-4 py-2 font-medium transition-colors border-b-2 {activeTab ===
+              'easy'
+                ? 'border-primary text-primary'
+                : 'border-transparent text-gray-500 hover:text-gray-700'}"
+              onclick={() => (activeTab = "easy")}
+            >
+              {i18n.t.exchange.easyExchangeTab}
+            </button>
           </div>
 
           {#if activeTab === "recommend"}
@@ -740,6 +835,81 @@
             </div>
           {/if}
 
+          {#if activeTab === "easy"}
+            <div class="mb-4">
+              <p class="text-sm text-gray-600 mb-4">
+                {i18n.t.exchange.easyExchangeDesc}
+              </p>
+
+              {#if findingPartner}
+                <div
+                  class="flex items-center justify-center p-8 bg-gray-50 rounded-xl"
+                >
+                  <div
+                    class="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full mr-3"
+                  ></div>
+                  <span class="text-primary font-bold"
+                    >{i18n.t.exchange.searchingPartner}</span
+                  >
+                </div>
+              {:else if matchedPartner}
+                <div
+                  class="bg-green-50 border border-green-200 p-4 rounded-xl mb-4"
+                >
+                  <h3 class="font-bold text-green-800 mb-2">
+                    {i18n.t.exchange.foundPartner}
+                  </h3>
+                  <p class="text-green-700 mb-4">
+                    {i18n.t.exchange.foundPartnerDesc.replace(
+                      "{name}",
+                      matchedPartner.profile?.displayName ||
+                        matchedPartner.profile?.handle ||
+                        matchedPartner.did,
+                    )}
+                  </p>
+                  <!-- Show stickers they offer -->
+                  <div
+                    class="flex gap-2 overflow-x-auto p-2 bg-white/50 rounded-lg mb-4"
+                  >
+                    {#each matchedPartner.stickers as s}
+                      <div class="w-16 h-16 flex-shrink-0">
+                        <StickerCanvas
+                          avatarUrl={typeof s.image === "string" ? s.image : ""}
+                          staticAngle={true}
+                        />
+                      </div>
+                    {/each}
+                  </div>
+
+                  <div class="flex gap-3">
+                    <button
+                      onclick={rejectEasyMatch}
+                      class="bg-white text-gray-500 border border-gray-300 px-4 py-2 rounded-lg font-bold hover:bg-gray-100 flex-1"
+                    >
+                      {i18n.t.exchange.reject}
+                    </button>
+                    <button
+                      onclick={acceptEasyExchange}
+                      disabled={processingAction !== null}
+                      class="bg-primary text-white px-4 py-2 rounded-lg font-bold hover:bg-primary-dark flex-1 shadow-md"
+                    >
+                      {i18n.t.exchange.exchangeAction}
+                    </button>
+                  </div>
+                </div>
+              {:else}
+                <!-- Initial state for Easy Tab -->
+                <!-- Logic: User selects stickers BELOW, then clicks button? -->
+                <!-- But the "Select Partner" block is typically Step 1, "Select Stickers" Step 2 -->
+                <!-- If Easy Tab is active, we don't need to select partner name. match starts when we click "Start" -->
+                <!-- So we should show the "Start" button AFTER selecting stickers? -->
+                <!-- Currently the UI flow is Top: Select Partner, Bottom: Select Stickers, Then: Action Button -->
+
+                <!-- We should update the Action Button logic at the bottom to handle easy exchange -->
+              {/if}
+            </div>
+          {/if}
+
           {#if resolveError}<p class="text-red-500 text-sm mt-1">
               {resolveError}
             </p>{/if}
@@ -752,7 +922,7 @@
         </div>
 
         <!-- 2. Select Stickers -->
-        {#if partnerDid}
+        {#if partnerDid || activeTab === "easy"}
           <div class="mb-6">
             <h3 class="block text-sm font-bold text-gray-700 mb-2">
               {i18n.t.exchange.selectStickersToOffer.replace(
@@ -823,39 +993,49 @@
             />
           </div>
 
-          <div class="flex flex-col gap-2 mb-4 justify-end items-end">
-            <label
-              class="flex items-center gap-2 cursor-pointer text-sm text-gray-700"
-            >
-              <input
-                type="checkbox"
-                bind:checked={mentionOnBluesky}
-                class="rounded text-primary focus:ring-primary"
-              />
-              {i18n.t.exchange.mentionOnBluesky}
-            </label>
-            <label
-              class="flex items-center gap-2 cursor-pointer text-sm text-gray-500"
-            >
-              <input
-                type="checkbox"
-                bind:checked={saveSettings}
-                class="rounded text-gray-500 focus:ring-gray-400"
-              />
-              {i18n.t.exchange.saveSettings}
-            </label>
-          </div>
+          {#if activeTab !== "easy"}
+            <div class="flex flex-col gap-2 mb-4 justify-end items-end">
+              <label
+                class="flex items-center gap-2 cursor-pointer text-sm text-gray-700"
+              >
+                <input
+                  type="checkbox"
+                  bind:checked={mentionOnBluesky}
+                  class="rounded text-primary focus:ring-primary"
+                />
+                {i18n.t.exchange.mentionOnBluesky}
+              </label>
+              <label
+                class="flex items-center gap-2 cursor-pointer text-sm text-gray-500"
+              >
+                <input
+                  type="checkbox"
+                  bind:checked={saveSettings}
+                  class="rounded text-gray-500 focus:ring-gray-400"
+                />
+                {i18n.t.exchange.saveSettings}
+              </label>
+            </div>
+          {/if}
 
           <div class="flex justify-end">
             <button
-              onclick={handleInitiate}
+              onclick={activeTab === "easy"
+                ? startEasyExchange
+                : handleInitiate}
               disabled={processingAction !== null ||
-                selectedStickers.size === 0}
+                selectedStickers.size === 0 ||
+                (activeTab === "easy" && findingPartner)}
               class="btn-secondary"
             >
-              {processingAction === "accept"
-                ? i18n.t.exchange.sending
-                : i18n.t.exchange.createOffer}
+              {processingAction === "accept" ||
+              (activeTab === "easy" && findingPartner)
+                ? activeTab === "easy"
+                  ? i18n.t.exchange.searchingPartner
+                  : i18n.t.exchange.sending
+                : activeTab === "easy"
+                  ? i18n.t.exchange.exchangeAction
+                  : i18n.t.exchange.createOffer}
             </button>
           </div>
         {/if}
