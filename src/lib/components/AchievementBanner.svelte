@@ -29,6 +29,16 @@
         return "👍";
     }
   }
+  function getCondition(achievement: Achievement) {
+    // Derive base key from titleKey (e.g. "achievements.exchange.1" -> "achievements.exchange")
+    // This handles the singular/plural mismatch (type is 'exchanges' but key is 'exchange')
+    const parts = achievement.titleKey.split(".");
+    parts.pop();
+    const key = `${parts.join(".")}.condition`;
+
+    const template = i18n.resolve(key);
+    return template.replace("{n}", achievement.count.toString());
+  }
 </script>
 
 {#if achievements.length > 0}
@@ -40,7 +50,7 @@
           border rounded-full px-3 py-1 text-xs font-bold
           flex items-center gap-1.5 transition hover:scale-105 cursor-default
         "
-        title={`Tier ${achievement.tier}`}
+        title={getCondition(achievement)}
       >
         <span>{getIcon(achievement.type)}</span>
         <span>{i18n.resolve(achievement.titleKey)}</span>

@@ -177,18 +177,21 @@ export const translations = {
     },
     achievements: {
       created: {
+        condition: "シールを {n}枚以上作成した",
         1: "かけだしクリエイター",
         10: "ステッカー量産体制",
         50: "神絵師",
         100: "伝説の創造主",
       },
       exchange: {
+        condition: "交換を {n}回以上成立させた",
         1: "はじめての交換会",
         10: "シールトレーダー",
         50: "絆の錬金術師",
         100: "青空をつなぐコレクター",
       },
       likes: {
+        condition: "いいねを {n}回以上行った",
         10: "親指戦士",
         100: "LOVEマシーン",
         500: "尊さの守護神",
@@ -374,18 +377,21 @@ export const translations = {
     },
     achievements: {
       created: {
+        condition: "Created {n} stickers or more",
         1: "Fledgling Creator",
         10: "Mass Production Mode",
         50: "God Tier Artist",
         100: "Legendary Creator",
       },
       exchange: {
+        condition: "Completed {n} exchanges or more",
         1: "First Exchange",
         10: "Sticker Trader",
         50: "Bond Alchemist",
         100: "Sky Connector",
       },
       likes: {
+        condition: "Given {n} likes or more",
         10: "Thumb Warrior",
         100: "Love Machine",
         500: "Guardian of Preciousness",
