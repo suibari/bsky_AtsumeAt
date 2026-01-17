@@ -532,6 +532,18 @@
     }
   }
 
+  function setTab(t: Tab) {
+    activeTab = t;
+    // Reset Partner State
+    partnerHandle = "";
+    partnerDid = null;
+    resolveError = "";
+    // Reset Easy Exchange State
+    matchedPartner = null;
+    findingPartner = false;
+    excludeDids = [];
+  }
+
   $effect(() => {
     if (activeTab === "withdraw" && agent) {
       fetchMyOpenOffers();
@@ -772,7 +784,7 @@
               'recommend'
                 ? 'border-primary text-primary'
                 : 'border-transparent text-gray-500 hover:text-gray-700'}"
-              onclick={() => (activeTab = "recommend")}
+              onclick={() => setTab("recommend")}
             >
               {i18n.t.exchange.recommendTab}
             </button>
@@ -781,7 +793,7 @@
               'search'
                 ? 'border-primary text-primary'
                 : 'border-transparent text-gray-500 hover:text-gray-700'}"
-              onclick={() => (activeTab = "search")}
+              onclick={() => setTab("search")}
             >
               {i18n.t.exchange.searchTab}
             </button>
@@ -790,7 +802,7 @@
               'easy'
                 ? 'border-primary text-primary'
                 : 'border-transparent text-gray-500 hover:text-gray-700'}"
-              onclick={() => (activeTab = "easy")}
+              onclick={() => setTab("easy")}
             >
               {i18n.t.exchange.easyExchangeTab}
             </button>
@@ -799,7 +811,7 @@
               'withdraw'
                 ? 'border-primary text-primary'
                 : 'border-transparent text-gray-500 hover:text-gray-700'}"
-              onclick={() => (activeTab = "withdraw")}
+              onclick={() => setTab("withdraw")}
             >
               {i18n.t.exchange.withdrawTab}
             </button>
@@ -911,14 +923,45 @@
                   <h3 class="font-bold text-green-800 mb-2">
                     {i18n.t.exchange.foundPartner}
                   </h3>
-                  <p class="text-green-700 mb-4">
-                    {i18n.t.exchange.foundPartnerDesc.replace(
-                      "{name}",
-                      matchedPartner.profile?.displayName ||
-                        matchedPartner.profile?.handle ||
-                        matchedPartner.did,
-                    )}
-                  </p>
+                  <div class="flex items-center gap-3 mb-4">
+                    <a
+                      href="https://bsky.app/profile/{matchedPartner.profile
+                        ?.handle || matchedPartner.did}"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      class="flex-shrink-0 hover:opacity-80 transition-opacity"
+                    >
+                      {#if matchedPartner.profile?.avatar}
+                        <img
+                          src={matchedPartner.profile.avatar}
+                          alt={matchedPartner.profile.handle}
+                          class="w-12 h-12 rounded-full border-2 border-white shadow-sm"
+                        />
+                      {:else}
+                        <div
+                          class="w-12 h-12 rounded-full bg-green-200 flex items-center justify-center text-green-700 font-bold border-2 border-white shadow-sm"
+                        >
+                          ?
+                        </div>
+                      {/if}
+                    </a>
+                    <div class="flex-1">
+                      <p class="text-green-700">
+                        {i18n.t.exchange.foundPartnerDesc.replace("{name}", "")}
+                        <a
+                          href="https://bsky.app/profile/{matchedPartner.profile
+                            ?.handle || matchedPartner.did}"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          class="font-bold hover:underline"
+                        >
+                          {matchedPartner.profile?.displayName ||
+                            matchedPartner.profile?.handle ||
+                            matchedPartner.did}
+                        </a>
+                      </p>
+                    </div>
+                  </div>
                   <!-- Show stickers they offer -->
                   <div
                     class="flex gap-2 overflow-x-auto p-2 bg-white/50 rounded-lg mb-4"
