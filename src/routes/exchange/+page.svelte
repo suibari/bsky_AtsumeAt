@@ -919,6 +919,8 @@
                   </p>
                 </div>
               {:else if matchedPartner}
+                {@const parts =
+                  i18n.t.exchange.foundPartnerDesc.split("{name}")}
                 <div
                   class="bg-green-50 border border-green-200 p-4 rounded-xl mb-4"
                 >
@@ -949,7 +951,7 @@
                     </a>
                     <div class="flex-1">
                       <p class="text-green-700">
-                        {i18n.t.exchange.foundPartnerDesc.replace("{name}", "")}
+                        {parts[0]}
                         <a
                           href="https://bsky.app/profile/{matchedPartner.profile
                             ?.handle || matchedPartner.did}"
@@ -961,6 +963,7 @@
                             matchedPartner.profile?.handle ||
                             matchedPartner.did}
                         </a>
+                        {parts[1]}
                       </p>
                     </div>
                   </div>
