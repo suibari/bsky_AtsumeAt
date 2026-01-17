@@ -1,0 +1,72 @@
+{
+  "lexicon": 1,
+  "id": "com.suibari.atsumeat.transaction",
+  "defs": {
+    "main": {
+      "type": "record",
+      "description": "Definition of a transaction",
+      "key": "tid",
+      "record": {
+        "type": "object",
+        "required": [
+          "partner",
+          "status",
+          "createdAt"
+        ],
+        "properties": {
+          "partner": {
+            "type": "string",
+            "format": "did",
+            "description": "The DID of the exchange partner."
+          },
+          "stickerIn": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uri"
+            },
+            "description": "URIs of the stickers received in this exchange (if completed)."
+          },
+          "stickerOut": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uri"
+            },
+            "description": "URIs of the stickers given in this exchange."
+          },
+          "message": {
+            "type": "string",
+            "maxLength": 6400,
+            "maxGraphemes": 640,
+            "description": "Optional message attached to the exchange offer or completion."
+          },
+          "status": {
+            "type": "string",
+            "maxLength": 64,
+            "knownValues": [
+              "offered",
+              "completed",
+              "rejected"
+            ],
+            "description": "The current status of the transaction."
+          },
+          "refPartner": {
+            "type": "string",
+            "format": "uri",
+            "description": "URI of the partner's profile, used for Constellation backlinking during the offer stage."
+          },
+          "refTransaction": {
+            "type": "string",
+            "format": "uri",
+            "description": "URI of the referencing transaction (e.g., the original Offer) when completing or rejecting."
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "datetime"
+          }
+        }
+      }
+    }
+  }
+}

@@ -3,6 +3,7 @@ import { TRANSACTION_COLLECTION, STICKER_COLLECTION, type Transaction, type Stic
 import { type StickerWithProfile, getAllStickerRecords } from './stickers';
 import { requestSignature } from './signatures';
 import { getPdsEndpoint, publicAgent } from './atproto';
+import { getBacklinks, type ConstellationRecord } from './constellation';
 import { i18n } from './i18n.svelte';
 
 export async function createExchangePost(agent: Agent, targetHandle: string, targetDid: string, offeredStickers: StickerWithProfile[], withPost: boolean = true, message?: string) {
@@ -177,8 +178,8 @@ export async function acceptExchange(agent: Agent, partnerDid: string, stickersT
           obtainedAt: new Date().toISOString(),
 
           // Signed Data
-          signature: sigData.signature,
-          signedPayload: sigData.signedPayload
+          signature: sigData.signature || '',
+          signedPayload: sigData.signedPayload || ''
         } as Sticker
       });
     }
@@ -205,7 +206,7 @@ export async function acceptExchange(agent: Agent, partnerDid: string, stickersT
   }
 }
 
-export async function rejectExchange(agent: Agent, partnerDid: string) {
+export async function rejectExchange(agent: Agent, partnerDid: string, offerUri?: string) {
   const myDid = agent.assertDid;
   if (!myDid) return;
 
@@ -217,25 +218,48 @@ export async function rejectExchange(agent: Agent, partnerDid: string) {
       pdsAgent = new Agent(pdsUrl);
     }
 
-    let cursor;
     let validOffer: { uri: string, value: unknown } | undefined;
 
-    do {
-      const partnerOffers = await pdsAgent.com.atproto.repo.listRecords({
-        repo: partnerDid,
-        collection: TRANSACTION_COLLECTION,
-        limit: 100,
-        cursor,
-      });
-      cursor = partnerOffers.data.cursor;
+    if (offerUri) {
+      // Target specific offer
+      const rkey = offerUri.split('/').pop();
+      if (rkey) {
+        try {
+          const res = await pdsAgent.com.atproto.repo.getRecord({
+            repo: partnerDid,
+            collection: TRANSACTION_COLLECTION,
+            rkey
+          });
+          const t = res.data.value as unknown as Transaction;
+          if (t.partner === myDid && t.status === 'offered') {
+            validOffer = { uri: offerUri, value: res.data.value };
+          }
+        } catch (e) {
+          console.warn(`Failed to verify specific offer ${offerUri}`, e);
+        }
+      }
+    }
 
-      validOffer = partnerOffers.data.records.find(r => {
-        const t = r.value as unknown as Transaction;
-        return t.partner === myDid && t.status === 'offered';
-      });
+    // Fallback: Find ANY active offer (Backwards compatibility or if specific verify failed)
+    if (!validOffer) {
+      let cursor;
+      do {
+        const partnerOffers = await pdsAgent.com.atproto.repo.listRecords({
+          repo: partnerDid,
+          collection: TRANSACTION_COLLECTION,
+          limit: 100,
+          cursor,
+        });
+        cursor = partnerOffers.data.cursor;
 
-      if (validOffer) break;
-    } while (cursor);
+        validOffer = partnerOffers.data.records.find(r => {
+          const t = r.value as unknown as Transaction;
+          return t.partner === myDid && t.status === 'offered';
+        });
+
+        if (validOffer) break;
+      } while (cursor);
+    }
 
     if (!validOffer) {
       throw new Error("No active exchange offer found from this user.");
@@ -520,21 +544,9 @@ export async function checkIncomingOffers(agent: Agent): Promise<IncomingOffer[]
   if (!myDid) return [];
 
   // Strategy: Use Constellation (Backlinks) to find who is effectively "pointing" to me via transaction.refPartner
-  const subject = encodeURIComponent(`at://${myDid}/app.bsky.actor.profile/self`);
-  const source = encodeURIComponent(`${TRANSACTION_COLLECTION}:refPartner`);
-  const url = `https://constellation.microcosm.blue/xrpc/blue.microcosm.links.getBacklinks?subject=${subject}&source=${source}`;
-
-  let links: any[] = [];
-  try {
-    const res = await fetch(url);
-    if (res.ok) {
-      const data = await res.json();
-      // Support multiple formats (frames, links, records)
-      links = (data.records || data.frames || data.links || []);
-    }
-  } catch (e) {
-    console.warn("Constellation check failed", e);
-  }
+  const subject = `at://${myDid}/app.bsky.actor.profile/self`;
+  const source = `${TRANSACTION_COLLECTION}:refPartner`;
+  const links = await getBacklinks(subject, source, 100);
 
   const results: IncomingOffer[] = [];
 
@@ -570,6 +582,8 @@ export async function checkIncomingOffers(agent: Agent): Promise<IncomingOffer[]
     // 'records' format: { did, collection, rkey }
     // 'frames'/'links' format: { author: { did }, value: ... }
     const authorDid = link.did || (link.author && link.author.did);
+    if (!authorDid) return; // Skip if no DID
+
     const rkey = link.rkey;
     let uri = link.uri;
 
@@ -595,20 +609,24 @@ export async function checkIncomingOffers(agent: Agent): Promise<IncomingOffer[]
             uri = data.uri || `at://${authorDid}/${TRANSACTION_COLLECTION}/${rkey}`;
             // console.log("Fetched record from PDS Direct:", t);
             fetched = true;
+          } else {
+            console.warn(`[Exchange] PDS Direct fetch failed: ${res.status}`, directUrl);
           }
         }
 
         // Strategy 2: AppView (Secondary - Public API)
         if (!fetched) {
           const appViewUrl = `https://public.api.bsky.app/xrpc/com.atproto.repo.getRecord?repo=${authorDid}&collection=${TRANSACTION_COLLECTION}&rkey=${rkey}`;
-          console.log("Fetching from AppView (Fallback):", appViewUrl);
+          // console.log("Fetching from AppView (Fallback):", appViewUrl);
           const res = await fetch(appViewUrl);
           if (res.ok) {
             const data = await res.json();
             t = data.value as unknown as Transaction;
             uri = data.uri;
-            console.log("Fetched record from AppView:", t);
+            // console.log("Fetched record from AppView:", t);
             fetched = true;
+          } else {
+            console.warn(`[Exchange] AppView fetch failed: ${res.status}`, appViewUrl);
           }
         }
       } catch (e) {
@@ -619,8 +637,12 @@ export async function checkIncomingOffers(agent: Agent): Promise<IncomingOffer[]
     }
 
     if (t && t.status === 'offered') {
+      if (!uri) {
+        uri = `at://${authorDid}/${TRANSACTION_COLLECTION}/${rkey}`;
+      }
+
       // Check if I have already responded (does a transaction exist that references this offer?)
-      if (uri && myRespondedOfferUris.has(uri)) {
+      if (myRespondedOfferUris.has(uri)) {
         console.log("Skipping already responded offer:", uri);
         return;
       }

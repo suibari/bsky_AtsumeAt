@@ -40,17 +40,7 @@
             // Check for Incoming Offers (Notifications)
             // Non-blocking for UI responsiveness
             checkIncomingOffers(agent).then((offers) => {
-              const lastChecked = localStorage.getItem(
-                "lastCheckedNotificationAt",
-              );
-              if (lastChecked) {
-                const threshold = new Date(lastChecked).getTime();
-                notificationCount = offers.filter(
-                  (o) => new Date(o.offer.createdAt).getTime() > threshold,
-                ).length;
-              } else {
-                notificationCount = offers.length;
-              }
+              notificationCount = offers.length;
             });
 
             const returnUrl = localStorage.getItem("returnUrl");

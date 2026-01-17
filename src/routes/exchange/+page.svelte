@@ -33,7 +33,7 @@
   let loading = $state(true);
   let verifying = $state(false);
   let isValidOffer = $state(false);
-  let processing = $state(false);
+  let processingAction = $state<"accept" | "reject" | null>(null);
   let incomingStickers = $state<Sticker[]>([]);
   let incomingMessage = $state<string | undefined>(undefined);
   let offererProfile = $state<ProfileViewDetailed | null>(null);
@@ -348,7 +348,8 @@
       localStorage.removeItem("mentionOnBluesky");
     }
 
-    processing = true;
+    processingAction = "accept"; // Use 'accept' to mean "doing the primary positive action"
+
     try {
       const stickersToSend = myStickers.filter((s) =>
         selectedStickers.has(s.uri),
@@ -367,7 +368,7 @@
       console.error(e);
       alert(i18n.t.exchange.failedToOffer);
     } finally {
-      processing = false;
+      processingAction = null;
     }
   }
 
@@ -379,7 +380,7 @@
       return;
     }
 
-    processing = true;
+    processingAction = "accept";
     try {
       await acceptExchange(
         agent,
@@ -392,7 +393,7 @@
       console.error("Exchange failed", e);
       alert("Failed to accept exchange. See console.");
     } finally {
-      processing = false;
+      processingAction = null;
     }
   }
 
@@ -401,7 +402,7 @@
     if (!agent || !targetUserParam) return;
     if (!confirm(i18n.t.exchange.rejectConfirm)) return;
 
-    processing = true;
+    processingAction = "reject";
     try {
       await rejectExchange(agent, targetUserParam);
       successReject = true;
@@ -409,7 +410,7 @@
       console.error("Rejection failed", e);
       alert("Failed to reject exchange. See console.");
     } finally {
-      processing = false;
+      processingAction = null;
     }
   }
 </script>
@@ -594,19 +595,20 @@
               >
               <button
                 onclick={handleReject}
-                disabled={processing}
+                disabled={processingAction !== null}
                 class="px-4 py-2 text-red-500 hover:text-red-700 font-bold"
               >
-                {processing
+                {processingAction === "reject"
                   ? i18n.t.exchange.rejecting
                   : i18n.t.exchange.rejectAction}
               </button>
               <button
                 onclick={handleAccept}
-                disabled={processing || selectedStickers.size === 0}
+                disabled={processingAction !== null ||
+                  selectedStickers.size === 0}
                 class="btn-secondary"
               >
-                {processing
+                {processingAction === "accept"
                   ? i18n.t.exchange.exchanging
                   : i18n.t.exchange.exchangeAction}
               </button>
@@ -847,10 +849,11 @@
           <div class="flex justify-end">
             <button
               onclick={handleInitiate}
-              disabled={processing || selectedStickers.size === 0}
+              disabled={processingAction !== null ||
+                selectedStickers.size === 0}
               class="btn-secondary"
             >
-              {processing
+              {processingAction === "accept"
                 ? i18n.t.exchange.sending
                 : i18n.t.exchange.createOffer}
             </button>

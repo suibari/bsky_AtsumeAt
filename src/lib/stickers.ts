@@ -3,6 +3,7 @@ import { STICKER_COLLECTION, CONFIG_COLLECTION, type Sticker, STICKER_LIKE_COLLE
 import { getPdsEndpoint, publicAgent } from './atproto';
 import { type SealVerificationResult, verifySeal, requestSignature } from './signatures';
 import { ensureHubRef } from './hub';
+import { getBacklinks } from './constellation';
 
 export type StickerWithProfile = Sticker & {
   profile?: {
@@ -74,8 +75,8 @@ export async function initStickers(agent: Agent, userDid: string, onStatus?: (ms
     obtainedAt: new Date().toISOString(),
 
     // Add Signature
-    signature: sigData?.signature,
-    signedPayload: sigData?.signedPayload
+    signature: sigData?.signature || '',
+    signedPayload: sigData?.signedPayload || ''
   };
 
   await agent.com.atproto.repo.createRecord({
@@ -425,6 +426,100 @@ function getRepoAndRkey(uri: string) {
   return { repo: parts[0], collection: parts[1], rkey: parts[2] };
 }
 
+// 5. Update Sticker (Tags, Name, etc.)
+export async function updateSticker(agent: Agent, stickerUri: string, updates: Partial<Sticker>) {
+  const myDid = agent.assertDid;
+  if (!myDid) return;
+
+  const { rkey } = getRepoAndRkey(stickerUri);
+  if (!rkey) return;
+
+  try {
+    // 1. Fetch current record (for CID and full data)
+    const { data: { value: currentRecord, cid: currentCid } } = await agent.com.atproto.repo.getRecord({
+      repo: myDid,
+      collection: STICKER_COLLECTION,
+      rkey
+    });
+
+    const sticker = currentRecord as Sticker;
+    const newSticker = { ...sticker, ...updates };
+
+    // 2. Data Sanitization
+    if (newSticker.tags) {
+      // Unique and Trim
+      newSticker.tags = Array.from(new Set(newSticker.tags.map(t => t.trim()).filter(t => t)));
+    }
+
+    // 3. Re-Signing Logic (If Name Changed)
+    if (updates.name !== undefined && updates.name !== sticker.name) {
+      // Name is part of the signed payload. We MUST re-sign.
+      // We can only re-sign if WE are the original minter (or we have the original signature info? No, we need to request a NEW signature from the server).
+      // Wait, if I am just a holder, I cannot change the name and re-sign it as valid unless the server allows "renaming"?
+      // The server signs: (model, image, obtainedFrom, originalCreator, name, message).
+      // If I change the `name`, valid seal requires a signature over the NEW name.
+      // The server `requestSignature` endpoint will sign whatever I send, but `verifySeal` checks:
+      // - Payload.sub == Owner (Me) -> YES
+      // - Payload.iss == Trusted Key -> YES
+      // - Field Matching -> YES (record.name == signed.name)
+      // So, YES, I can re-sign it as myself.
+
+      // Preserve original info for the signature payload
+      // We need to reconstruct the payload info
+      const infoPayload = {
+        model: sticker.model,
+        // Ensure image is string URL
+        image: typeof sticker.image === 'string' ? sticker.image : '', // Fallback? Image should be URL in record usually.
+        obtainedFrom: sticker.obtainedFrom,
+        originalCreator: sticker.originalOwner,
+        name: newSticker.name, // NEW Name
+        message: sticker.message
+      };
+
+      // If image was blob ref, we might have issues getting the URL back if we don't have it handy?
+      // `sticker.image` in the record might be a BlobRef object.
+      // But `signatures.ts` expects `image` string for URL matching.
+      // If we are just updating metadata, we might need to resolve the blob URL again if it's missing?
+      // Actually `initStickers` calculates it.
+      // Let's assume for now the user has the 'StickerWithProfile' which has the URL, but here we only fetching the raw record.
+      // We should pass the 'current image URL' if possible, or attempt to reconstruct it.
+
+      if (typeof sticker.image === 'object') {
+        // Reconstruct URL logic (duplicated from getUserStickers roughly)
+        // If we can't reconstruct, we might fail verification on 'image'.
+        // But let's try our best.
+        const blobDid = sticker.originalOwner || myDid;
+        const ref = (sticker.image as any).ref;
+        const link = ref.$link ? ref.$link : ref.toString();
+        if (link && link !== '[object Object]') {
+          infoPayload.image = `https://cdn.bsky.app/img/feed_fullsize/plain/${blobDid}/${link}@jpeg`;
+        }
+      }
+
+      const sigData = await requestSignature(myDid, { info: infoPayload });
+      if (sigData) {
+        newSticker.signature = sigData.signature;
+        newSticker.signedPayload = sigData.signedPayload;
+      } else {
+        throw new Error("Failed to re-sign sticker during name update");
+      }
+    }
+
+    // 4. Perform Update
+    await agent.com.atproto.repo.putRecord({
+      repo: myDid,
+      collection: STICKER_COLLECTION,
+      rkey,
+      record: newSticker,
+      swapRecord: currentCid
+    });
+
+  } catch (e) {
+    console.error("Failed to update sticker", e);
+    throw e;
+  }
+}
+
 // 4. Delete Sticker
 export async function deleteSticker(agent: Agent, stickerUri: string) {
   const myDid = agent.assertDid;
@@ -449,36 +544,9 @@ export async function deleteSticker(agent: Agent, stickerUri: string) {
 // 2. Fetch Likes for a Sticker (Using Constellation)
 // Returns: List of liker DIDs
 export async function getStickerLikes(agent: Agent, stickerUri: string): Promise<string[]> {
-  // Constellation query:
-  // subject = stickerUri
-  // source = "blue.atsumeat.stickerLike:.subject.uri" ?? Or just strict matching?
-  // Constellation usually indexes by subject.
-
-  // Subject: The Sticker URI (target)
-  const subject = encodeURIComponent(stickerUri);
-  // Source Collection filters (Only interested in likes)
-  // Constellation syntax for 'getBacklinks'
-  // Source Collection filters (Only interested in likes)
-  // Constellation syntax for 'getBacklinks': collection:.path.to.uri
-  const source = encodeURIComponent(`${STICKER_LIKE_COLLECTION}:subject.uri`);
-  // NOTE: Constellation expects 'source' to be collection, or specific path?
-  // Documentation says: source=collection
-
-  const url = `https://constellation.microcosm.blue/xrpc/blue.microcosm.links.getBacklinks?subject=${subject}&source=${source}`;
-
-  try {
-    const res = await fetch(url);
-    if (!res.ok) throw new Error('Constellation API error');
-    const data = await res.json();
-    const records = (data.records || []) as { did: string, collection: string, rkey: string }[];
-
-    // Extract authors (DIDs)
-    return records.map(r => r.did);
-
-  } catch (e) {
-    console.error('Failed to get sticker likes', e);
-    return [];
-  }
+  const source = `${STICKER_LIKE_COLLECTION}:subject.uri`;
+  const records = await getBacklinks(stickerUri, source);
+  return records.map(r => r.did);
 }
 
 // 3. Batch Fetch Like States for Multiple Stickers
@@ -505,18 +573,9 @@ export async function loadStickerLikeState(agent: Agent, sticker: StickerWithPro
   }
 
   // Re-impl for efficiency:
-  const subject = encodeURIComponent(targetUri);
-  const source = encodeURIComponent(`${STICKER_LIKE_COLLECTION}:subject.uri`);
-  const url = `https://constellation.microcosm.blue/xrpc/blue.microcosm.links.getBacklinks?subject=${subject}&source=${source}`;
-
-  let records: { did: string, collection: string, rkey: string }[] = [];
-  try {
-    const res = await fetch(url);
-    if (res.ok) {
-      const data = await res.json();
-      records = (data.records || []) as { did: string, collection: string, rkey: string }[];
-    }
-  } catch (e) { }
+  const source = `${STICKER_LIKE_COLLECTION}:subject.uri`;
+  const rawRecords = await getBacklinks(targetUri, source);
+  const records = rawRecords.map(r => ({ did: r.did, collection: r.collection, rkey: r.rkey }));
 
   const likers: { did: string; avatar?: string; handle?: string }[] = [];
 

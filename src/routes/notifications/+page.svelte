@@ -32,8 +32,6 @@
   async function loadOffers() {
     if (!agent) return;
     offers = await checkIncomingOffers(agent);
-    // Mark as read (update timestamp)
-    localStorage.setItem("lastCheckedNotificationAt", new Date().toISOString());
   }
 
   async function handleAccept(offer: IncomingOffer) {
@@ -48,9 +46,9 @@
 
     processing = offer.partnerDid;
     try {
-      await rejectExchange(agent, offer.partnerDid);
+      await rejectExchange(agent, offer.partnerDid, offer.uri);
       // Remove from list
-      offers = offers.filter((o) => o.partnerDid !== offer.partnerDid);
+      offers = offers.filter((o) => o.uri !== offer.uri);
       message = i18n.t.exchange.rejectedTitle;
       setTimeout(() => (message = null), 3000);
     } catch (e) {

@@ -34,9 +34,16 @@ export const translations = {
       sortObtained: "入手日順",
       sortMinter: "発行者順",
       sortLikes: "いいね順",
+      defaultName: "{name}のシール",
+    },
+    stickerViewer: {
+      editDetails: "編集",
+      saveChanges: "保存",
+      tagsPublicInfo: "タグは公開情報です",
     },
     common: {
       loading: "読み込み中...",
+      saving: "保存中...",
       back: "戻る",
       cancel: "キャンセル",
       ok: "OK",
@@ -169,6 +176,29 @@ export const translations = {
       otherTitle: "その他",
       otherText: "このページに記載される文章は予告なく変更することがあります。",
       links: "リンク",
+    },
+    achievements: {
+      created: {
+        condition: "シールを {n}枚以上作成した",
+        1: "かけだしクリエイター",
+        10: "ステッカー量産体制",
+        50: "神絵師",
+        100: "伝説の創造主",
+      },
+      exchange: {
+        condition: "交換を {n}回以上成立させた",
+        1: "はじめての交換会",
+        10: "シールトレーダー",
+        50: "絆の錬金術師",
+        100: "青空をつなぐコレクター",
+      },
+      likes: {
+        condition: "いいねを {n}回以上行った",
+        10: "親指戦士",
+        100: "LOVEマシーン",
+        500: "尊さの守護神",
+        1000: "無限のいいね黄金回転",
+      }
     }
   },
   en: {
@@ -206,9 +236,16 @@ export const translations = {
       sortObtained: "Date Obtained",
       sortMinter: "By Minter",
       sortLikes: "Most Liked",
+      defaultName: "{name}'s Sticker",
+    },
+    stickerViewer: {
+      editDetails: "Edit Details",
+      saveChanges: "Save Changes",
+      tagsPublicInfo: "Tags are public information",
     },
     common: {
       loading: "Loading...",
+      saving: "Saving...",
       back: "Back",
       cancel: "Cancel",
       ok: "OK",
@@ -341,6 +378,29 @@ export const translations = {
       otherTitle: "Others",
       otherText: "The text on this page is subject to change without notice.",
       links: "Links",
+    },
+    achievements: {
+      created: {
+        condition: "Created {n} stickers or more",
+        1: "Fledgling Creator",
+        10: "Mass Production Mode",
+        50: "God Tier Artist",
+        100: "Legendary Creator",
+      },
+      exchange: {
+        condition: "Completed {n} exchanges or more",
+        1: "First Exchange",
+        10: "Sticker Trader",
+        50: "Bond Alchemist",
+        100: "Sky Connector",
+      },
+      likes: {
+        condition: "Given {n} likes or more",
+        10: "Thumb Warrior",
+        100: "Love Machine",
+        500: "Guardian of Preciousness",
+        1000: "Infinite Golden Rotation",
+      }
     }
   }
 };

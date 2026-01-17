@@ -9,17 +9,18 @@ export interface Sticker {
   $type: typeof STICKER_COLLECTION;
   name?: string; // Name of the sticker
   message?: string; // Optional sticker message
+  tags?: string[]; // User-defined tags for organization
   image: string | BlobRef; // Avatar URL or BlobRef
   imageType?: 'avatar' | 'custom';
   subjectDid?: string; // DID of the user depicted (if applicable)
   originalOwner: string; // DID of the creator/minter
-  model: string; // 'default', 'cat', etc.
+  model: string; // 'default' | 'cid:<cid>'
   obtainedFrom?: string; // The user who gave this sticker (DID)
   obtainedAt: string;
 
   // Verification
-  signature?: string;       // Server signature (base64)
-  signedPayload?: string;   // JSON string that was signed
+  signature: string;       // Server signature (base64)
+  signedPayload: string;   // JSON string that was signed
   [key: string]: unknown;
 }
 

@@ -9,11 +9,18 @@
   import { createExchangePost } from "$lib/exchange";
   import type { ProfileViewDetailed } from "@atproto/api/dist/client/types/app/bsky/actor/defs";
   import { i18n } from "$lib/i18n.svelte";
+  import {
+    calculateAchievements,
+    getUserStats,
+    type Achievement,
+  } from "$lib/achievements";
+  import AchievementBanner from "$lib/components/AchievementBanner.svelte";
 
   let agent = $state<Agent | null>(null);
   let currentDid = $state<string | null>(null);
   let profile = $state<ProfileViewDetailed | null>(null);
   let loadingProfile = $state(true);
+  let achievements = $state<Achievement[]>([]);
 
   const did = $derived($page.params.did);
 
@@ -37,6 +44,17 @@
     try {
       const res = await publicAgent.getProfile({ actor: did });
       profile = res.data;
+
+      // Load Achievements (Async, don't block main UI excessively if unnecessary, but here we want to show it)
+      // Use publicAgent or agent. Logic needs 'listRecords'. publicAgent is fine for reading.
+      // But getUserStats uses 'agent' argument. stickers.ts mostly uses whatever agent passed.
+      // 'getAllStickerRecords' uses the agent passed.
+      // Let's use the authenticated agent if available, or publicAgent if we were browsing as guest (but here we require login per onMount logic essentially? No, publicAgent is imported)
+      // Wait, onMount checks for session. Basic access might be restricted to logged in users in this app?
+      // Yes, onMount redirects to / if no session. So 'agent' is available.
+      // But we should pass 'agent' to be safe.
+      const stats = await getUserStats(agent, did);
+      achievements = calculateAchievements(stats);
     } catch (e) {
       console.error("Failed to fetch profile", e);
     } finally {
@@ -98,7 +116,10 @@
           <h2 class="text-2xl font-bold text-gray-900">
             {profile.displayName || profile.handle}
           </h2>
+
           <p class="text-gray-500 font-medium">@{profile.handle}</p>
+
+          <AchievementBanner {achievements} />
 
           {#if profile.description}
             <p
