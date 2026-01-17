@@ -40,6 +40,19 @@
             "type": "unknown",
             "description": "The image content, either a string URL (for CDN/Blob) or a BlobRef."
           },
+          "shape": {
+            "type": "string",
+            "maxLength": 64,
+            "knownValues": [
+              "circle",
+              "square",
+              "star",
+              "heart",
+              "diamond",
+              "butterfly"
+            ],
+            "description": "The shape of the sticker canvas."
+          },
           "imageType": {
             "type": "string",
             "maxLength": 64,

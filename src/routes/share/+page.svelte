@@ -93,18 +93,95 @@
     canvas.freeDrawingBrush = brush;
   }
 
+  function getClipPathForShape(
+    shape: string,
+    width: number,
+    height: number,
+  ): fabric.Object {
+    if (shape === "square") {
+      return new fabricModule.Rect({
+        width: width,
+        height: height,
+        rx: 16, // Rounded corners
+        ry: 16,
+        originX: "center",
+        originY: "center",
+      });
+    } else if (shape === "star") {
+      // Fat star polygon 0-1 coords scaled
+      // 50% 0%, 63% 38%, 100% 38%, 69% 59%, 82% 100%, 50% 75%, 18% 100%, 31% 59%, 0% 38%, 37% 38%
+      const points = [
+        { x: 0.5, y: 0.0 },
+        { x: 0.63, y: 0.38 },
+        { x: 1.0, y: 0.38 },
+        { x: 0.69, y: 0.59 },
+        { x: 0.82, y: 1.0 },
+        { x: 0.5, y: 0.75 },
+        { x: 0.18, y: 1.0 },
+        { x: 0.31, y: 0.59 },
+        { x: 0.0, y: 0.38 },
+        { x: 0.37, y: 0.38 },
+      ].map((p) => ({ x: (p.x - 0.5) * width, y: (p.y - 0.5) * height }));
+
+      return new fabricModule.Polygon(points, {
+        originX: "center",
+        originY: "center",
+      });
+    } else if (shape === "diamond") {
+      const points = [
+        { x: 0, y: -height / 2 },
+        { x: width / 2, y: 0 },
+        { x: 0, y: height / 2 },
+        { x: -width / 2, y: 0 },
+      ];
+      return new fabricModule.Polygon(points, {
+        originX: "center",
+        originY: "center",
+      });
+    } else if (shape === "heart") {
+      const pathData =
+        "M0.5,0.95 C0.5,0.95 0.1,0.65 0.1,0.35 C0.1,0.15 0.25,0.05 0.4,0.1 C0.48,0.13 0.5,0.2 0.5,0.2 C0.5,0.2 0.52,0.13 0.6,0.1 C0.75,0.05 0.9,0.15 0.9,0.35 C0.9,0.65 0.5,0.95 0.5,0.95 Z";
+      const path = new fabricModule.Path(pathData, {
+        originX: "center",
+        originY: "center",
+      });
+      const bounds = path.getBoundingRect();
+      const scaleX = width / bounds.width;
+      const scaleY = height / bounds.height;
+      path.set({ scaleX, scaleY });
+      return path;
+    } else if (shape === "butterfly") {
+      const pathData =
+        "M0.5 0.53 L 0.55 0.45 C 0.7 0.2 0.9 0.1 0.95 0.3 C 0.98 0.4 0.9 0.55 0.75 0.65 C 0.85 0.7 0.95 0.8 0.85 0.9 C 0.75 1.0 0.6 0.9 0.5 0.8 C 0.4 0.9 0.25 1.0 0.15 0.9 C 0.05 0.8 0.15 0.7 0.25 0.65 C 0.1 0.55 0.02 0.4 0.05 0.3 C 0.1 0.1 0.3 0.2 0.45 0.45 Z";
+      const path = new fabricModule.Path(pathData, {
+        originX: "center",
+        originY: "center",
+      });
+      const bounds = path.getBoundingRect();
+      const scaleX = width / bounds.width;
+      const scaleY = height / bounds.height;
+      path.set({ scaleX, scaleY });
+      return path;
+    }
+
+    // Default Circle
+    return new fabricModule.Circle({
+      radius: width / 2,
+      originX: "center",
+      originY: "center",
+    });
+  }
+
   // Core Logic: Add Sticker to Canvas
-  async function addStickerToCanvas(
-    imgData: string | Blob,
-    x?: number,
-    y?: number,
-  ) {
+  async function addStickerToCanvas(sticker: any, x?: number, y?: number) {
     if (!canvas || !fabricModule) return;
 
-    let imgUrl = typeof imgData === "string" ? imgData : "";
+    let imgUrl = typeof sticker.image === "string" ? sticker.image : "";
     if (imgUrl.startsWith("http")) {
       imgUrl = `/api/proxy?url=${encodeURIComponent(imgUrl)}`;
     }
+
+    if (!imgUrl) return;
 
     try {
       const img: any = await fabricModule.FabricImage.fromURL(imgUrl, {
@@ -124,57 +201,48 @@
       // Target visual size (Diameter)
       const targetSize = 150;
       const radius = targetSize / 2;
-      const borderWidth = 4;
-      const padding = 4;
+      const borderWidth = 0; // Disable border for now for custom shapes, or use stroke on image
+      // For now, simpler rendering without the complex colored border wrapper for all shapes
+      // Or we can try to apply border if circle/square.
 
-      // Calculate Inner Image Radius
-      const imageRadius = radius - borderWidth - padding;
-
-      // Scale image to fit the inner radius
-      const imgScale = (imageRadius * 2) / Math.max(img.width, img.height);
-
-      // 2. Base Circle (The Colored Border)
-      const baseCircle = new fabricModule.Circle({
-        radius: radius,
-        fill: borderColor,
-        originX: "center",
-        originY: "center",
-      });
-
-      // 3. White Circle (The Padding Background)
-      const whiteCircle = new fabricModule.Circle({
-        radius: radius - borderWidth,
-        fill: "#ffffff",
-        originX: "center",
-        originY: "center",
-      });
-
-      // 4. The Image
-      // Clip path for the image (Circular crop)
-      const clipPath = new fabricModule.Circle({
-        radius: img.width / 2, // Clip at original image size/center
-        originX: "center",
-        originY: "center",
-      });
-      // But wait, changing clipPath in a group setting can be tricky with scaling.
-      // Easier: Clip the image instance relative to itself.
-      // Since we scale the image instance, the clip path should match the unscaled dimensions?
-      // Fabric clipPath is relative to the object center.
-      // Let's use the min dimension circle.
-
-      const clipRadius = Math.min(img.width, img.height) / 2;
-      const imgClip = new fabricModule.Circle({
-        radius: clipRadius,
-        originX: "center",
-        originY: "center",
-      });
+      // Scale image to fit target size
+      const imgScale = targetSize / Math.max(img.width, img.height);
+      const shape = sticker.shape || "circle";
 
       img.set({
         scaleX: imgScale,
         scaleY: imgScale,
-        clipPath: imgClip,
         originX: "center",
         originY: "center",
+        borderColor: "#28a745",
+        cornerColor: "#28a745",
+        cornerSize: 10,
+        transparentCorners: false,
+      });
+
+      // Apply Clip Path based on Shape
+      const clip = getClipPathForShape(
+        shape,
+        img.width || 100,
+        img.height || 100,
+      );
+      img.clipPath = clip;
+
+      // Add simple shadow
+      img.item(0)?.set({
+        shadow: new fabricModule.Shadow({
+          blur: 10,
+          color: "rgba(0,0,0,0.3)",
+          offsetX: 2,
+          offsetY: 2,
+        }),
+      });
+      // The image itself is the object.
+      img.shadow = new fabricModule.Shadow({
+        blur: 10,
+        color: "rgba(0,0,0,0.3)",
+        offsetX: 2,
+        offsetY: 2,
       });
 
       // Calculate Position
@@ -182,35 +250,23 @@
       let top = y;
 
       if (left === undefined || top === undefined) {
-        // canvas.getCenter() might not be available or reliable in all envs.
-        // Use manual width/height fallback.
         left = (canvas.width || 400) / 2;
         top = (canvas.height || 600) / 2;
       }
 
-      // 5. Group
-      const group = new fabricModule.Group([baseCircle, whiteCircle, img], {
+      img.set({
         left: left,
         top: top,
-        originX: "center",
-        originY: "center",
-        cornerColor: "#28a745",
-        cornerStyle: "circle",
-        transparentCorners: false,
-        borderColor: "#28a745",
-        // Initial scale 1 because we sized the components to targetSize
-        scaleX: 1,
-        scaleY: 1,
       });
 
-      canvas.add(group);
-      canvas.setActiveObject(group);
+      canvas.add(img);
+      canvas.setActiveObject(img);
       canvas.requestRenderAll();
 
       // Animate (Simple Pop)
-      group.set({ scaleX: 0.1, scaleY: 0.1 });
-      group.animate(
-        { scaleX: 1, scaleY: 1 }, // Animate to 1
+      img.set({ scaleX: 0.1, scaleY: 0.1 });
+      img.animate(
+        { scaleX: imgScale, scaleY: imgScale }, // Animate to target scale
         {
           duration: 300,
           onChange: canvas.requestRenderAll.bind(canvas),
@@ -229,19 +285,15 @@
 
     try {
       const data = JSON.parse(json);
-      const { image } = data;
-      // Pass drop coordinates
-      await addStickerToCanvas(image, e.offsetX, e.offsetY);
+      // Pass full date object (it has image and shape)
+      await addStickerToCanvas(data, e.offsetX, e.offsetY);
     } catch (e) {
       console.error("Drop failed", e);
     }
   }
 
   function handleStickerTap(sticker: StickerWithProfile) {
-    const imageUrl = typeof sticker.image === "string" ? sticker.image : "";
-    if (imageUrl) {
-      addStickerToCanvas(imageUrl); // No coords = Center
-    }
+    addStickerToCanvas(sticker); // No coords = Center
   }
 
   function togglePen() {

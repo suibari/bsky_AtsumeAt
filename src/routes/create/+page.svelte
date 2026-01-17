@@ -5,6 +5,7 @@
   import { goto } from "$app/navigation";
   import { STICKER_COLLECTION, type Sticker } from "$lib/schemas";
   import { i18n } from "$lib/i18n.svelte";
+  import { CSS_SHAPES, SVG_DEFS } from "$lib/shapes";
 
   import PdsImagePicker from "$lib/components/PdsImagePicker.svelte";
 
@@ -12,6 +13,9 @@
   let fileInput = $state<HTMLInputElement>();
   let imageUrl = $state<string | null>(null);
   let name = $state("");
+  let shape = $state<
+    "circle" | "square" | "star" | "heart" | "diamond" | "butterfly"
+  >("circle");
   let processing = $state(false);
 
   // Tab State
@@ -252,6 +256,7 @@
       const payloadInfo = {
         model: `cid:${cid}`,
         name: name || undefined,
+        shape,
         image: stickerImageUrl, // Use the string URL to match acceptExchange consistency
       };
 
@@ -287,6 +292,7 @@
         originalOwner: agent.assertDid!,
         model: `cid:${cid}`,
         name: name || undefined,
+        shape,
         obtainedAt: new Date().toISOString(),
         signature: signature || "",
         signedPayload: signedPayload || "",
@@ -376,7 +382,12 @@
       {:else}
         <!-- Crop Area -->
         <div
-          class="relative w-[300px] h-[300px] bg-white overflow-hidden rounded-full shadow-inner border-4 border-primary cursor-move touch-none"
+          class="relative w-[300px] h-[300px] bg-white overflow-hidden shadow-inner cursor-move touch-none transition-all duration-300"
+          style={CSS_SHAPES[shape]
+            ? `clip-path: ${CSS_SHAPES[shape]}`
+            : SVG_DEFS[shape]
+              ? `clip-path: url(#shape-${shape})`
+              : `clip-path: ${CSS_SHAPES.circle}`}
           bind:this={cropContainer}
           onmousedown={onMouseDown}
           onmousemove={onMouseMove}
@@ -413,6 +424,45 @@
               bind:value={scale}
               class="w-full"
             />
+          </div>
+
+          <!-- Shape Selector -->
+          <div>
+            <label class="text-sm font-medium text-gray-700 mb-2 block"
+              >{i18n.t.create.shapeLabel || "Shape"}</label
+            >
+            <div class="flex gap-2 justify-center">
+              {#each ["circle", "square", "star", "heart", "diamond", "butterfly"] as s}
+                <button
+                  class="w-10 h-10 rounded-lg border-2 flex items-center justify-center transition-all {shape ===
+                  s
+                    ? 'border-primary bg-primary/10'
+                    : 'border-gray-200 hover:border-gray-300'}"
+                  onclick={() => (shape = s as any)}
+                  title={s}
+                >
+                  <!-- Quick icons/shapes -->
+                  {#if s === "circle"}
+                    <div class="w-6 h-6 bg-gray-400 rounded-full"></div>
+                  {:else if s === "square"}
+                    <div class="w-6 h-6 bg-gray-400 rounded-md"></div>
+                  {:else if CSS_SHAPES[s]}
+                    <div
+                      class="w-6 h-6 bg-gray-400"
+                      style="clip-path: {CSS_SHAPES[s]}"
+                    ></div>
+                  {:else if SVG_DEFS[s]}
+                    <svg
+                      viewBox="0 0 {SVG_DEFS[s].viewBox[0]} {SVG_DEFS[s]
+                        .viewBox[1]}"
+                      class="w-6 h-6 fill-gray-400"
+                    >
+                      <path d={SVG_DEFS[s].d} />
+                    </svg>
+                  {/if}
+                </button>
+              {/each}
+            </div>
           </div>
 
           <!-- Name Input -->

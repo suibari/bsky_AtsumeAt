@@ -59,6 +59,7 @@ export async function initStickers(agent: Agent, userDid: string, onStatus?: (ms
   const infoPayload = {
     model: 'default',
     image: avatar, // We verify the avatar URL logic in verifySeal if needed, but here we just sign it.
+    shape: 'circle', // Default for Avatar
     // Self-issued, so obtainedFrom is undefined (implicit)
   };
 
@@ -72,6 +73,7 @@ export async function initStickers(agent: Agent, userDid: string, onStatus?: (ms
     subjectDid: userDid,
     originalOwner: userDid,
     model: 'default',
+    shape: 'circle',
     obtainedAt: new Date().toISOString(),
 
     // Add Signature
@@ -188,6 +190,7 @@ export async function getUserStickers(agent: Agent, userDid: string): Promise<St
       // MAPPING
       if (info.model) s.model = info.model;
       if (info.image) s.image = info.image;
+      if (info.shape) s.shape = info.shape;
       if (info.obtainedFrom) s.obtainedFrom = info.obtainedFrom;
       // We trust 'obtainedFrom' from signature!
     }
@@ -451,9 +454,9 @@ export async function updateSticker(agent: Agent, stickerUri: string, updates: P
       newSticker.tags = Array.from(new Set(newSticker.tags.map(t => t.trim()).filter(t => t)));
     }
 
-    // 3. Re-Signing Logic (If Name Changed)
-    if (updates.name !== undefined && updates.name !== sticker.name) {
-      // Name is part of the signed payload. We MUST re-sign.
+    // 3. Re-Signing Logic (If Name or Shape Changed)
+    if ((updates.name !== undefined && updates.name !== sticker.name) || (updates.shape !== undefined && updates.shape !== sticker.shape)) {
+      // Name or Shape is part of the signed payload. We MUST re-sign.
       // We can only re-sign if WE are the original minter (or we have the original signature info? No, we need to request a NEW signature from the server).
       // Wait, if I am just a holder, I cannot change the name and re-sign it as valid unless the server allows "renaming"?
       // The server signs: (model, image, obtainedFrom, originalCreator, name, message).
@@ -473,6 +476,7 @@ export async function updateSticker(agent: Agent, stickerUri: string, updates: P
         obtainedFrom: sticker.obtainedFrom,
         originalCreator: sticker.originalOwner,
         name: newSticker.name, // NEW Name
+        shape: newSticker.shape, // NEW Shape
         message: sticker.message
       };
 

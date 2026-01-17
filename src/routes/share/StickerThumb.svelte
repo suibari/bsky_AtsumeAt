@@ -16,6 +16,7 @@
       JSON.stringify({
         uri: sticker.uri,
         image: sticker.image,
+        shape: sticker.shape,
       }),
     );
     e.dataTransfer.effectAllowed = "copy";
@@ -47,5 +48,6 @@
   <StickerCanvas
     avatarUrl={typeof sticker.image === "string" ? sticker.image : ""}
     staticAngle={true}
+    shape={sticker.shape || "circle"}
   />
 </div>

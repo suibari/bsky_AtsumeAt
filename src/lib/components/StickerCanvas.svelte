@@ -1,15 +1,19 @@
 <script lang="ts">
   import { onMount, onDestroy } from "svelte";
   import { getDominantColor } from "$lib/color";
+  import { CSS_SHAPES, SVG_DEFS } from "$lib/shapes";
 
+  // Shape Handling
   let {
     avatarUrl = "",
     staticAngle = false,
     allowVerticalRotation = false,
+    shape = "circle",
   } = $props<{
-    avatarUrl?: string; // Expect a full URL or blob
+    avatarUrl?: string;
     staticAngle?: boolean;
     allowVerticalRotation?: boolean;
+    shape?: "circle" | "square" | "star" | "heart" | "diamond" | "butterfly";
   }>();
 
   let container: HTMLDivElement;
@@ -134,6 +138,24 @@
       });
     }
   });
+
+  // Shape Styles
+  let clipStyle = $derived.by(() => {
+    if (CSS_SHAPES[shape as string]) {
+      return `clip-path: ${CSS_SHAPES[shape as string]}`;
+    }
+    if (SVG_DEFS[shape as string]) {
+      return `clip-path: url(#shape-${shape})`;
+    }
+    return `clip-path: ${CSS_SHAPES.circle}`;
+  });
+
+  let containerStyle = $derived(clipStyle);
+
+  // Border Simulation for clipped shapes
+  // CSS 'border' gets clipped. We use a background wrapper to simulate border.
+  // We apply this strategy to ALL shapes for consistency.
+  let useRealBorder = false;
 </script>
 
 <div
@@ -150,50 +172,87 @@
     class="card w-full h-full relative"
     style="transform: rotateX({finalRotX}deg) rotateY({finalRotY}deg);"
   >
-    <!-- Front Face -->
+    <!-- Sticker Shape Wrapper -->
+    <!-- We apply the shape (clip-path or border-radius) here -->
     <div
-      class="face front absolute inset-0 w-full h-full bg-white rounded-full overflow-hidden shadow-xl"
-      style="border: 4px solid {borderColor}; transition: border-color 0.3s ease;"
+      class="face front absolute inset-0 w-full h-full flex items-center justify-center shadow-xl"
+      style="{containerStyle}; {useRealBorder
+        ? `border: 4px solid ${borderColor}; transition: border-color 0.3s ease;`
+        : `background: ${borderColor}; transition: background-color 0.3s ease;`}"
+      class:rounded-full={shape === "circle"}
+      class:rounded-2xl={shape === "square"}
     >
-      <img
-        src={proxiedImage}
-        alt="Sticker"
-        class="w-full h-full object-cover p-1 bg-white rounded-full"
-        draggable="false"
-      />
-
-      <!-- Gloss Overlay -->
+      <!-- Content (Image + Gloss) -->
+      <!-- If simple border used, image is full size. If clipped, image needs to be inset to reveal border/bg. -->
       <div
-        class="gloss absolute inset-0 w-full h-full rounded-full pointer-events-none z-10"
-        style="
-          background: linear-gradient(115deg, transparent 40%, rgba(255, 255, 255, 0.7) 50%, transparent 60%); 
-          background-size: 200% 100%;
-          background-position: {100 -
-          ((((finalRotY % 360) + 360) % 360) / 360) * 200}%;
-          mix-blend-mode: overlay;
-        "
-      ></div>
+        class="relative flex items-center justify-center"
+        style={`width: 92%; height: 92%; ${containerStyle}; background: white;`}
+      >
+        <img
+          src={proxiedImage}
+          alt="Sticker"
+          class="object-cover"
+          style={`width: 96%; height: 96%; ${containerStyle};`}
+          draggable="false"
+        />
 
-      <!-- Specular Highlight (Static) -->
-      <div
-        class="absolute inset-0 rounded-full ring-1 ring-inset ring-white/50 z-20"
-      ></div>
+        <!-- Gloss Overlay -->
+        <div
+          class="gloss absolute inset-0 w-full h-full pointer-events-none z-10"
+          style="
+            background: linear-gradient(115deg, transparent 40%, rgba(255, 255, 255, 0.7) 50%, transparent 60%); 
+            background-size: 200% 100%;
+            background-position: {100 -
+            ((((finalRotY % 360) + 360) % 360) / 360) * 200}%;
+            mix-blend-mode: overlay;
+          "
+        ></div>
+
+        <!-- Specular Highlight (Static) -->
+        <div
+          class="absolute inset-0 ring-1 ring-inset ring-white/50 z-20"
+          class:rounded-full={shape === "circle"}
+          class:rounded-xl={shape === "square"}
+          style={!useRealBorder ? containerStyle : ""}
+        ></div>
+      </div>
     </div>
 
     <!-- Back Face -->
     <div
-      class="face back absolute inset-0 w-full h-full rounded-full flex items-center justify-center border-4 border-white shadow-xl"
+      class="face back absolute inset-0 w-full h-full flex items-center justify-center border-4 border-white shadow-xl"
       style="
           transform: rotateY(180deg); 
           background-color: {borderColor};
           background-image: repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(0,0,0,0.1) 10px, rgba(0,0,0,0.1) 20px);
           transition: background-color 0.3s ease;
+          {containerStyle}
         "
+      class:rounded-full={shape === "circle"}
+      class:rounded-2xl={shape === "square"}
     >
-      <div class="w-2/3 h-2/3 bg-white/20 rounded-full animate-pulse"></div>
+      <div
+        class="w-2/3 h-2/3 bg-white/20 animate-pulse"
+        class:rounded-full={shape === "circle"}
+        class:rounded-xl={shape === "square"}
+        style={!useRealBorder ? containerStyle : ""}
+      ></div>
     </div>
   </div>
 </div>
+
+<svg width="0" height="0" class="absolute pointer-events-none opacity-0">
+  <defs>
+    {#each Object.entries(SVG_DEFS) as [name, def]}
+      <clipPath id="shape-{name}" clipPathUnits="objectBoundingBox">
+        <path
+          d={def.d}
+          transform="scale({1 / def.viewBox[0]}, {1 / def.viewBox[1]})"
+        />
+      </clipPath>
+    {/each}
+  </defs>
+</svg>
 
 <style>
   .scene {
@@ -201,7 +260,7 @@
   }
   .card {
     transform-style: preserve-3d;
-    transition: transform 0.1s cubic-bezier(0, 0, 0.2, 1); /* Slight smoothing */
+    transition: transform 0.1s cubic-bezier(0, 0, 0.2, 1);
   }
   .face {
     backface-visibility: hidden;

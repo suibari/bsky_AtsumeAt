@@ -104,6 +104,8 @@ export async function verifySeal(sticker: Sticker, ownerDid: string, agent: Agen
       }
     }
 
+    if (info.shape && sticker.shape !== info.shape) mismatches.push(`shape (Record: ${sticker.shape}, Signed: ${info.shape})`);
+
     if (mismatches.length > 0) {
       const reason = `Field mismatch: ${mismatches.join(', ')}`;
       console.warn(`[Seal-Tamper] ${reason}`, { uri: (sticker as any).uri });

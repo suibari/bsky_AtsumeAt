@@ -5,6 +5,7 @@
   import type { StickerWithProfile } from "$lib/stickers";
   import { i18n } from "$lib/i18n.svelte";
   import type { Agent } from "@atproto/api";
+  import { CSS_SHAPES, SVG_DEFS } from "$lib/shapes";
 
   let { sticker, agent, isOpen, onclose, onupdate } = $props<{
     sticker: StickerWithProfile | null;
@@ -20,6 +21,9 @@
   let isEditing = $state(false);
   let editName = $state("");
   let editTags = $state<string[]>([]);
+  let editShape = $state<
+    "circle" | "square" | "star" | "heart" | "diamond" | "butterfly"
+  >("circle");
   let newTagInput = $state("");
   let isSaving = $state(false);
 
@@ -28,6 +32,7 @@
     if (sticker && isOpen) {
       editName = sticker.name || "";
       editTags = sticker.tags ? [...sticker.tags] : [];
+      editShape = (sticker.shape as any) || "circle";
       isEditing = false;
       isSaving = false;
     }
@@ -40,6 +45,7 @@
       // Diff check
       const updates: any = {};
       if (editName !== (sticker.name || "")) updates.name = editName;
+      if (editShape !== (sticker.shape || "circle")) updates.shape = editShape;
       // Simple array compare
       const sortedOld = (sticker.tags || []).slice().sort().join(",");
       const sortedNew = editTags.slice().sort().join(",");
@@ -133,6 +139,9 @@
           <StickerCanvas
             avatarUrl={typeof sticker.image === "string" ? sticker.image : ""}
             allowVerticalRotation={true}
+            shape={isEditing && editShape
+              ? editShape
+              : sticker.shape || "circle"}
           />
           <div
             class="absolute bottom-2 left-1/2 -translate-x-1/2 text-xs text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"
@@ -150,6 +159,39 @@
               class="text-2xl font-bold text-center text-gray-800 bg-transparent border-b-2 border-primary/20 focus:border-primary outline-none w-full"
               placeholder="Sticker Name"
             />
+
+            <!-- Shape Editor -->
+            <div class="flex gap-2 justify-center mt-2">
+              {#each ["circle", "square", "star", "heart", "diamond", "butterfly"] as s}
+                <button
+                  class="w-8 h-8 rounded-lg border flex items-center justify-center transition-all {editShape ===
+                  s
+                    ? 'border-primary bg-primary/10'
+                    : 'border-gray-200 hover:border-gray-300'}"
+                  onclick={() => (editShape = s as any)}
+                  title={s}
+                >
+                  {#if s === "circle"}
+                    <div class="w-4 h-4 bg-gray-400 rounded-full"></div>
+                  {:else if s === "square"}
+                    <div class="w-4 h-4 bg-gray-400 rounded-sm"></div>
+                  {:else if CSS_SHAPES[s]}
+                    <div
+                      class="w-4 h-4 bg-gray-400"
+                      style="clip-path: {CSS_SHAPES[s]}"
+                    ></div>
+                  {:else if SVG_DEFS[s]}
+                    <svg
+                      viewBox="0 0 {SVG_DEFS[s].viewBox[0]} {SVG_DEFS[s]
+                        .viewBox[1]}"
+                      class="w-5 h-5 fill-gray-400"
+                    >
+                      <path d={SVG_DEFS[s].d} />
+                    </svg>
+                  {/if}
+                </button>
+              {/each}
+            </div>
           {:else}
             <h2 class="text-2xl font-bold text-gray-800">
               {sticker.name ||

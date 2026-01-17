@@ -434,6 +434,7 @@
                   avatarUrl={typeof sticker.image === "string"
                     ? sticker.image
                     : ""}
+                  shape={sticker.shape || "circle"}
                 />
               </div>
 
