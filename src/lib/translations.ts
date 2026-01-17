@@ -38,6 +38,7 @@ export const translations = {
     stickerViewer: {
       editDetails: "編集",
       saveChanges: "保存",
+      tagsPublicInfo: "タグは公開情報です",
     },
     common: {
       loading: "読み込み中...",
@@ -238,6 +239,7 @@ export const translations = {
     stickerViewer: {
       editDetails: "Edit Details",
       saveChanges: "Save Changes",
+      tagsPublicInfo: "Tags are public information",
     },
     common: {
       loading: "Loading...",

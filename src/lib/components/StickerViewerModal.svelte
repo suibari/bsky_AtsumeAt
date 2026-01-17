@@ -199,6 +199,9 @@
 
           <div class="flex flex-wrap gap-2">
             {#if isEditing}
+              <div class="w-full text-xs text-gray-400 mb-1">
+                ※ {i18n.t.stickerViewer.tagsPublicInfo}
+              </div>
               {#each editTags as tag}
                 <span
                   class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-primary/10 text-primary"
