@@ -93,75 +93,102 @@
     canvas.freeDrawingBrush = brush;
   }
 
-  function getClipPathForShape(
-    shape: string,
-    width: number,
-    height: number,
-  ): fabric.Object {
+  import { SVG_DEFS } from "$lib/shapes";
+
+  // ... (keeping imports)
+
+  function getFabricShape(shape: string, width: number, height: number): any {
+    if (!fabricModule) return null;
+
+    // Helper to center object based on ViewBox conceptual center
+    const alignToViewBox = (
+      obj: any,
+      bbox: any,
+      vbW: number,
+      vbH: number,
+      scale: number,
+    ) => {
+      // Use Top-Left origin for easier calculation
+      obj.set({ originX: "left", originY: "top" });
+
+      // We want the ViewBox Center (vbW/2, vbH/2) to map to the Group Center (0,0).
+      // The current Object Origin (0,0) is at bbox.left, bbox.top in unscaled coords.
+      // We want the point (vbW/2, vbH/2) in unscaled coords to end up at (0,0) in parent coords.
+
+      // So we place the object such that:
+      // obj.left = (bbox.left - vbW/2) * scale
+      // obj.top = (bbox.top - vbH/2) * scale
+      // If bbox.left is 0 and vbW/2 is 8, obj.left is -8 * scale. Correct.
+
+      obj.set({
+        left: (bbox.left - vbW / 2) * scale,
+        top: (bbox.top - vbH / 2) * scale,
+        scaleX: scale,
+        scaleY: scale,
+      });
+      return obj;
+    };
+
     if (shape === "square") {
       return new fabricModule.Rect({
         width: width,
         height: height,
-        rx: 16, // Rounded corners
-        ry: 16,
+        rx: width * 0.15, // Match CSS round 15% (approx)
+        ry: height * 0.15,
         originX: "center",
         originY: "center",
       });
     } else if (shape === "star") {
-      // Fat star polygon 0-1 coords scaled
-      // 50% 0%, 63% 38%, 100% 38%, 69% 59%, 82% 100%, 50% 75%, 18% 100%, 31% 59%, 0% 38%, 37% 38%
-      const points = [
+      // Use implicit 1x1 ViewBox for Star
+      const rawPoints = [
         { x: 0.5, y: 0.0 },
-        { x: 0.63, y: 0.38 },
-        { x: 1.0, y: 0.38 },
-        { x: 0.69, y: 0.59 },
-        { x: 0.82, y: 1.0 },
-        { x: 0.5, y: 0.75 },
-        { x: 0.18, y: 1.0 },
-        { x: 0.31, y: 0.59 },
-        { x: 0.0, y: 0.38 },
-        { x: 0.37, y: 0.38 },
-      ].map((p) => ({ x: (p.x - 0.5) * width, y: (p.y - 0.5) * height }));
-
-      return new fabricModule.Polygon(points, {
-        originX: "center",
-        originY: "center",
-      });
-    } else if (shape === "diamond") {
-      const points = [
-        { x: 0, y: -height / 2 },
-        { x: width / 2, y: 0 },
-        { x: 0, y: height / 2 },
-        { x: -width / 2, y: 0 },
+        { x: 0.66, y: 0.32 },
+        { x: 0.98, y: 0.35 },
+        { x: 0.72, y: 0.57 },
+        { x: 0.79, y: 0.91 },
+        { x: 0.5, y: 0.74 },
+        { x: 0.21, y: 0.91 },
+        { x: 0.28, y: 0.57 },
+        { x: 0.02, y: 0.35 },
+        { x: 0.34, y: 0.32 },
       ];
-      return new fabricModule.Polygon(points, {
-        originX: "center",
-        originY: "center",
+      // Create polygon unscaled
+      const ply = new fabricModule.Polygon(rawPoints, {
+        originX: "left",
+        originY: "top",
       });
-    } else if (shape === "heart") {
-      const pathData =
-        "M0.5,0.95 C0.5,0.95 0.1,0.65 0.1,0.35 C0.1,0.15 0.25,0.05 0.4,0.1 C0.48,0.13 0.5,0.2 0.5,0.2 C0.5,0.2 0.52,0.13 0.6,0.1 C0.75,0.05 0.9,0.15 0.9,0.35 C0.9,0.65 0.5,0.95 0.5,0.95 Z";
-      const path = new fabricModule.Path(pathData, {
-        originX: "center",
-        originY: "center",
+
+      // ViewBox is 1x1. Target size is 'width'.
+      // Resetting to standard 1.0 scale. The selection box will be rectangular (touching tips), which is unavoidable.
+      return alignToViewBox(ply, ply.getBoundingRect(), 1, 1, width);
+    } else if (shape === "diamond") {
+      // Use implicit 1x1 ViewBox for Diamond
+      const rawPoints = [
+        { x: 0.5, y: 0 },
+        { x: 1, y: 0.5 },
+        { x: 0.5, y: 1 },
+        { x: 0, y: 0.5 },
+      ];
+      const ply = new fabricModule.Polygon(rawPoints, {
+        originX: "left",
+        originY: "top",
       });
-      const bounds = path.getBoundingRect();
-      const scaleX = width / bounds.width;
-      const scaleY = height / bounds.height;
-      path.set({ scaleX, scaleY });
-      return path;
-    } else if (shape === "butterfly") {
-      const pathData =
-        "M0.5 0.53 L 0.55 0.45 C 0.7 0.2 0.9 0.1 0.95 0.3 C 0.98 0.4 0.9 0.55 0.75 0.65 C 0.85 0.7 0.95 0.8 0.85 0.9 C 0.75 1.0 0.6 0.9 0.5 0.8 C 0.4 0.9 0.25 1.0 0.15 0.9 C 0.05 0.8 0.15 0.7 0.25 0.65 C 0.1 0.55 0.02 0.4 0.05 0.3 C 0.1 0.1 0.3 0.2 0.45 0.45 Z";
-      const path = new fabricModule.Path(pathData, {
-        originX: "center",
-        originY: "center",
+      return alignToViewBox(ply, ply.getBoundingRect(), 1, 1, width);
+    } else if (SVG_DEFS[shape]) {
+      const def = SVG_DEFS[shape];
+      const path = new fabricModule.Path(def.d, {
+        originX: "left",
+        originY: "top",
       });
-      const bounds = path.getBoundingRect();
-      const scaleX = width / bounds.width;
-      const scaleY = height / bounds.height;
-      path.set({ scaleX, scaleY });
-      return path;
+      // Scale based on ViewBox width vs Target Width
+      const scale = width / def.viewBox[0];
+      return alignToViewBox(
+        path,
+        path.getBoundingRect(),
+        def.viewBox[0],
+        def.viewBox[1],
+        scale,
+      );
     }
 
     // Default Circle
@@ -198,51 +225,86 @@
       }
 
       // 1. Geometry Setup
-      // Target visual size (Diameter)
       const targetSize = 150;
-      const radius = targetSize / 2;
-      const borderWidth = 0; // Disable border for now for custom shapes, or use stroke on image
-      // For now, simpler rendering without the complex colored border wrapper for all shapes
-      // Or we can try to apply border if circle/square.
-
-      // Scale image to fit target size
-      const imgScale = targetSize / Math.max(img.width, img.height);
       const shape = sticker.shape || "circle";
 
-      img.set({
-        scaleX: imgScale,
-        scaleY: imgScale,
-        originX: "center",
-        originY: "center",
-        borderColor: "#28a745",
-        cornerColor: "#28a745",
-        cornerSize: 10,
-        transparentCorners: false,
+      // We will create 3 layers:
+      // Outer: Colored Shape (100%)
+      // Inner: White Shape (92%)
+      // Image: Clipped Image (96% of Inner = ~88% of Outer)
+
+      const outerScale = 1.0;
+      const innerScale = 0.92;
+      const imageScaleRelativeToInner = 0.96;
+      const totalImageScale = innerScale * imageScaleRelativeToInner;
+
+      // 1. Outer Shape (Color)
+      const outerObj = getFabricShape(shape, targetSize, targetSize);
+      outerObj.set({
+        fill: borderColor,
+        stroke: null,
       });
 
-      // Apply Clip Path based on Shape
-      const clip = getClipPathForShape(
+      // 2. Inner Shape (White)
+      const innerObj = getFabricShape(
         shape,
-        img.width || 100,
-        img.height || 100,
+        targetSize * innerScale,
+        targetSize * innerScale,
       );
-      img.clipPath = clip;
+      innerObj.set({
+        fill: "#ffffff",
+        stroke: null,
+      });
 
-      // Add simple shadow
-      img.item(0)?.set({
+      // 3. Image Setup
+      // Scale image to cover the *Target Size* roughly, then we clip it.
+      // But we want the image to be "inside" the inner white border.
+      // The clip path should be the shape at `totalImageScale`.
+
+      // First, scale the raw image to cover the target box
+      const imgRawScale =
+        (targetSize * totalImageScale) / Math.max(img.width, img.height);
+
+      img.set({
+        scaleX: imgRawScale,
+        scaleY: imgRawScale,
+        originX: "center",
+        originY: "center",
+      });
+
+      // Create clip path object
+      // Create clip path object
+      const clipObj = getFabricShape(shape, img.width, img.height);
+      // Clip path needs absolute positioning logic usually, but nested in group?
+      // Fabric 6: clipPath is relative to object center if object is centered?
+      // Actually standard clipPath is relative to object center.
+      // Since 'img' origin is center, 'clipObj' origin center works perfectly.
+      img.clipPath = clipObj;
+
+      // Group them all
+      // We need to position them relative to Group Center (0,0)
+
+      const group = new fabricModule.Group([outerObj, innerObj, img], {
+        originX: "center",
+        originY: "center",
+        subTargetCheck: false, // Treat as single object
+        interactive: true,
+      });
+
+      // Apply Shadow to the GROUP (so it follows the outer shape roughly)
+      // Note: Shadow on Group with transparent parts can be tricky.
+      // Ideally shadow is on 'outerObj', but we want the whole thing to cast it.
+      // If we put shadow on Group, it might box-shadow the bounding box if not careful?
+      // Fabric shadow usually follows transparency.
+
+      // Let's try applying shadow to the Group first.
+      group.set({
         shadow: new fabricModule.Shadow({
           blur: 10,
           color: "rgba(0,0,0,0.3)",
           offsetX: 2,
           offsetY: 2,
         }),
-      });
-      // The image itself is the object.
-      img.shadow = new fabricModule.Shadow({
-        blur: 10,
-        color: "rgba(0,0,0,0.3)",
-        offsetX: 2,
-        offsetY: 2,
       });
 
       // Calculate Position
@@ -254,19 +316,23 @@
         top = (canvas.height || 600) / 2;
       }
 
-      img.set({
+      group.set({
         left: left,
         top: top,
+        borderColor: "#28a745",
+        cornerColor: "#28a745",
+        cornerSize: 10,
+        transparentCorners: false,
       });
 
-      canvas.add(img);
-      canvas.setActiveObject(img);
+      canvas.add(group);
+      canvas.setActiveObject(group);
       canvas.requestRenderAll();
 
-      // Animate (Simple Pop)
-      img.set({ scaleX: 0.1, scaleY: 0.1 });
-      img.animate(
-        { scaleX: imgScale, scaleY: imgScale }, // Animate to target scale
+      // Animate Pop
+      group.set({ scaleX: 0.1, scaleY: 0.1 });
+      group.animate(
+        { scaleX: 1, scaleY: 1 },
         {
           duration: 300,
           onChange: canvas.requestRenderAll.bind(canvas),
