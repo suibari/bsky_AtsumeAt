@@ -8,6 +8,7 @@ export const CSS_SHAPES: Record<string, string> = {
   rectangle: "inset(20% 0% 20% 0% round 15%)",
   star: "polygon(50% 0%, 66% 32%, 98% 35%, 72% 57%, 79% 91%, 50% 74%, 21% 91%, 28% 57%, 2% 35%, 34% 32%)",
   diamond: "polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%)",
+  transparent: "inset(0% 0% 0% 0%)",
 };
 
 // Complex shapes defined as SVG paths with their ViewBox dimensions

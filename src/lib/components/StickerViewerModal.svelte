@@ -22,7 +22,13 @@
   let editName = $state("");
   let editTags = $state<string[]>([]);
   let editShape = $state<
-    "circle" | "square" | "star" | "heart" | "diamond" | "butterfly"
+    | "circle"
+    | "square"
+    | "star"
+    | "heart"
+    | "diamond"
+    | "butterfly"
+    | "transparent"
   >("circle");
   let newTagInput = $state("");
   let isSaving = $state(false);
@@ -162,7 +168,7 @@
 
             <!-- Shape Editor -->
             <div class="flex gap-2 justify-center mt-2">
-              {#each ["circle", "square", "star", "heart", "diamond", "butterfly"] as s}
+              {#each ["circle", "square", "star", "heart", "diamond", "butterfly", "transparent"] as s}
                 <button
                   class="w-8 h-8 rounded-lg border flex items-center justify-center transition-all {editShape ===
                   s
@@ -188,6 +194,15 @@
                     >
                       <path d={SVG_DEFS[s].d} />
                     </svg>
+                  {:else if s === "transparent"}
+                    <div
+                      class="w-4 h-4 border border-gray-300 relative overflow-hidden bg-white"
+                    >
+                      <div
+                        class="absolute inset-0"
+                        style="background-image: linear-gradient(45deg, #ccc 25%, transparent 25%), linear-gradient(-45deg, #ccc 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #ccc 75%), linear-gradient(-45deg, transparent 75%, #ccc 75%); background-size: 6px 6px; background-position: 0 0, 0 3px, 3px -3px, -3px 0px;"
+                      ></div>
+                    </div>
                   {/if}
                 </button>
               {/each}

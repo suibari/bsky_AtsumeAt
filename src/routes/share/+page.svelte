@@ -251,22 +251,25 @@
       const totalImageScale = innerScale * imageScaleRelativeToInner;
 
       // 1. Outer Shape (Color)
-      const outerObj = getFabricShape(shape, targetSize, targetSize);
-      outerObj.set({
-        fill: borderColor,
-        stroke: null,
-      });
+      let outerObj, innerObj;
+      if (shape !== "transparent") {
+        outerObj = getFabricShape(shape, targetSize, targetSize);
+        outerObj.set({
+          fill: borderColor,
+          stroke: null,
+        });
 
-      // 2. Inner Shape (White)
-      const innerObj = getFabricShape(
-        shape,
-        targetSize * innerScale,
-        targetSize * innerScale,
-      );
-      innerObj.set({
-        fill: "#ffffff",
-        stroke: null,
-      });
+        // 2. Inner Shape (White)
+        innerObj = getFabricShape(
+          shape,
+          targetSize * innerScale,
+          targetSize * innerScale,
+        );
+        innerObj.set({
+          fill: "#ffffff",
+          stroke: null,
+        });
+      }
 
       // 3. Image Setup
       // Scale image to cover the *Target Size* roughly, then we clip it.
@@ -275,7 +278,8 @@
 
       // First, scale the raw image to cover the target box
       const imgRawScale =
-        (targetSize * totalImageScale) / Math.max(img.width, img.height);
+        (targetSize * (shape === "transparent" ? 1.0 : totalImageScale)) /
+        Math.max(img.width, img.height);
 
       img.set({
         scaleX: imgRawScale,
@@ -285,18 +289,23 @@
       });
 
       // Create clip path object
-      // Create clip path object
-      const clipObj = getFabricShape(shape, img.width, img.height);
-      // Clip path needs absolute positioning logic usually, but nested in group?
-      // Fabric 6: clipPath is relative to object center if object is centered?
-      // Actually standard clipPath is relative to object center.
-      // Since 'img' origin is center, 'clipObj' origin center works perfectly.
-      img.clipPath = clipObj;
+      if (shape !== "transparent") {
+        const clipObj = getFabricShape(shape, img.width, img.height);
+        // Clip path needs absolute positioning logic usually, but nested in group?
+        // Fabric 6: clipPath is relative to object center if object is centered?
+        // Actually standard clipPath is relative to object center.
+        // Since 'img' origin is center, 'clipObj' origin center works perfectly.
+        img.clipPath = clipObj;
+      }
 
       // Group them all
       // We need to position them relative to Group Center (0,0)
+      const groupObjects = [];
+      if (outerObj) groupObjects.push(outerObj);
+      if (innerObj) groupObjects.push(innerObj);
+      groupObjects.push(img);
 
-      const group = new fabricModule.Group([outerObj, innerObj, img], {
+      const group = new fabricModule.Group(groupObjects, {
         originX: "center",
         originY: "center",
         subTargetCheck: false, // Treat as single object

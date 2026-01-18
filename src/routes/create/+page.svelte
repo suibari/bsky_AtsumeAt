@@ -21,6 +21,7 @@
     | "diamond"
     | "butterfly"
     | "rectangle"
+    | "transparent"
   >("circle");
   let processing = $state(false);
 
@@ -214,8 +215,10 @@
       // Let's adjust logic:
       // Center of image at Center of Canvas + Translate
 
-      ctx.fillStyle = "#FFFFFF";
-      ctx.fillRect(0, 0, size, size);
+      if (shape !== "transparent") {
+        ctx.fillStyle = "#FFFFFF";
+        ctx.fillRect(0, 0, size, size);
+      }
 
       // Scale factor between Preview (300px) and Output (500px)
       const outputScale = size / 300;
@@ -237,7 +240,11 @@
 
       // 2. To Blob
       const blob = await new Promise<Blob | null>((resolve) =>
-        canvas.toBlob(resolve, "image/jpeg", 0.9),
+        canvas.toBlob(
+          resolve,
+          shape === "transparent" ? "image/png" : "image/jpeg",
+          shape === "transparent" ? 1.0 : 0.9,
+        ),
       );
       if (!blob) throw new Error("Canvas blob failed");
 
@@ -248,13 +255,13 @@
 
       const arrayBuffer = await blob.arrayBuffer();
       const uploadRes = await agent.uploadBlob(new Uint8Array(arrayBuffer), {
-        encoding: "image/jpeg",
+        encoding: shape === "transparent" ? "image/png" : "image/jpeg",
       });
 
       const cid = uploadRes.data.blob.ref.toString();
 
       // Construct the canonical CDN URL for the sticker
-      const stickerImageUrl = `https://cdn.bsky.app/img/feed_fullsize/plain/${agent.assertDid!}/${cid}@jpeg`;
+      const stickerImageUrl = `https://cdn.bsky.app/img/feed_fullsize/plain/${agent.assertDid!}/${cid}@${shape === "transparent" ? "png" : "jpeg"}`;
 
       // 3.5 Sign the Payload
       // We need to fetch the signature helper logic or call the API directly here.
@@ -438,7 +445,7 @@
               >{settings.t.create.shapeLabel || "Shape"}</label
             >
             <div class="flex gap-2 justify-center flex-wrap">
-              {#each ["circle", "square", "rectangle", "star", "heart", "diamond", "butterfly"] as s}
+              {#each ["circle", "square", "rectangle", "star", "heart", "diamond", "butterfly", "transparent"] as s}
                 <button
                   class="w-10 h-10 rounded-lg border-2 flex items-center justify-center transition-all {shape ===
                   s
@@ -465,6 +472,16 @@
                     >
                       <path d={SVG_DEFS[s].d} />
                     </svg>
+                  {:else if s === "transparent"}
+                    <!-- Checkerboard icon for transparent -->
+                    <div
+                      class="w-6 h-6 border border-gray-300 relative overflow-hidden bg-white"
+                    >
+                      <div
+                        class="absolute inset-0"
+                        style="background-image: linear-gradient(45deg, #ccc 25%, transparent 25%), linear-gradient(-45deg, #ccc 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #ccc 75%), linear-gradient(-45deg, transparent 75%, #ccc 75%); background-size: 8px 8px; background-position: 0 0, 0 4px, 4px -4px, -4px 0px;"
+                      ></div>
+                    </div>
                   {/if}
                 </button>
               {/each}
@@ -500,7 +517,9 @@
               onclick={handleCreate}
               disabled={processing}
             >
-              {processing ? settings.t.create.creating : settings.t.create.title}
+              {processing
+                ? settings.t.create.creating
+                : settings.t.create.title}
             </button>
           </div>
         </div>

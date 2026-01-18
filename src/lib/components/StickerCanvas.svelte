@@ -177,9 +177,11 @@
     <!-- We apply the shape (clip-path or border-radius) here -->
     <div
       class="face front absolute inset-0 w-full h-full flex items-center justify-center shadow-xl"
-      style="{containerStyle}; {useRealBorder
-        ? `border: 4px solid ${borderColor}; transition: border-color 0.3s ease;`
-        : `background: ${borderColor}; transition: background-color 0.3s ease;`}"
+      style="{containerStyle}; {shape === 'transparent'
+        ? 'background: transparent;'
+        : useRealBorder
+          ? `border: 4px solid ${borderColor}; transition: border-color 0.3s ease;`
+          : `background: ${borderColor}; transition: background-color 0.3s ease;`}"
       class:rounded-full={shape === "circle"}
       class:rounded-2xl={shape === "square"}
     >
@@ -187,13 +189,13 @@
       <!-- If simple border used, image is full size. If clipped, image needs to be inset to reveal border/bg. -->
       <div
         class="relative flex items-center justify-center"
-        style={`width: 92%; height: 92%; ${containerStyle}; background: white;`}
+        style={`width: ${shape === "transparent" ? "100%" : "92%"}; height: ${shape === "transparent" ? "100%" : "92%"}; ${containerStyle}; background: ${shape === "transparent" ? "transparent" : "white"};`}
       >
         <img
           src={proxiedImage}
           alt="Sticker"
           class="object-cover"
-          style={`width: 96%; height: 96%; ${containerStyle};`}
+          style={`width: ${shape === "transparent" ? "100%" : "96%"}; height: ${shape === "transparent" ? "100%" : "96%"}; ${containerStyle};`}
           draggable="false"
         />
 
