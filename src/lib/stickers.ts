@@ -229,7 +229,8 @@ export async function getUserStickers(agent: Agent, userDid: string): Promise<St
       const link = ref.$link ? ref.$link : ref.toString();
 
       if (link !== '[object Object]') {
-        s.image = `https://cdn.bsky.app/img/feed_fullsize/plain/${blobDid}/${link}@jpeg`;
+        const ext = s.shape === 'transparent' ? 'png' : 'jpeg';
+        s.image = `https://cdn.bsky.app/img/feed_fullsize/plain/${blobDid}/${link}@${ext}`;
       } else {
         console.warn("Could not extract link from ref", ref);
       }
@@ -496,7 +497,9 @@ export async function updateSticker(agent: Agent, stickerUri: string, updates: P
         const ref = (sticker.image as any).ref;
         const link = ref.$link ? ref.$link : ref.toString();
         if (link && link !== '[object Object]') {
-          infoPayload.image = `https://cdn.bsky.app/img/feed_fullsize/plain/${blobDid}/${link}@jpeg`;
+          const shapeToCheck = newSticker.shape || sticker.shape;
+          const ext = shapeToCheck === 'transparent' ? 'png' : 'jpeg';
+          infoPayload.image = `https://cdn.bsky.app/img/feed_fullsize/plain/${blobDid}/${link}@${ext}`;
         }
       }
 

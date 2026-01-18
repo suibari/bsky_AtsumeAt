@@ -142,6 +142,7 @@
 
   // Shape Styles
   let clipStyle = $derived.by(() => {
+    if (shape === "transparent") return ""; // No clip-path for transparent to allow drop-shadow
     if (CSS_SHAPES[shape as string]) {
       return `clip-path: ${CSS_SHAPES[shape as string]}`;
     }

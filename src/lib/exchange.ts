@@ -708,7 +708,8 @@ export async function fetchStickersForTransaction(agent: Agent, t: Transaction, 
               }
 
               if (link && link !== '[object Object]') {
-                s.image = `https://cdn.bsky.app/img/feed_fullsize/plain/${partnerDid}/${link}@jpeg`;
+                const ext = s.shape === 'transparent' ? 'png' : 'jpeg';
+                s.image = `https://cdn.bsky.app/img/feed_fullsize/plain/${partnerDid}/${link}@${ext}`;
               }
             }
 
