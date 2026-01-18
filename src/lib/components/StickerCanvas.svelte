@@ -219,24 +219,32 @@
     </div>
 
     <!-- Back Face -->
+    <!-- Use concentric div approach for border to handle clip-paths correctly (like Rectangle) -->
     <div
-      class="face back absolute inset-0 w-full h-full flex items-center justify-center border-4 border-white shadow-xl"
+      class="face back absolute inset-0 w-full h-full flex items-center justify-center shadow-xl bg-white"
       style="
           transform: rotateY(180deg); 
-          background-color: {borderColor};
-          background-image: repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(0,0,0,0.1) 10px, rgba(0,0,0,0.1) 20px);
-          transition: background-color 0.3s ease;
           {containerStyle}
         "
       class:rounded-full={shape === "circle"}
       class:rounded-2xl={shape === "square"}
     >
+      <!-- Inner Content (Pattern) -->
+      <!-- Simulate 4px border by sizing this to ~95% -->
       <div
-        class="w-2/3 h-2/3 bg-white/20 animate-pulse"
-        class:rounded-full={shape === "circle"}
-        class:rounded-xl={shape === "square"}
-        style={!useRealBorder ? containerStyle : ""}
-      ></div>
+        class="flex items-center justify-center relative w-full h-full"
+        style="width: 95%; height: 95%; {containerStyle}; 
+               background-color: {borderColor};
+               background-image: repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(0,0,0,0.1) 10px, rgba(0,0,0,0.1) 20px);
+               transition: background-color 0.3s ease;"
+      >
+        <div
+          class="w-2/3 h-2/3 bg-white/20 animate-pulse"
+          class:rounded-full={shape === "circle"}
+          class:rounded-xl={shape === "square"}
+          style={!useRealBorder ? containerStyle : ""}
+        ></div>
+      </div>
     </div>
   </div>
 </div>
