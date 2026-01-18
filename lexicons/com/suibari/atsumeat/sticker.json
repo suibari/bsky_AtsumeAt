@@ -49,7 +49,8 @@
               "star",
               "heart",
               "diamond",
-              "butterfly"
+              "butterfly",
+              "transparent"
             ],
             "description": "The shape of the sticker canvas."
           },
