@@ -761,7 +761,7 @@ export async function findEasyExchangePartner(agent: Agent, offeredStickers: Sti
 
   // Concurrency Control
   const CONCURRENCY_LIMIT = 10;
-  const SEARCH_LIMIT = 100;
+  const SEARCH_LIMIT = 200;
   const relevantCandidates = shuffledCandidates.slice(0, SEARCH_LIMIT);
 
   let candidatesChecked = 0;
