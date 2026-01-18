@@ -462,6 +462,16 @@
                     <div class="w-6 h-6 bg-gray-400 rounded-full"></div>
                   {:else if s === "square"}
                     <div class="w-6 h-6 bg-gray-400 rounded-md"></div>
+                  {:else if s === "transparent"}
+                    <!-- Checkerboard icon for transparent -->
+                    <div
+                      class="w-6 h-6 border border-gray-300 relative overflow-hidden bg-white rounded"
+                    >
+                      <div
+                        class="absolute inset-0"
+                        style="background-image: linear-gradient(45deg, #ccc 25%, transparent 25%), linear-gradient(-45deg, #ccc 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #ccc 75%), linear-gradient(-45deg, transparent 75%, #ccc 75%); background-size: 8px 8px; background-position: 0 0, 0 4px, 4px -4px, -4px 0px;"
+                      ></div>
+                    </div>
                   {:else if CSS_SHAPES[s]}
                     <div
                       class="w-6 h-6 bg-gray-400"
@@ -475,16 +485,6 @@
                     >
                       <path d={SVG_DEFS[s].d} />
                     </svg>
-                  {:else if s === "transparent"}
-                    <!-- Checkerboard icon for transparent -->
-                    <div
-                      class="w-6 h-6 border border-gray-300 relative overflow-hidden bg-white"
-                    >
-                      <div
-                        class="absolute inset-0"
-                        style="background-image: linear-gradient(45deg, #ccc 25%, transparent 25%), linear-gradient(-45deg, #ccc 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #ccc 75%), linear-gradient(-45deg, transparent 75%, #ccc 75%); background-size: 8px 8px; background-position: 0 0, 0 4px, 4px -4px, -4px 0px;"
-                      ></div>
-                    </div>
                   {/if}
                 </button>
               {/each}
