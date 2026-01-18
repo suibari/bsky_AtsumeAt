@@ -92,19 +92,24 @@
             transition:slide
           >
             <div class="flex items-center gap-3">
-              {#if offer.profile?.avatar}
-                <img
-                  src={offer.profile.avatar}
-                  alt="Avatar"
-                  class="w-12 h-12 rounded-full object-cover border border-gray-200"
-                />
-              {:else}
-                <div
-                  class="w-12 h-12 rounded-full bg-gray-200 flex items-center justify-center text-xl"
-                >
-                  ?
-                </div>
-              {/if}
+              <a
+                href="/profile/{offer.partnerDid}"
+                class="block transition-opacity hover:opacity-80"
+              >
+                {#if offer.profile?.avatar}
+                  <img
+                    src={offer.profile.avatar}
+                    alt="Avatar"
+                    class="w-12 h-12 rounded-full object-cover border border-gray-200"
+                  />
+                {:else}
+                  <div
+                    class="w-12 h-12 rounded-full bg-gray-200 flex items-center justify-center text-xl"
+                  >
+                    ?
+                  </div>
+                {/if}
+              </a>
               <div>
                 <h3 class="font-bold text-gray-800">
                   {offer.profile?.displayName ||
