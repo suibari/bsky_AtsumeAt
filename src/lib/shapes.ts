@@ -1,9 +1,11 @@
-export type StickerShape = "circle" | "square" | "star" | "heart" | "diamond" | "butterfly";
+export type StickerShape = "circle" | "square" | "star" | "heart" | "diamond" | "butterfly" | "rectangle" | "transparent";
 
 // Pure CSS clip-path shapes
 export const CSS_SHAPES: Record<string, string> = {
   circle: "circle(50% at 50% 50%)",
   square: "inset(0% 0% 0% 0% round 15%)",
+  // Horizontal Rectangle: 20% inset on top/bottom = 60% height, 100% width. Rounded corners.
+  rectangle: "inset(20% 0% 20% 0% round 15%)",
   star: "polygon(50% 0%, 66% 32%, 98% 35%, 72% 57%, 79% 91%, 50% 74%, 21% 91%, 28% 57%, 2% 35%, 34% 32%)",
   diamond: "polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%)",
 };

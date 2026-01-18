@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount, onDestroy } from "svelte";
   import { getDominantColor } from "$lib/color";
-  import { CSS_SHAPES, SVG_DEFS } from "$lib/shapes";
+  import { CSS_SHAPES, SVG_DEFS, type StickerShape } from "$lib/shapes";
 
   // Shape Handling
   let {
@@ -13,7 +13,7 @@
     avatarUrl?: string;
     staticAngle?: boolean;
     allowVerticalRotation?: boolean;
-    shape?: "circle" | "square" | "star" | "heart" | "diamond" | "butterfly";
+    shape?: StickerShape;
   }>();
 
   let container: HTMLDivElement;

@@ -138,6 +138,18 @@
         originX: "center",
         originY: "center",
       });
+    } else if (shape === "rectangle") {
+      // Horizontal Rectangle (60% height)
+      // Matches CSS inset(20% 0% 20% 0%)
+      const rectHeight = width * 0.6;
+      return new fabricModule.Rect({
+        width: width,
+        height: rectHeight,
+        rx: width * 0.05, // Slightly smaller radius for rectangle
+        ry: width * 0.05,
+        originX: "center",
+        originY: "center",
+      });
     } else if (shape === "star") {
       // Use implicit 1x1 ViewBox for Star
       const rawPoints = [

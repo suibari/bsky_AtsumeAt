@@ -46,6 +46,7 @@
             "knownValues": [
               "circle",
               "square",
+              "rectangle",
               "star",
               "heart",
               "diamond",

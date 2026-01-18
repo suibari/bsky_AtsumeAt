@@ -14,7 +14,13 @@
   let imageUrl = $state<string | null>(null);
   let name = $state("");
   let shape = $state<
-    "circle" | "square" | "star" | "heart" | "diamond" | "butterfly"
+    | "circle"
+    | "square"
+    | "star"
+    | "heart"
+    | "diamond"
+    | "butterfly"
+    | "rectangle"
   >("circle");
   let processing = $state(false);
 
@@ -431,8 +437,8 @@
             <label class="text-sm font-medium text-gray-700 mb-2 block"
               >{i18n.t.create.shapeLabel || "Shape"}</label
             >
-            <div class="flex gap-2 justify-center">
-              {#each ["circle", "square", "star", "heart", "diamond", "butterfly"] as s}
+            <div class="flex gap-2 justify-center flex-wrap">
+              {#each ["circle", "square", "rectangle", "star", "heart", "diamond", "butterfly"] as s}
                 <button
                   class="w-10 h-10 rounded-lg border-2 flex items-center justify-center transition-all {shape ===
                   s

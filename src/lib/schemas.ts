@@ -12,7 +12,7 @@ export interface Sticker {
   tags?: string[]; // User-defined tags for organization
   image: string | BlobRef; // Avatar URL or BlobRef
   imageType?: 'avatar' | 'custom';
-  shape?: 'circle' | 'square' | 'star' | 'heart' | 'diamond' | 'butterfly';
+  shape?: 'circle' | 'square' | 'rectangle' | 'star' | 'heart' | 'diamond' | 'butterfly' | 'transparent';
   subjectDid?: string; // DID of the user depicted (if applicable)
   originalOwner: string; // DID of the creator/minter
   model: string; // 'default' | 'cid:<cid>'
