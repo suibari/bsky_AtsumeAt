@@ -3,7 +3,7 @@
   import { quintOut } from "svelte/easing";
   import StickerCanvas from "./StickerCanvas.svelte";
   import type { StickerWithProfile } from "$lib/stickers";
-  import { i18n } from "$lib/i18n.svelte";
+  import { settings } from "$lib/settings.svelte";
   import type { Agent } from "@atproto/api";
   import { CSS_SHAPES, SVG_DEFS } from "$lib/shapes";
 
@@ -195,7 +195,7 @@
           {:else}
             <h2 class="text-2xl font-bold text-gray-800">
               {sticker.name ||
-                i18n.t.stickerBook.defaultName.replace(
+                settings.t.stickerBook.defaultName.replace(
                   "{name}",
                   sticker.originalOwnerProfile?.displayName ||
                     sticker.originalOwnerProfile?.handle ||
@@ -247,7 +247,7 @@
           <div class="flex flex-wrap gap-2">
             {#if isEditing}
               <div class="w-full text-xs text-gray-400 mb-1">
-                ※ {i18n.t.stickerViewer.tagsPublicInfo}
+                ※ {settings.t.stickerViewer.tagsPublicInfo}
               </div>
               {#each editTags as tag}
                 <span
@@ -337,7 +337,7 @@
               class="px-4 py-2 text-gray-500 hover:text-gray-700 font-medium"
               disabled={isSaving}
             >
-              {i18n.t.common.cancel}
+              {settings.t.common.cancel}
             </button>
             <button
               onclick={handleSave}
@@ -348,9 +348,9 @@
                 <div
                   class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"
                 ></div>
-                {i18n.t.common.saving}
+                {settings.t.common.saving}
               {:else}
-                {i18n.t.stickerViewer.saveChanges}
+                {settings.t.stickerViewer.saveChanges}
               {/if}
             </button>
           {:else}
@@ -363,7 +363,7 @@
               onclick={() => (isEditing = true)}
               class="px-6 py-2 bg-white border border-gray-200 text-gray-700 hover:bg-gray-50 hover:border-gray-300 rounded-full font-bold transition-all shadow-sm"
             >
-              {i18n.t.stickerViewer.editDetails}
+              {settings.t.stickerViewer.editDetails}
             </button>
           {/if}
         </div>

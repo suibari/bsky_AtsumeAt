@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import { Agent } from "@atproto/api";
-  import { i18n } from "$lib/i18n.svelte";
+  import { settings } from "$lib/settings.svelte";
   import { getAllStickerRecords } from "$lib/stickers";
   import { getPdsEndpoint } from "$lib/atproto";
 
@@ -127,7 +127,7 @@
 <div class="w-full">
   {#if images.length === 0 && !loading}
     <div class="text-center py-8 text-gray-500">
-      {i18n.t.create.picker.noImages}
+      {settings.t.create.picker.noImages}
     </div>
   {:else}
     <div class="grid grid-cols-3 sm:grid-cols-4 gap-2 mb-4">
@@ -160,7 +160,7 @@
       class="w-full py-2 text-primary font-medium hover:bg-primary/5 rounded-lg transition-colors"
       onclick={loadMore}
     >
-      {i18n.t.create.picker.loadMore}
+      {settings.t.create.picker.loadMore}
     </button>
   {/if}
 </div>

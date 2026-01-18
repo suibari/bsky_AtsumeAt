@@ -5,7 +5,7 @@ import { requestSignature } from './signatures';
 import { getPdsEndpoint, publicAgent } from './atproto';
 import { getBacklinks, type ConstellationRecord } from './constellation';
 import { getHubUsers } from './hub';
-import { i18n } from './i18n.svelte';
+import { settings } from './settings.svelte';
 
 export async function createExchangePost(agent: Agent, targetHandle: string | null, targetDid: string | null, offeredStickers: StickerWithProfile[], withPost: boolean = true, message?: string, isEasyExchange: boolean = false) {
   const origin = window.location.origin;
@@ -33,7 +33,7 @@ export async function createExchangePost(agent: Agent, targetHandle: string | nu
   if (withPost && targetHandle && !isEasyExchange) {
     const stickerCount = offeredStickers.length;
 
-    const text = i18n.t.exchange.offerPost
+    const text = settings.t.exchange.offerPost
       .replace('{handle}', targetHandle)
       .replace('{n}', stickerCount.toString())
       .replace('{s}', stickerCount > 1 ? 's' : '');
@@ -48,8 +48,8 @@ export async function createExchangePost(agent: Agent, targetHandle: string | nu
         $type: 'app.bsky.embed.external',
         external: {
           uri: `${origin}/exchange?user=${myDid}`,
-          title: i18n.t.exchange.embedTitle,
-          description: i18n.t.exchange.embedDescription,
+          title: settings.t.exchange.embedTitle,
+          description: settings.t.exchange.embedDescription,
         }
       }
     });
@@ -296,7 +296,7 @@ export async function resolvePendingExchanges(agent: Agent, onStatus?: (msg: str
   const myDid = agent.assertDid;
   if (!myDid) return;
 
-  if (onStatus) onStatus(i18n.t.exchange.checkingExchanges);
+  if (onStatus) onStatus(settings.t.exchange.checkingExchanges);
 
   // Resolve PDS
   let pdsAgent = agent;
@@ -347,13 +347,13 @@ export async function resolvePendingExchanges(agent: Agent, onStatus?: (msg: str
         const profile = await publicAgent.getProfile({ actor: partnerDid });
         partnerName = profile.data.displayName || profile.data.handle || partnerDid;
       } catch (e) { }
-      onStatus(i18n.t.exchange.checkingWithPartner.replace('{name}', partnerName));
+      onStatus(settings.t.exchange.checkingWithPartner.replace('{name}', partnerName));
     }
 
     const claimed = await checkInverseExchange(agent, partnerDid, offer.uri);
 
     if (claimed === 'completed') {
-      if (onStatus) onStatus(i18n.t.exchange.receivedFromServer.replace('{name}', partnerName));
+      if (onStatus) onStatus(settings.t.exchange.receivedFromServer.replace('{name}', partnerName));
       await new Promise(r => setTimeout(r, 1000));
 
       // 3. Update MY transaction to completed
@@ -372,7 +372,7 @@ export async function resolvePendingExchanges(agent: Agent, onStatus?: (msg: str
       }
     } else if (claimed === 'rejected') {
       // User requested NO notification for rejection
-      // if (onStatus) onStatus(i18n.t.exchange.rejectedByPartner.replace('{name}', partnerName));
+      // if (onStatus) onStatus(settings.t.exchange.rejectedByPartner.replace('{name}', partnerName));
       // await new Promise(r => setTimeout(r, 1000));
 
       // Update MY transaction to rejected

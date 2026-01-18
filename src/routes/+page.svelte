@@ -8,13 +8,13 @@
   import { resolvePendingExchanges, checkIncomingOffers } from "$lib/exchange";
   import AboutModal from "$lib/components/AboutModal.svelte";
   import InfoModal from "$lib/components/InfoModal.svelte";
-  import { i18n } from "$lib/i18n.svelte";
+  import { settings } from "$lib/settings.svelte";
 
   import { fade, fly } from "svelte/transition";
 
   let agent = $state<Agent | null>(null);
   let loading = $state(true);
-  let loadingMessage = $state(i18n.t.common.loading);
+  let loadingMessage = $state(settings.t.common.loading);
   let view = $state<"landing" | "book">("landing");
   let menuOpen = $state(false);
   let notificationCount = $state(0);
@@ -48,7 +48,7 @@
             // Initialization logic - ALWAYS run before redirect
             try {
               loadingMessage =
-                i18n.lang === "ja"
+                settings.lang === "ja"
                   ? "シール帳を確認中..."
                   : "Checking your sticker book...";
               await initStickers(agent, agent.assertDid);
@@ -97,9 +97,9 @@
         class="max-w-6xl mx-auto p-4 flex justify-between items-center relative"
       >
         <div class="flex items-center gap-2">
-          <h1 class="text-xl font-bold text-primary">{i18n.t.appName}</h1>
+          <h1 class="text-xl font-bold text-primary">{settings.t.appName}</h1>
           <span class="text-sm text-gray-400 border-l pl-2 ml-1"
-            >{i18n.t.header.stickerBook}</span
+            >{settings.t.header.stickerBook}</span
           >
         </div>
 
@@ -136,7 +136,7 @@
           <button
             onclick={() => (showInfo = true)}
             class="p-2 text-gray-600 hover:text-primary transition-colors"
-            aria-label={i18n.t.header.info}
+            aria-label={settings.t.header.info}
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -187,21 +187,21 @@
               class="px-4 py-2 hover:bg-secondary/20 text-gray-700 font-medium text-sm flex items-center gap-2"
             >
               <span>🎨</span>
-              {i18n.t.header.create}
+              {settings.t.header.create}
             </a>
             <a
               href="/exchange"
               class="px-4 py-2 hover:bg-secondary/20 text-gray-700 font-medium text-sm flex items-center gap-2"
             >
               <span>🤝</span>
-              {i18n.t.header.exchange}
+              {settings.t.header.exchange}
             </a>
             <a
               href="/share"
               class="px-4 py-2 hover:bg-secondary/20 text-gray-700 font-medium text-sm flex items-center gap-2"
             >
               <span>✨</span>
-              {i18n.t.header.share}
+              {settings.t.header.share}
             </a>
             <button
               onclick={() => {
@@ -211,7 +211,7 @@
               class="px-4 py-2 w-full text-left hover:bg-secondary/20 text-gray-700 font-medium text-sm flex items-center gap-2"
             >
               <span>ℹ️</span>
-              {i18n.t.header.about}
+              {settings.t.header.about}
             </button>
             <div class="h-px bg-gray-100 my-1"></div>
             <a
@@ -219,7 +219,7 @@
               class="px-4 py-2 hover:bg-secondary/20 text-gray-700 font-medium text-sm flex items-center gap-2"
             >
               <span>⚙️</span>
-              {i18n.t.header.settings}
+              {settings.t.header.settings}
             </a>
             <div class="h-px bg-gray-100 my-1"></div>
             <button
@@ -227,7 +227,7 @@
               class="px-4 py-2 w-full text-left hover:bg-red-50 text-red-600 font-medium text-sm flex items-center gap-2"
             >
               <span>🚪</span>
-              {i18n.t.header.signOut}
+              {settings.t.header.signOut}
             </button>
           </div>
 

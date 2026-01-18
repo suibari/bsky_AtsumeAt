@@ -1,6 +1,6 @@
 <script lang="ts">
   import { fade, scale } from "svelte/transition";
-  import { i18n } from "$lib/i18n.svelte";
+  import { settings } from "$lib/settings.svelte";
 
   let { onClose } = $props<{ onClose: () => void }>();
 </script>
@@ -22,11 +22,11 @@
     <div
       class="px-8 py-6 border-b border-primary/10 flex justify-between items-center bg-transparent"
     >
-      <h2 class="text-2xl font-bold text-gray-700">{i18n.t.info.title}</h2>
+      <h2 class="text-2xl font-bold text-gray-700">{settings.t.info.title}</h2>
       <button
         onclick={onClose}
         class="p-2 -mr-2 text-gray-400 hover:text-gray-600 rounded-full hover:bg-gray-100 transition"
-        aria-label={i18n.t.common.back}
+        aria-label={settings.t.common.back}
       >
         <svg
           xmlns="http://www.w3.org/2000/svg"
@@ -46,7 +46,7 @@
     <!-- Content -->
     <div class="p-8 overflow-y-auto prose prose-sm text-gray-600">
       <p class="text-lg text-center font-medium text-gray-700 mb-6">
-        {i18n.t.info.description}
+        {settings.t.info.description}
       </p>
 
       <ul class="list-none pl-0 space-y-4">
@@ -58,9 +58,9 @@
           </div>
           <div>
             <strong class="text-primary block text-base"
-              >{i18n.t.info.step1}</strong
+              >{settings.t.info.step1}</strong
             >
-            <span class="text-sm">{i18n.t.info.step1Desc}</span>
+            <span class="text-sm">{settings.t.info.step1Desc}</span>
           </div>
         </li>
         <li class="flex gap-3">
@@ -71,9 +71,9 @@
           </div>
           <div>
             <strong class="text-primary block text-base"
-              >{i18n.t.info.step2}</strong
+              >{settings.t.info.step2}</strong
             >
-            <span class="text-sm">{i18n.t.info.step2Desc}</span>
+            <span class="text-sm">{settings.t.info.step2Desc}</span>
           </div>
         </li>
         <li class="flex gap-3">
@@ -84,9 +84,9 @@
           </div>
           <div>
             <strong class="text-primary block text-base"
-              >{i18n.t.info.step3}</strong
+              >{settings.t.info.step3}</strong
             >
-            <span class="text-sm">{i18n.t.info.step3Desc}</span>
+            <span class="text-sm">{settings.t.info.step3Desc}</span>
           </div>
         </li>
         <li class="flex gap-3">
@@ -97,9 +97,9 @@
           </div>
           <div>
             <strong class="text-primary block text-base"
-              >{i18n.t.info.step4}</strong
+              >{settings.t.info.step4}</strong
             >
-            <span class="text-sm">{i18n.t.info.step4Desc}</span>
+            <span class="text-sm">{settings.t.info.step4Desc}</span>
           </div>
         </li>
       </ul>
@@ -111,7 +111,7 @@
         onclick={onClose}
         class="px-6 py-2 bg-white border-2 border-gray-200 rounded-full text-sm font-bold text-gray-700 hover:bg-gray-50 hover:border-gray-300 focus:outline-none transition"
       >
-        {i18n.t.common.ok}
+        {settings.t.common.ok}
       </button>
     </div>
   </div>

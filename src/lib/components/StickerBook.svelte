@@ -11,7 +11,7 @@
     type LikeState,
   } from "$lib/stickers";
   import { publicAgent } from "$lib/atproto";
-  import { i18n } from "$lib/i18n.svelte";
+  import { settings } from "$lib/settings.svelte";
   import StickerCanvas from "./StickerCanvas.svelte";
   import StickerViewerModal from "./StickerViewerModal.svelte";
   import { fade } from "svelte/transition";
@@ -147,7 +147,7 @@
 
         if (s.originalOwner === primaryMinterDid) {
           if (!targetDid || targetDid === agent.assertDid) {
-            title = i18n.t.stickerBook.myStickers || "My Stickers";
+            title = settings.t.stickerBook.myStickers || "My Stickers";
           }
           // If viewing someone else, just let it use their name (already set above)
           // or we could add a possessive suffix if needed, but Name is fine for grouping.
@@ -334,11 +334,11 @@
       <div
         class="animate-spin rounded-full h-10 w-10 border-b-2 border-primary mx-auto mb-4"
       ></div>
-      <p class="text-gray-500">{i18n.t.common.loading}</p>
+      <p class="text-gray-500">{settings.t.common.loading}</p>
     </div>
   {:else if stickers.length === 0}
     <div class="card-glass border-dashed border-primary/30 p-12 text-center">
-      <p class="text-gray-500">{i18n.t.common.noStickers}</p>
+      <p class="text-gray-500">{settings.t.common.noStickers}</p>
       {#if !targetDid || targetDid === agent.assertDid}
         <button
           onclick={() => loadStickers(agent.assertDid!)}
@@ -354,20 +354,20 @@
 
       <div class="flex items-center gap-2">
         <span class="text-sm text-gray-500"
-          >{i18n.t.stickerBook.sortBy || "Sort:"}</span
+          >{settings.t.stickerBook.sortBy || "Sort:"}</span
         >
         <select
           bind:value={sortOrder}
           class="select-sm rounded-lg border-gray-200 text-sm"
         >
           <option value="obtained"
-            >{i18n.t.stickerBook.sortObtained || "Date Obtained"}</option
+            >{settings.t.stickerBook.sortObtained || "Date Obtained"}</option
           >
           <option value="minter"
-            >{i18n.t.stickerBook.sortMinter || "By Minter"}</option
+            >{settings.t.stickerBook.sortMinter || "By Minter"}</option
           >
           <option value="likes"
-            >{i18n.t.stickerBook.sortLikes || "Most Liked"}</option
+            >{settings.t.stickerBook.sortLikes || "Most Liked"}</option
           >
         </select>
       </div>
@@ -445,7 +445,7 @@
                 <p class="font-bold text-gray-700 truncate text-sm">
                   {#if sticker.imageType === "custom"}
                     {sticker.name ||
-                      i18n.t.stickerBook.defaultName.replace(
+                      settings.t.stickerBook.defaultName.replace(
                         "{name}",
                         sticker.originalOwnerProfile?.displayName ||
                           sticker.originalOwnerProfile?.handle ||
@@ -453,7 +453,7 @@
                           "Unknown",
                       )}
                   {:else}
-                    {i18n.t.stickerBook.defaultName.replace(
+                    {settings.t.stickerBook.defaultName.replace(
                       "{name}",
                       sticker.profile?.displayName ||
                         sticker.profile?.handle ||

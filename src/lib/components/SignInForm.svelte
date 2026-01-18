@@ -1,6 +1,6 @@
 <script lang="ts">
   import { signIn } from "$lib/atproto";
-  import { i18n } from "$lib/i18n.svelte";
+  import { settings } from "$lib/settings.svelte";
   import ActorTypeahead from "./ActorTypeahead.svelte";
 
   let handle = $state("");
@@ -33,7 +33,7 @@
 <div class="flex flex-col space-y-4">
   <ActorTypeahead
     bind:value={handle}
-    placeholder={i18n.t.landing.handlePlaceholder}
+    placeholder={settings.t.landing.handlePlaceholder}
     onEnter={handleLogin}
   />
 
@@ -42,10 +42,10 @@
     disabled={loading}
     class="btn-primary hover:shadow-lg w-full"
   >
-    {loading ? i18n.t.common.loading : i18n.t.landing.signInWithBluesky}
+    {loading ? settings.t.common.loading : settings.t.landing.signInWithBluesky}
   </button>
 
   <div class="mt-4 text-sm text-gray-500 text-center">
-    <p>{i18n.t.landing.connectMessage}</p>
+    <p>{settings.t.landing.connectMessage}</p>
   </div>
 </div>

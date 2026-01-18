@@ -8,7 +8,7 @@
   import html2canvas from "html2canvas";
   import { getDominantColor } from "$lib/color";
   import StickerCanvas from "$lib/components/StickerCanvas.svelte";
-  import { i18n } from "$lib/i18n.svelte";
+  import { settings } from "$lib/settings.svelte";
   import { fade } from "svelte/transition";
 
   let agent = $state<Agent | null>(null);
@@ -17,7 +17,7 @@
   let canvasEl: HTMLCanvasElement;
   let processing = $state(false);
   let isPenMode = $state(false);
-  let postText = $state(i18n.t.share.defaultPostText);
+  let postText = $state(settings.t.share.defaultPostText);
   let altText = $state("");
   let currentUserProfile = $state<ProfileViewDetailed | null>(null);
   let showToast = $state(false);
@@ -42,7 +42,7 @@
           currentUserProfile = profileRes.data;
           const name =
             currentUserProfile.displayName || currentUserProfile.handle;
-          altText = i18n.t.share.altDefault.replace("{name}", name);
+          altText = settings.t.share.altDefault.replace("{name}", name);
         } catch (e) {
           console.error("Failed to load data", e);
         }
@@ -454,7 +454,7 @@
       const rt = new RichText({ text: postText });
       await rt.detectFacets(agent);
 
-      const defaultAlt = i18n.t.share.myCollection;
+      const defaultAlt = settings.t.share.myCollection;
 
       await agent.post({
         text: rt.text,
@@ -475,7 +475,7 @@
       setTimeout(() => (showToast = false), 3000);
     } catch (e) {
       console.error("Share failed", e);
-      alert(i18n.t.share.failed);
+      alert(settings.t.share.failed);
     } finally {
       processing = false;
     }
@@ -487,9 +487,9 @@
     class="w-full max-w-6xl p-4 flex justify-between items-center z-10 relative"
   >
     <a href="/" class="text-gray-500 hover:text-primary font-bold"
-      >← {i18n.t.common.back}</a
+      >← {settings.t.common.back}</a
     >
-    <h1 class="text-xl font-bold text-primary">{i18n.t.share.title}</h1>
+    <h1 class="text-xl font-bold text-primary">{settings.t.share.title}</h1>
     <div class="w-16"></div>
   </header>
 
@@ -507,28 +507,28 @@
             ? 'ring-2 ring-primary text-primary'
             : 'text-gray-600'}"
           onclick={togglePen}
-          title={i18n.t.share.penTool}
+          title={settings.t.share.penTool}
         >
           ✏️
         </button>
         <button
           class="p-3 rounded-full bg-white shadow-md hover:bg-gray-50 text-gray-600 transition-colors"
           onclick={undo}
-          title={i18n.t.share.undo}
+          title={settings.t.share.undo}
         >
           ↩️
         </button>
         <button
           class="p-3 rounded-full bg-white shadow-md hover:bg-gray-50 text-red-500 transition-colors"
           onclick={deleteSelected}
-          title={i18n.t.share.delete}
+          title={settings.t.share.delete}
         >
           🗑️
         </button>
         <button
           class="p-3 rounded-full bg-white shadow-md hover:bg-gray-50 text-gray-500 transition-colors"
           onclick={randomizeBackground}
-          title={i18n.t.share.changeBg}
+          title={settings.t.share.changeBg}
         >
           🎨
         </button>
@@ -553,7 +553,7 @@
       </div>
 
       <p class="text-center text-gray-400 text-xs">
-        {i18n.t.share.guide}
+        {settings.t.share.guide}
       </p>
     </div>
 
@@ -564,7 +564,7 @@
       <div
         class="p-4 border-b border-gray-100 flex justify-between items-center"
       >
-        <h2 class="font-bold text-gray-700">{i18n.t.share.myStickers}</h2>
+        <h2 class="font-bold text-gray-700">{settings.t.share.myStickers}</h2>
         <span class="text-xs bg-primary/20 text-primary px-2 py-1 rounded-full"
           >{stickers.length}</span
         >
@@ -576,9 +576,9 @@
         {#if stickers.length === 0}
           <div class="col-span-3 text-center py-8 text-gray-400">
             {#if agent}
-              {i18n.t.share.loadingStickers}
+              {settings.t.share.loadingStickers}
             {:else}
-              {i18n.t.share.signInToLoad}
+              {settings.t.share.signInToLoad}
             {/if}
           </div>
         {:else}
@@ -601,7 +601,7 @@
           type="text"
           bind:value={altText}
           class="w-full p-2 mb-3 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none"
-          placeholder={i18n.t.share.myCollection}
+          placeholder={settings.t.share.myCollection}
         />
 
         <label
@@ -624,9 +624,9 @@
             <div
               class="animate-spin rounded-full h-4 w-4 border-b-2 border-white"
             ></div>
-            {i18n.t.share.posting}
+            {settings.t.share.posting}
           {:else}
-            <span>✨</span> {i18n.t.share.postToBluesky}
+            <span>✨</span> {settings.t.share.postToBluesky}
           {/if}
         </button>
       </div>
@@ -639,7 +639,7 @@
       transition:fade
     >
       <span>✅</span>
-      {i18n.t.share.posted}
+      {settings.t.share.posted}
     </div>
   {/if}
 </div>

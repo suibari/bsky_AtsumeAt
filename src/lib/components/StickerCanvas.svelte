@@ -2,6 +2,7 @@
   import { onMount, onDestroy } from "svelte";
   import { getDominantColor } from "$lib/color";
   import { CSS_SHAPES, SVG_DEFS, type StickerShape } from "$lib/shapes";
+  import { settings } from "$lib/settings.svelte";
 
   // Shape Handling
   let {
@@ -81,7 +82,7 @@
     if (staticAngle) return;
     animationId = requestAnimationFrame(animate);
 
-    if (!isDragging) {
+    if (!isDragging && !settings.disableRotation) {
       // Simply increment the unified rotY state
       rotY += 0.5;
     }

@@ -3,8 +3,8 @@
   import { getClient } from "$lib/atproto";
   import { Agent } from "@atproto/api";
   import { deleteAllData } from "$lib/hub";
-  import { i18n } from "$lib/i18n.svelte";
   import LanguageSwitcher from "$lib/components/LanguageSwitcher.svelte";
+  import { settings } from "$lib/settings.svelte";
 
   let agent = $state<Agent | null>(null);
   let isDeleting = $state(false);
@@ -21,12 +21,12 @@
 
   async function handleDeleteAll() {
     if (!agent) return;
-    const confirmed = window.confirm(i18n.t.settings.confirmDelete);
+    const confirmed = window.confirm(settings.t.settings.confirmDelete);
     if (confirmed) {
       isDeleting = true;
       try {
         await deleteAllData(agent);
-        alert(i18n.t.settings.deleteSuccess);
+        alert(settings.t.settings.deleteSuccess);
         window.location.href = "/";
       } catch (e) {
         console.error("Failed to delete data", e);
@@ -44,7 +44,7 @@
         <a
           href="/"
           class="text-gray-600 hover:text-primary transition-colors"
-          aria-label={i18n.t.common.back}
+          aria-label={settings.t.common.back}
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"
@@ -61,7 +61,7 @@
             />
           </svg>
         </a>
-        <h1 class="text-xl font-bold text-gray-800">{i18n.t.settings.title}</h1>
+        <h1 class="text-xl font-bold text-gray-800">{settings.t.settings.title}</h1>
       </div>
       <div class="w-8"></div>
     </div>
@@ -70,7 +70,7 @@
   <main class="max-w-xl mx-auto p-6 space-y-6">
     <div class="bg-white rounded-lg shadow-sm p-6 border border-gray-100">
       <h2 class="text-lg font-semibold text-gray-800 mb-4">
-        {i18n.t.settings.language}
+        {settings.t.settings.language}
       </h2>
       <div
         class="flex justify-center p-4 bg-surface rounded-xl border border-primary/5"
@@ -80,11 +80,36 @@
     </div>
 
     <div class="bg-white rounded-lg shadow-sm p-6 border border-gray-100">
+      <h2 class="text-lg font-semibold text-gray-800 mb-4">
+        {settings.t.settings.displaySettings}
+      </h2>
+      <div
+        class="flex items-center justify-between p-4 bg-surface rounded-xl border border-primary/5"
+      >
+        <span class="text-gray-700 font-medium"
+          >{settings.t.settings.disableRotation}</span
+        >
+        <label class="relative inline-flex items-center cursor-pointer">
+          <input
+            type="checkbox"
+            class="sr-only peer"
+            checked={settings.disableRotation}
+            onchange={(e) =>
+              settings.setDisableRotation(e.currentTarget.checked)}
+          />
+          <div
+            class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary/20 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"
+          ></div>
+        </label>
+      </div>
+    </div>
+
+    <div class="bg-white rounded-lg shadow-sm p-6 border border-gray-100">
       <h2 class="text-lg font-semibold text-red-600 mb-4">
-        {i18n.t.settings.dangerZone}
+        {settings.t.settings.dangerZone}
       </h2>
       <p class="text-sm text-gray-600 mb-6">
-        {i18n.t.settings.dangerMessage}
+        {settings.t.settings.dangerMessage}
       </p>
 
       <button
@@ -96,7 +121,7 @@
           <div
             class="animate-spin rounded-full h-5 w-5 border-b-2 border-red-600"
           ></div>
-          {i18n.t.settings.deleting}
+          {settings.t.settings.deleting}
         {:else}
           <svg
             xmlns="http://www.w3.org/2000/svg"
@@ -112,7 +137,7 @@
               d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
             />
           </svg>
-          {i18n.t.settings.deleteAll}
+          {settings.t.settings.deleteAll}
         {/if}
       </button>
     </div>

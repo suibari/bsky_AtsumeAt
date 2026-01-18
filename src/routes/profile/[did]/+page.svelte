@@ -8,7 +8,7 @@
   import { getUserStickers, type StickerWithProfile } from "$lib/stickers";
   import { createExchangePost } from "$lib/exchange";
   import type { ProfileViewDetailed } from "@atproto/api/dist/client/types/app/bsky/actor/defs";
-  import { i18n } from "$lib/i18n.svelte";
+  import { settings } from "$lib/settings.svelte";
   import {
     calculateAchievements,
     getUserStats,
@@ -86,7 +86,7 @@
         <div
           class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"
         ></div>
-        <p class="ml-3 text-gray-500">{i18n.t.profile.loading}</p>
+        <p class="ml-3 text-gray-500">{settings.t.profile.loading}</p>
       </div>
     {:else if profile}
       <div
@@ -134,13 +134,13 @@
             <div class="text-center">
               <div class="font-bold text-lg">{profile.followersCount || 0}</div>
               <div class="text-xs text-gray-500 uppercase tracking-wider">
-                {i18n.t.profile.followers}
+                {settings.t.profile.followers}
               </div>
             </div>
             <div class="text-center">
               <div class="font-bold text-lg">{profile.followsCount || 0}</div>
               <div class="text-xs text-gray-500 uppercase tracking-wider">
-                {i18n.t.profile.following}
+                {settings.t.profile.following}
               </div>
             </div>
           </div>
@@ -153,7 +153,7 @@
                 class="btn-secondary inline-flex items-center gap-2"
               >
                 <span>🍬</span>
-                {i18n.t.profile.exchange}
+                {settings.t.profile.exchange}
               </a>
             </div>
           {/if}
@@ -164,7 +164,7 @@
       <div class="mt-8">
         <h2 class="text-xl font-bold mb-6 text-primary flex items-center gap-2">
           <span class="text-2xl">✨</span>
-          {i18n.t.profile.userStickers.replace(
+          {settings.t.profile.userStickers.replace(
             "{name}",
             profile.displayName || profile.handle,
           )}
@@ -175,8 +175,8 @@
       </div>
     {:else}
       <div class="text-center py-20">
-        <p class="text-gray-500 mb-6">{i18n.t.profile.notFound}</p>
-        <a href="/" class="btn-primary">{i18n.t.profile.backHome}</a>
+        <p class="text-gray-500 mb-6">{settings.t.profile.notFound}</p>
+        <a href="/" class="btn-primary">{settings.t.profile.backHome}</a>
       </div>
     {/if}
   </main>

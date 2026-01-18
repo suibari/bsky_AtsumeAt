@@ -17,6 +17,8 @@ export const translations = {
       deleting: "削除しています...",
       confirmDelete: "本当に削除しますか？すべてのデータ（シールデータ、いいねデータ、交換履歴）が消えてしまい、元に戻せなくなります。",
       deleteSuccess: "すべてのデータを削除しました。",
+      disableRotation: "シールの自動回転を無効にする",
+      displaySettings: "表示設定",
     },
     header: {
       stickerBook: "シール帳",
@@ -235,6 +237,8 @@ export const translations = {
       deleting: "Deleting...",
       confirmDelete: "Are you sure? This will delete ALL your AtsumeAt data (Stickers, Config, Transactions). This action cannot be undone.",
       deleteSuccess: "All data deleted. Redirecting to landing page.",
+      disableRotation: "Disable sticker auto-rotation",
+      displaySettings: "Display Settings",
     },
     header: {
       stickerBook: "Sticker Book",
