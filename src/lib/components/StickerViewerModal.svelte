@@ -3,8 +3,9 @@
   import { quintOut } from "svelte/easing";
   import StickerCanvas from "./StickerCanvas.svelte";
   import type { StickerWithProfile } from "$lib/stickers";
-  import { i18n } from "$lib/i18n.svelte";
+  import { settings } from "$lib/settings.svelte";
   import type { Agent } from "@atproto/api";
+  import { CSS_SHAPES, SVG_DEFS } from "$lib/shapes";
 
   let { sticker, agent, isOpen, onclose, onupdate } = $props<{
     sticker: StickerWithProfile | null;
@@ -20,6 +21,15 @@
   let isEditing = $state(false);
   let editName = $state("");
   let editTags = $state<string[]>([]);
+  let editShape = $state<
+    | "circle"
+    | "square"
+    | "star"
+    | "heart"
+    | "diamond"
+    | "butterfly"
+    | "transparent"
+  >("circle");
   let newTagInput = $state("");
   let isSaving = $state(false);
 
@@ -28,6 +38,7 @@
     if (sticker && isOpen) {
       editName = sticker.name || "";
       editTags = sticker.tags ? [...sticker.tags] : [];
+      editShape = (sticker.shape as any) || "circle";
       isEditing = false;
       isSaving = false;
     }
@@ -40,6 +51,7 @@
       // Diff check
       const updates: any = {};
       if (editName !== (sticker.name || "")) updates.name = editName;
+      if (editShape !== (sticker.shape || "circle")) updates.shape = editShape;
       // Simple array compare
       const sortedOld = (sticker.tags || []).slice().sort().join(",");
       const sortedNew = editTags.slice().sort().join(",");
@@ -133,6 +145,9 @@
           <StickerCanvas
             avatarUrl={typeof sticker.image === "string" ? sticker.image : ""}
             allowVerticalRotation={true}
+            shape={isEditing && editShape
+              ? editShape
+              : sticker.shape || "circle"}
           />
           <div
             class="absolute bottom-2 left-1/2 -translate-x-1/2 text-xs text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"
@@ -150,10 +165,52 @@
               class="text-2xl font-bold text-center text-gray-800 bg-transparent border-b-2 border-primary/20 focus:border-primary outline-none w-full"
               placeholder="Sticker Name"
             />
+
+            <!-- Shape Editor -->
+            <div class="flex gap-2 justify-center mt-2">
+              {#each ["circle", "square", "star", "heart", "diamond", "butterfly", "transparent"] as s}
+                <button
+                  class="w-8 h-8 rounded-lg border flex items-center justify-center transition-all {editShape ===
+                  s
+                    ? 'border-primary bg-primary/10'
+                    : 'border-gray-200 hover:border-gray-300'}"
+                  onclick={() => (editShape = s as any)}
+                  title={s}
+                >
+                  {#if s === "circle"}
+                    <div class="w-4 h-4 bg-gray-400 rounded-full"></div>
+                  {:else if s === "square"}
+                    <div class="w-4 h-4 bg-gray-400 rounded-sm"></div>
+                  {:else if s === "transparent"}
+                    <div
+                      class="w-4 h-4 border border-gray-300 relative overflow-hidden bg-white rounded-sm"
+                    >
+                      <div
+                        class="absolute inset-0"
+                        style="background-image: linear-gradient(45deg, #ccc 25%, transparent 25%), linear-gradient(-45deg, #ccc 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #ccc 75%), linear-gradient(-45deg, transparent 75%, #ccc 75%); background-size: 6px 6px; background-position: 0 0, 0 3px, 3px -3px, -3px 0px;"
+                      ></div>
+                    </div>
+                  {:else if CSS_SHAPES[s]}
+                    <div
+                      class="w-4 h-4 bg-gray-400"
+                      style="clip-path: {CSS_SHAPES[s]}"
+                    ></div>
+                  {:else if SVG_DEFS[s]}
+                    <svg
+                      viewBox="0 0 {SVG_DEFS[s].viewBox[0]} {SVG_DEFS[s]
+                        .viewBox[1]}"
+                      class="w-5 h-5 fill-gray-400"
+                    >
+                      <path d={SVG_DEFS[s].d} />
+                    </svg>
+                  {/if}
+                </button>
+              {/each}
+            </div>
           {:else}
             <h2 class="text-2xl font-bold text-gray-800">
               {sticker.name ||
-                i18n.t.stickerBook.defaultName.replace(
+                settings.t.stickerBook.defaultName.replace(
                   "{name}",
                   sticker.originalOwnerProfile?.displayName ||
                     sticker.originalOwnerProfile?.handle ||
@@ -205,7 +262,7 @@
           <div class="flex flex-wrap gap-2">
             {#if isEditing}
               <div class="w-full text-xs text-gray-400 mb-1">
-                ※ {i18n.t.stickerViewer.tagsPublicInfo}
+                ※ {settings.t.stickerViewer.tagsPublicInfo}
               </div>
               {#each editTags as tag}
                 <span
@@ -295,7 +352,7 @@
               class="px-4 py-2 text-gray-500 hover:text-gray-700 font-medium"
               disabled={isSaving}
             >
-              {i18n.t.common.cancel}
+              {settings.t.common.cancel}
             </button>
             <button
               onclick={handleSave}
@@ -306,9 +363,9 @@
                 <div
                   class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"
                 ></div>
-                {i18n.t.common.saving}
+                {settings.t.common.saving}
               {:else}
-                {i18n.t.stickerViewer.saveChanges}
+                {settings.t.stickerViewer.saveChanges}
               {/if}
             </button>
           {:else}
@@ -321,7 +378,7 @@
               onclick={() => (isEditing = true)}
               class="px-6 py-2 bg-white border border-gray-200 text-gray-700 hover:bg-gray-50 hover:border-gray-300 rounded-full font-bold transition-all shadow-sm"
             >
-              {i18n.t.stickerViewer.editDetails}
+              {settings.t.stickerViewer.editDetails}
             </button>
           {/if}
         </div>

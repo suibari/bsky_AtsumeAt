@@ -8,7 +8,7 @@
   import html2canvas from "html2canvas";
   import { getDominantColor } from "$lib/color";
   import StickerCanvas from "$lib/components/StickerCanvas.svelte";
-  import { i18n } from "$lib/i18n.svelte";
+  import { settings } from "$lib/settings.svelte";
   import { fade } from "svelte/transition";
 
   let agent = $state<Agent | null>(null);
@@ -17,7 +17,7 @@
   let canvasEl: HTMLCanvasElement;
   let processing = $state(false);
   let isPenMode = $state(false);
-  let postText = $state(i18n.t.share.defaultPostText);
+  let postText = $state(settings.t.share.defaultPostText);
   let altText = $state("");
   let currentUserProfile = $state<ProfileViewDetailed | null>(null);
   let showToast = $state(false);
@@ -42,7 +42,7 @@
           currentUserProfile = profileRes.data;
           const name =
             currentUserProfile.displayName || currentUserProfile.handle;
-          altText = i18n.t.share.altDefault.replace("{name}", name);
+          altText = settings.t.share.altDefault.replace("{name}", name);
         } catch (e) {
           console.error("Failed to load data", e);
         }
@@ -93,18 +93,134 @@
     canvas.freeDrawingBrush = brush;
   }
 
+  import { SVG_DEFS } from "$lib/shapes";
+
+  // ... (keeping imports)
+
+  function getFabricShape(shape: string, width: number, height: number): any {
+    if (!fabricModule) return null;
+
+    // Helper to center object based on ViewBox conceptual center
+    const alignToViewBox = (
+      obj: any,
+      bbox: any,
+      vbW: number,
+      vbH: number,
+      scale: number,
+    ) => {
+      // Use Top-Left origin for easier calculation
+      obj.set({ originX: "left", originY: "top" });
+
+      // We want the ViewBox Center (vbW/2, vbH/2) to map to the Group Center (0,0).
+      // The current Object Origin (0,0) is at bbox.left, bbox.top in unscaled coords.
+      // We want the point (vbW/2, vbH/2) in unscaled coords to end up at (0,0) in parent coords.
+
+      // So we place the object such that:
+      // obj.left = (bbox.left - vbW/2) * scale
+      // obj.top = (bbox.top - vbH/2) * scale
+      // If bbox.left is 0 and vbW/2 is 8, obj.left is -8 * scale. Correct.
+
+      obj.set({
+        left: (bbox.left - vbW / 2) * scale,
+        top: (bbox.top - vbH / 2) * scale,
+        scaleX: scale,
+        scaleY: scale,
+      });
+      return obj;
+    };
+
+    if (shape === "square") {
+      return new fabricModule.Rect({
+        width: width,
+        height: height,
+        rx: width * 0.15, // Match CSS round 15% (approx)
+        ry: height * 0.15,
+        originX: "center",
+        originY: "center",
+      });
+    } else if (shape === "rectangle") {
+      // Horizontal Rectangle (60% height)
+      // Matches CSS inset(20% 0% 20% 0%)
+      const rectHeight = width * 0.6;
+      return new fabricModule.Rect({
+        width: width,
+        height: rectHeight,
+        rx: width * 0.05, // Slightly smaller radius for rectangle
+        ry: width * 0.05,
+        originX: "center",
+        originY: "center",
+      });
+    } else if (shape === "star") {
+      // Use implicit 1x1 ViewBox for Star
+      const rawPoints = [
+        { x: 0.5, y: 0.0 },
+        { x: 0.66, y: 0.32 },
+        { x: 0.98, y: 0.35 },
+        { x: 0.72, y: 0.57 },
+        { x: 0.79, y: 0.91 },
+        { x: 0.5, y: 0.74 },
+        { x: 0.21, y: 0.91 },
+        { x: 0.28, y: 0.57 },
+        { x: 0.02, y: 0.35 },
+        { x: 0.34, y: 0.32 },
+      ];
+      // Create polygon unscaled
+      const ply = new fabricModule.Polygon(rawPoints, {
+        originX: "left",
+        originY: "top",
+      });
+
+      // ViewBox is 1x1. Target size is 'width'.
+      // Resetting to standard 1.0 scale. The selection box will be rectangular (touching tips), which is unavoidable.
+      return alignToViewBox(ply, ply.getBoundingRect(), 1, 1, width);
+    } else if (shape === "diamond") {
+      // Use implicit 1x1 ViewBox for Diamond
+      const rawPoints = [
+        { x: 0.5, y: 0 },
+        { x: 1, y: 0.5 },
+        { x: 0.5, y: 1 },
+        { x: 0, y: 0.5 },
+      ];
+      const ply = new fabricModule.Polygon(rawPoints, {
+        originX: "left",
+        originY: "top",
+      });
+      return alignToViewBox(ply, ply.getBoundingRect(), 1, 1, width);
+    } else if (SVG_DEFS[shape]) {
+      const def = SVG_DEFS[shape];
+      const path = new fabricModule.Path(def.d, {
+        originX: "left",
+        originY: "top",
+      });
+      // Scale based on ViewBox width vs Target Width
+      const scale = width / def.viewBox[0];
+      return alignToViewBox(
+        path,
+        path.getBoundingRect(),
+        def.viewBox[0],
+        def.viewBox[1],
+        scale,
+      );
+    }
+
+    // Default Circle
+    return new fabricModule.Circle({
+      radius: width / 2,
+      originX: "center",
+      originY: "center",
+    });
+  }
+
   // Core Logic: Add Sticker to Canvas
-  async function addStickerToCanvas(
-    imgData: string | Blob,
-    x?: number,
-    y?: number,
-  ) {
+  async function addStickerToCanvas(sticker: any, x?: number, y?: number) {
     if (!canvas || !fabricModule) return;
 
-    let imgUrl = typeof imgData === "string" ? imgData : "";
+    let imgUrl = typeof sticker.image === "string" ? sticker.image : "";
     if (imgUrl.startsWith("http")) {
       imgUrl = `/api/proxy?url=${encodeURIComponent(imgUrl)}`;
     }
+
+    if (!imgUrl) return;
 
     try {
       const img: any = await fabricModule.FabricImage.fromURL(imgUrl, {
@@ -121,60 +237,95 @@
       }
 
       // 1. Geometry Setup
-      // Target visual size (Diameter)
       const targetSize = 150;
-      const radius = targetSize / 2;
-      const borderWidth = 4;
-      const padding = 4;
+      const shape = sticker.shape || "circle";
 
-      // Calculate Inner Image Radius
-      const imageRadius = radius - borderWidth - padding;
+      // We will create 3 layers:
+      // Outer: Colored Shape (100%)
+      // Inner: White Shape (92%)
+      // Image: Clipped Image (96% of Inner = ~88% of Outer)
 
-      // Scale image to fit the inner radius
-      const imgScale = (imageRadius * 2) / Math.max(img.width, img.height);
+      const outerScale = 1.0;
+      const innerScale = 0.92;
+      const imageScaleRelativeToInner = 0.96;
+      const totalImageScale = innerScale * imageScaleRelativeToInner;
 
-      // 2. Base Circle (The Colored Border)
-      const baseCircle = new fabricModule.Circle({
-        radius: radius,
-        fill: borderColor,
-        originX: "center",
-        originY: "center",
-      });
+      // 1. Outer Shape (Color)
+      let outerObj, innerObj;
+      if (shape !== "transparent") {
+        outerObj = getFabricShape(shape, targetSize, targetSize);
+        outerObj.set({
+          fill: borderColor,
+          stroke: null,
+        });
 
-      // 3. White Circle (The Padding Background)
-      const whiteCircle = new fabricModule.Circle({
-        radius: radius - borderWidth,
-        fill: "#ffffff",
-        originX: "center",
-        originY: "center",
-      });
+        // 2. Inner Shape (White)
+        innerObj = getFabricShape(
+          shape,
+          targetSize * innerScale,
+          targetSize * innerScale,
+        );
+        innerObj.set({
+          fill: "#ffffff",
+          stroke: null,
+        });
+      }
 
-      // 4. The Image
-      // Clip path for the image (Circular crop)
-      const clipPath = new fabricModule.Circle({
-        radius: img.width / 2, // Clip at original image size/center
-        originX: "center",
-        originY: "center",
-      });
-      // But wait, changing clipPath in a group setting can be tricky with scaling.
-      // Easier: Clip the image instance relative to itself.
-      // Since we scale the image instance, the clip path should match the unscaled dimensions?
-      // Fabric clipPath is relative to the object center.
-      // Let's use the min dimension circle.
+      // 3. Image Setup
+      // Scale image to cover the *Target Size* roughly, then we clip it.
+      // But we want the image to be "inside" the inner white border.
+      // The clip path should be the shape at `totalImageScale`.
 
-      const clipRadius = Math.min(img.width, img.height) / 2;
-      const imgClip = new fabricModule.Circle({
-        radius: clipRadius,
-        originX: "center",
-        originY: "center",
-      });
+      // First, scale the raw image to cover the target box
+      const imgRawScale =
+        (targetSize * (shape === "transparent" ? 1.0 : totalImageScale)) /
+        Math.max(img.width, img.height);
 
       img.set({
-        scaleX: imgScale,
-        scaleY: imgScale,
-        clipPath: imgClip,
+        scaleX: imgRawScale,
+        scaleY: imgRawScale,
         originX: "center",
         originY: "center",
+      });
+
+      // Create clip path object
+      if (shape !== "transparent") {
+        const clipObj = getFabricShape(shape, img.width, img.height);
+        // Clip path needs absolute positioning logic usually, but nested in group?
+        // Fabric 6: clipPath is relative to object center if object is centered?
+        // Actually standard clipPath is relative to object center.
+        // Since 'img' origin is center, 'clipObj' origin center works perfectly.
+        img.clipPath = clipObj;
+      }
+
+      // Group them all
+      // We need to position them relative to Group Center (0,0)
+      const groupObjects = [];
+      if (outerObj) groupObjects.push(outerObj);
+      if (innerObj) groupObjects.push(innerObj);
+      groupObjects.push(img);
+
+      const group = new fabricModule.Group(groupObjects, {
+        originX: "center",
+        originY: "center",
+        subTargetCheck: false, // Treat as single object
+        interactive: true,
+      });
+
+      // Apply Shadow to the GROUP (so it follows the outer shape roughly)
+      // Note: Shadow on Group with transparent parts can be tricky.
+      // Ideally shadow is on 'outerObj', but we want the whole thing to cast it.
+      // If we put shadow on Group, it might box-shadow the bounding box if not careful?
+      // Fabric shadow usually follows transparency.
+
+      // Let's try applying shadow to the Group first.
+      group.set({
+        shadow: new fabricModule.Shadow({
+          blur: 10,
+          color: "rgba(0,0,0,0.3)",
+          offsetX: 2,
+          offsetY: 2,
+        }),
       });
 
       // Calculate Position
@@ -182,35 +333,27 @@
       let top = y;
 
       if (left === undefined || top === undefined) {
-        // canvas.getCenter() might not be available or reliable in all envs.
-        // Use manual width/height fallback.
         left = (canvas.width || 400) / 2;
         top = (canvas.height || 600) / 2;
       }
 
-      // 5. Group
-      const group = new fabricModule.Group([baseCircle, whiteCircle, img], {
+      group.set({
         left: left,
         top: top,
-        originX: "center",
-        originY: "center",
-        cornerColor: "#28a745",
-        cornerStyle: "circle",
-        transparentCorners: false,
         borderColor: "#28a745",
-        // Initial scale 1 because we sized the components to targetSize
-        scaleX: 1,
-        scaleY: 1,
+        cornerColor: "#28a745",
+        cornerSize: 10,
+        transparentCorners: false,
       });
 
       canvas.add(group);
       canvas.setActiveObject(group);
       canvas.requestRenderAll();
 
-      // Animate (Simple Pop)
+      // Animate Pop
       group.set({ scaleX: 0.1, scaleY: 0.1 });
       group.animate(
-        { scaleX: 1, scaleY: 1 }, // Animate to 1
+        { scaleX: 1, scaleY: 1 },
         {
           duration: 300,
           onChange: canvas.requestRenderAll.bind(canvas),
@@ -229,19 +372,15 @@
 
     try {
       const data = JSON.parse(json);
-      const { image } = data;
-      // Pass drop coordinates
-      await addStickerToCanvas(image, e.offsetX, e.offsetY);
+      // Pass full date object (it has image and shape)
+      await addStickerToCanvas(data, e.offsetX, e.offsetY);
     } catch (e) {
       console.error("Drop failed", e);
     }
   }
 
   function handleStickerTap(sticker: StickerWithProfile) {
-    const imageUrl = typeof sticker.image === "string" ? sticker.image : "";
-    if (imageUrl) {
-      addStickerToCanvas(imageUrl); // No coords = Center
-    }
+    addStickerToCanvas(sticker); // No coords = Center
   }
 
   function togglePen() {
@@ -324,7 +463,7 @@
       const rt = new RichText({ text: postText });
       await rt.detectFacets(agent);
 
-      const defaultAlt = i18n.t.share.myCollection;
+      const defaultAlt = settings.t.share.myCollection;
 
       await agent.post({
         text: rt.text,
@@ -345,7 +484,7 @@
       setTimeout(() => (showToast = false), 3000);
     } catch (e) {
       console.error("Share failed", e);
-      alert(i18n.t.share.failed);
+      alert(settings.t.share.failed);
     } finally {
       processing = false;
     }
@@ -357,9 +496,9 @@
     class="w-full max-w-6xl p-4 flex justify-between items-center z-10 relative"
   >
     <a href="/" class="text-gray-500 hover:text-primary font-bold"
-      >← {i18n.t.common.back}</a
+      >← {settings.t.common.back}</a
     >
-    <h1 class="text-xl font-bold text-primary">{i18n.t.share.title}</h1>
+    <h1 class="text-xl font-bold text-primary">{settings.t.share.title}</h1>
     <div class="w-16"></div>
   </header>
 
@@ -377,28 +516,28 @@
             ? 'ring-2 ring-primary text-primary'
             : 'text-gray-600'}"
           onclick={togglePen}
-          title={i18n.t.share.penTool}
+          title={settings.t.share.penTool}
         >
           ✏️
         </button>
         <button
           class="p-3 rounded-full bg-white shadow-md hover:bg-gray-50 text-gray-600 transition-colors"
           onclick={undo}
-          title={i18n.t.share.undo}
+          title={settings.t.share.undo}
         >
           ↩️
         </button>
         <button
           class="p-3 rounded-full bg-white shadow-md hover:bg-gray-50 text-red-500 transition-colors"
           onclick={deleteSelected}
-          title={i18n.t.share.delete}
+          title={settings.t.share.delete}
         >
           🗑️
         </button>
         <button
           class="p-3 rounded-full bg-white shadow-md hover:bg-gray-50 text-gray-500 transition-colors"
           onclick={randomizeBackground}
-          title={i18n.t.share.changeBg}
+          title={settings.t.share.changeBg}
         >
           🎨
         </button>
@@ -423,7 +562,7 @@
       </div>
 
       <p class="text-center text-gray-400 text-xs">
-        {i18n.t.share.guide}
+        {settings.t.share.guide}
       </p>
     </div>
 
@@ -434,7 +573,7 @@
       <div
         class="p-4 border-b border-gray-100 flex justify-between items-center"
       >
-        <h2 class="font-bold text-gray-700">{i18n.t.share.myStickers}</h2>
+        <h2 class="font-bold text-gray-700">{settings.t.share.myStickers}</h2>
         <span class="text-xs bg-primary/20 text-primary px-2 py-1 rounded-full"
           >{stickers.length}</span
         >
@@ -446,9 +585,9 @@
         {#if stickers.length === 0}
           <div class="col-span-3 text-center py-8 text-gray-400">
             {#if agent}
-              {i18n.t.share.loadingStickers}
+              {settings.t.share.loadingStickers}
             {:else}
-              {i18n.t.share.signInToLoad}
+              {settings.t.share.signInToLoad}
             {/if}
           </div>
         {:else}
@@ -471,7 +610,7 @@
           type="text"
           bind:value={altText}
           class="w-full p-2 mb-3 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none"
-          placeholder={i18n.t.share.myCollection}
+          placeholder={settings.t.share.myCollection}
         />
 
         <label
@@ -494,9 +633,9 @@
             <div
               class="animate-spin rounded-full h-4 w-4 border-b-2 border-white"
             ></div>
-            {i18n.t.share.posting}
+            {settings.t.share.posting}
           {:else}
-            <span>✨</span> {i18n.t.share.postToBluesky}
+            <span>✨</span> {settings.t.share.postToBluesky}
           {/if}
         </button>
       </div>
@@ -509,7 +648,7 @@
       transition:fade
     >
       <span>✅</span>
-      {i18n.t.share.posted}
+      {settings.t.share.posted}
     </div>
   {/if}
 </div>

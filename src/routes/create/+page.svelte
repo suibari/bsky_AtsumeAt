@@ -4,7 +4,8 @@
   import { Agent } from "@atproto/api";
   import { goto } from "$app/navigation";
   import { STICKER_COLLECTION, type Sticker } from "$lib/schemas";
-  import { i18n } from "$lib/i18n.svelte";
+  import { settings } from "$lib/settings.svelte";
+  import { CSS_SHAPES, SVG_DEFS } from "$lib/shapes";
 
   import PdsImagePicker from "$lib/components/PdsImagePicker.svelte";
 
@@ -12,6 +13,16 @@
   let fileInput = $state<HTMLInputElement>();
   let imageUrl = $state<string | null>(null);
   let name = $state("");
+  let shape = $state<
+    | "circle"
+    | "square"
+    | "star"
+    | "heart"
+    | "diamond"
+    | "butterfly"
+    | "rectangle"
+    | "transparent"
+  >("circle");
   let processing = $state(false);
 
   // Tab State
@@ -204,8 +215,10 @@
       // Let's adjust logic:
       // Center of image at Center of Canvas + Translate
 
-      ctx.fillStyle = "#FFFFFF";
-      ctx.fillRect(0, 0, size, size);
+      if (shape !== "transparent") {
+        ctx.fillStyle = "#FFFFFF";
+        ctx.fillRect(0, 0, size, size);
+      }
 
       // Scale factor between Preview (300px) and Output (500px)
       const outputScale = size / 300;
@@ -227,7 +240,11 @@
 
       // 2. To Blob
       const blob = await new Promise<Blob | null>((resolve) =>
-        canvas.toBlob(resolve, "image/jpeg", 0.9),
+        canvas.toBlob(
+          resolve,
+          shape === "transparent" ? "image/png" : "image/jpeg",
+          shape === "transparent" ? 1.0 : 0.9,
+        ),
       );
       if (!blob) throw new Error("Canvas blob failed");
 
@@ -238,13 +255,13 @@
 
       const arrayBuffer = await blob.arrayBuffer();
       const uploadRes = await agent.uploadBlob(new Uint8Array(arrayBuffer), {
-        encoding: "image/jpeg",
+        encoding: shape === "transparent" ? "image/png" : "image/jpeg",
       });
 
       const cid = uploadRes.data.blob.ref.toString();
 
       // Construct the canonical CDN URL for the sticker
-      const stickerImageUrl = `https://cdn.bsky.app/img/feed_fullsize/plain/${agent.assertDid!}/${cid}@jpeg`;
+      const stickerImageUrl = `https://cdn.bsky.app/img/feed_fullsize/plain/${agent.assertDid!}/${cid}@${shape === "transparent" ? "png" : "jpeg"}`;
 
       // 3.5 Sign the Payload
       // We need to fetch the signature helper logic or call the API directly here.
@@ -252,6 +269,7 @@
       const payloadInfo = {
         model: `cid:${cid}`,
         name: name || undefined,
+        shape,
         image: stickerImageUrl, // Use the string URL to match acceptExchange consistency
       };
 
@@ -287,6 +305,7 @@
         originalOwner: agent.assertDid!,
         model: `cid:${cid}`,
         name: name || undefined,
+        shape,
         obtainedAt: new Date().toISOString(),
         signature: signature || "",
         signedPayload: signedPayload || "",
@@ -301,7 +320,7 @@
       goto("/");
     } catch (e) {
       console.error("Creation failed", e);
-      alert(i18n.t.create.failed);
+      alert(settings.t.create.failed);
     } finally {
       processing = false;
     }
@@ -312,9 +331,9 @@
   <div class="max-w-6xl mx-auto p-4 md:p-8 flex flex-col items-center">
     <header class="w-full max-w-3xl flex items-center justify-between mb-8">
       <a href="/" class="text-gray-500 hover:text-primary"
-        >← {i18n.t.common.back}</a
+        >← {settings.t.common.back}</a
       >
-      <h1 class="text-xl font-bold text-primary">{i18n.t.create.title}</h1>
+      <h1 class="text-xl font-bold text-primary">{settings.t.create.title}</h1>
       <div class="w-8"></div>
     </header>
 
@@ -331,7 +350,7 @@
               : 'border-transparent text-gray-500 hover:text-gray-700'}"
             onclick={() => (activeTab = "post")}
           >
-            {i18n.t.create.tabs?.post ?? "From Posts"}
+            {settings.t.create.tabs?.post ?? "From Posts"}
           </button>
           <button
             class="flex-1 py-3 text-center font-medium border-b-2 transition-colors {activeTab ===
@@ -340,7 +359,7 @@
               : 'border-transparent text-gray-500 hover:text-gray-700'}"
             onclick={() => (activeTab = "file")}
           >
-            {i18n.t.create.tabs?.file ?? "From File"}
+            {settings.t.create.tabs?.file ?? "From File"}
           </button>
         </div>
 
@@ -358,7 +377,7 @@
             onkeydown={(e) => e.key === "Enter" && fileInput?.click()}
           >
             <span class="text-4xl mb-2">📷</span>
-            <span class="text-gray-500">{i18n.t.create.selectImage}</span>
+            <span class="text-gray-500">{settings.t.create.selectImage}</span>
             <input
               bind:this={fileInput}
               type="file"
@@ -376,7 +395,15 @@
       {:else}
         <!-- Crop Area -->
         <div
-          class="relative w-[300px] h-[300px] bg-white overflow-hidden rounded-full shadow-inner border-4 border-primary cursor-move touch-none"
+          class="relative w-[300px] h-[300px] bg-white overflow-hidden shadow-inner cursor-move touch-none transition-all duration-300"
+          style="{CSS_SHAPES[shape]
+            ? `clip-path: ${CSS_SHAPES[shape]}`
+            : SVG_DEFS[shape]
+              ? `clip-path: url(#shape-${shape})`
+              : `clip-path: ${CSS_SHAPES.circle}`};
+              {shape === 'transparent'
+            ? 'background-image: linear-gradient(45deg, #eee 25%, transparent 25%), linear-gradient(-45deg, #eee 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #eee 75%), linear-gradient(-45deg, transparent 75%, #eee 75%); background-size: 20px 20px; background-position: 0 0, 0 10px, 10px -10px, -10px 0px;'
+            : ''}"
           bind:this={cropContainer}
           onmousedown={onMouseDown}
           onmousemove={onMouseMove}
@@ -403,7 +430,7 @@
         <div class="w-full mt-6 space-y-4">
           <div>
             <label class="text-sm font-medium text-gray-700"
-              >{i18n.t.create.zoom}</label
+              >{settings.t.create.zoom}</label
             >
             <input
               type="range"
@@ -415,15 +442,64 @@
             />
           </div>
 
+          <!-- Shape Selector -->
+          <div>
+            <label class="text-sm font-medium text-gray-700 mb-2 block"
+              >{settings.t.create.shapeLabel || "Shape"}</label
+            >
+            <div class="flex gap-2 justify-center flex-wrap">
+              {#each ["circle", "square", "rectangle", "star", "heart", "diamond", "butterfly", "transparent"] as s}
+                <button
+                  class="w-10 h-10 rounded-lg border-2 flex items-center justify-center transition-all {shape ===
+                  s
+                    ? 'border-primary bg-primary/10'
+                    : 'border-gray-200 hover:border-gray-300'}"
+                  onclick={() => (shape = s as any)}
+                  title={s}
+                >
+                  <!-- Quick icons/shapes -->
+                  {#if s === "circle"}
+                    <div class="w-6 h-6 bg-gray-400 rounded-full"></div>
+                  {:else if s === "square"}
+                    <div class="w-6 h-6 bg-gray-400 rounded-md"></div>
+                  {:else if s === "transparent"}
+                    <!-- Checkerboard icon for transparent -->
+                    <div
+                      class="w-6 h-6 border border-gray-300 relative overflow-hidden bg-white rounded"
+                    >
+                      <div
+                        class="absolute inset-0"
+                        style="background-image: linear-gradient(45deg, #ccc 25%, transparent 25%), linear-gradient(-45deg, #ccc 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #ccc 75%), linear-gradient(-45deg, transparent 75%, #ccc 75%); background-size: 8px 8px; background-position: 0 0, 0 4px, 4px -4px, -4px 0px;"
+                      ></div>
+                    </div>
+                  {:else if CSS_SHAPES[s]}
+                    <div
+                      class="w-6 h-6 bg-gray-400"
+                      style="clip-path: {CSS_SHAPES[s]}"
+                    ></div>
+                  {:else if SVG_DEFS[s]}
+                    <svg
+                      viewBox="0 0 {SVG_DEFS[s].viewBox[0]} {SVG_DEFS[s]
+                        .viewBox[1]}"
+                      class="w-6 h-6 fill-gray-400"
+                    >
+                      <path d={SVG_DEFS[s].d} />
+                    </svg>
+                  {/if}
+                </button>
+              {/each}
+            </div>
+          </div>
+
           <!-- Name Input -->
           <div class="mt-4 w-full">
             <label class="text-sm font-medium text-gray-700 mb-1 block"
-              >{i18n.t.create.nameLabel}</label
+              >{settings.t.create.nameLabel}</label
             >
             <input
               type="text"
               bind:value={name}
-              placeholder={i18n.t.create.namePlaceholder}
+              placeholder={settings.t.create.namePlaceholder}
               class="w-full border border-gray-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-primary focus:border-transparent outline-none h-10"
               maxlength="50"
             />
@@ -437,14 +513,16 @@
                 name = "";
               }}
             >
-              {i18n.t.common.cancel}
+              {settings.t.common.cancel}
             </button>
             <button
               class="flex-1 py-2 px-4 bg-primary text-white rounded-lg hover:bg-primary/90 disabled:opacity-50"
               onclick={handleCreate}
               disabled={processing}
             >
-              {processing ? i18n.t.create.creating : i18n.t.create.title}
+              {processing
+                ? settings.t.create.creating
+                : settings.t.create.title}
             </button>
           </div>
         </div>

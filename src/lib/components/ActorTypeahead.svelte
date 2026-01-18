@@ -1,7 +1,7 @@
 <script lang="ts">
   import { publicAgent } from "$lib/atproto";
   import type { ProfileViewBasic } from "@atproto/api/dist/client/types/app/bsky/actor/defs";
-  import { i18n } from "$lib/i18n.svelte";
+  import { settings } from "$lib/settings.svelte";
   import { fly } from "svelte/transition";
 
   interface Props {

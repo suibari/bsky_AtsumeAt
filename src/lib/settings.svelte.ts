@@ -1,6 +1,8 @@
+
 import { translations, type Language, type TranslationKey } from "./translations";
 
-class I18nManager {
+class SettingsManager {
+  disableRotation = $state(false);
   #lang = $state<Language>("ja");
 
   constructor() {
@@ -9,13 +11,27 @@ class I18nManager {
 
   private init() {
     if (typeof localStorage !== "undefined") {
-      const saved = localStorage.getItem("lang") as Language;
-      if (saved && (saved === "ja" || saved === "en")) {
-        this.#lang = saved;
+      // Rotation Setting
+      const savedRotation = localStorage.getItem("settings:disableRotation");
+      if (savedRotation) {
+        this.disableRotation = savedRotation === "true";
+      }
+
+      // Language Setting
+      const savedLang = localStorage.getItem("lang") as Language;
+      if (savedLang && (savedLang === "ja" || savedLang === "en")) {
+        this.#lang = savedLang;
       } else {
         const browserLang = navigator.language.split("-")[0];
         this.#lang = browserLang === "ja" ? "ja" : "en";
       }
+    }
+  }
+
+  setDisableRotation(value: boolean) {
+    this.disableRotation = value;
+    if (typeof localStorage !== "undefined") {
+      localStorage.setItem("settings:disableRotation", String(value));
     }
   }
 
@@ -48,4 +64,4 @@ class I18nManager {
   }
 }
 
-export const i18n = new I18nManager();
+export const settings = new SettingsManager();

@@ -4,9 +4,10 @@ import { type StickerWithProfile, getAllStickerRecords } from './stickers';
 import { requestSignature } from './signatures';
 import { getPdsEndpoint, publicAgent } from './atproto';
 import { getBacklinks, type ConstellationRecord } from './constellation';
-import { i18n } from './i18n.svelte';
+import { getHubUsers } from './hub';
+import { settings } from './settings.svelte';
 
-export async function createExchangePost(agent: Agent, targetHandle: string, targetDid: string, offeredStickers: StickerWithProfile[], withPost: boolean = true, message?: string) {
+export async function createExchangePost(agent: Agent, targetHandle: string | null, targetDid: string | null, offeredStickers: StickerWithProfile[], withPost: boolean = true, message?: string, isEasyExchange: boolean = false) {
   const origin = window.location.origin;
   const myDid = agent.assertDid;
 
@@ -16,8 +17,9 @@ export async function createExchangePost(agent: Agent, targetHandle: string, tar
     collection: TRANSACTION_COLLECTION,
     record: {
       $type: TRANSACTION_COLLECTION,
-      partner: targetDid,
-      refPartner: `at://${targetDid}/app.bsky.actor.profile/self`, // Reference Profile URI for Constellation
+      partner: targetDid || undefined,
+      isEasyExchange: isEasyExchange,
+      refPartner: targetDid ? `at://${targetDid}/app.bsky.actor.profile/self` : undefined, // Reference Profile URI for Constellation
       stickerIn: [], // We don't know what we get yet
       stickerOut: offeredStickers.map(s => s.uri),
       message, // Save the proposal message
@@ -28,10 +30,10 @@ export async function createExchangePost(agent: Agent, targetHandle: string, tar
 
 
   // 2. Create text with mention (Optional)
-  if (withPost) {
+  if (withPost && targetHandle && !isEasyExchange) {
     const stickerCount = offeredStickers.length;
 
-    const text = i18n.t.exchange.offerPost
+    const text = settings.t.exchange.offerPost
       .replace('{handle}', targetHandle)
       .replace('{n}', stickerCount.toString())
       .replace('{s}', stickerCount > 1 ? 's' : '');
@@ -46,8 +48,8 @@ export async function createExchangePost(agent: Agent, targetHandle: string, tar
         $type: 'app.bsky.embed.external',
         external: {
           uri: `${origin}/exchange?user=${myDid}`,
-          title: i18n.t.exchange.embedTitle,
-          description: i18n.t.exchange.embedDescription,
+          title: settings.t.exchange.embedTitle,
+          description: settings.t.exchange.embedDescription,
         }
       }
     });
@@ -82,7 +84,10 @@ export async function acceptExchange(agent: Agent, partnerDid: string, stickersT
 
       validOffer = partnerOffers.data.records.find(r => {
         const t = r.value as unknown as Transaction;
-        return t.partner === myDid && t.status === 'offered';
+        // Check if targeted to me OR if it is an Easy Exchange (open to anyone)
+        const isTargetedToMe = t.partner === myDid;
+        const isEasyEx = t.isEasyExchange === true && !t.partner;
+        return (isTargetedToMe || isEasyEx) && t.status === 'offered';
       });
 
       if (validOffer) break;
@@ -291,7 +296,7 @@ export async function resolvePendingExchanges(agent: Agent, onStatus?: (msg: str
   const myDid = agent.assertDid;
   if (!myDid) return;
 
-  if (onStatus) onStatus(i18n.t.exchange.checkingExchanges);
+  if (onStatus) onStatus(settings.t.exchange.checkingExchanges);
 
   // Resolve PDS
   let pdsAgent = agent;
@@ -333,6 +338,7 @@ export async function resolvePendingExchanges(agent: Agent, onStatus?: (msg: str
   // 2. Check each partner
   for (const offer of myOffers) {
     const partnerDid = offer.value.partner;
+    if (!partnerDid) continue; // Skip offers without partner (Easy Exchange pending)
 
     let partnerName = partnerDid;
     if (onStatus) {
@@ -341,13 +347,13 @@ export async function resolvePendingExchanges(agent: Agent, onStatus?: (msg: str
         const profile = await publicAgent.getProfile({ actor: partnerDid });
         partnerName = profile.data.displayName || profile.data.handle || partnerDid;
       } catch (e) { }
-      onStatus(i18n.t.exchange.checkingWithPartner.replace('{name}', partnerName));
+      onStatus(settings.t.exchange.checkingWithPartner.replace('{name}', partnerName));
     }
 
     const claimed = await checkInverseExchange(agent, partnerDid, offer.uri);
 
     if (claimed === 'completed') {
-      if (onStatus) onStatus(i18n.t.exchange.receivedFromServer.replace('{name}', partnerName));
+      if (onStatus) onStatus(settings.t.exchange.receivedFromServer.replace('{name}', partnerName));
       await new Promise(r => setTimeout(r, 1000));
 
       // 3. Update MY transaction to completed
@@ -366,7 +372,7 @@ export async function resolvePendingExchanges(agent: Agent, onStatus?: (msg: str
       }
     } else if (claimed === 'rejected') {
       // User requested NO notification for rejection
-      // if (onStatus) onStatus(i18n.t.exchange.rejectedByPartner.replace('{name}', partnerName));
+      // if (onStatus) onStatus(settings.t.exchange.rejectedByPartner.replace('{name}', partnerName));
       // await new Promise(r => setTimeout(r, 1000));
 
       // Update MY transaction to rejected
@@ -727,3 +733,238 @@ export async function fetchStickersForTransaction(agent: Agent, t: Transaction, 
   }
   return stickers;
 }
+
+export interface MatchedPartner {
+  did: string;
+  offer: Transaction;
+  stickers: Sticker[];
+  profile?: {
+    displayName?: string;
+    handle: string;
+    avatar?: string;
+  };
+}
+
+export async function findEasyExchangePartner(agent: Agent, offeredStickers: StickerWithProfile[], excludeDids: string[] = []): Promise<MatchedPartner | null> {
+  const myDid = agent.assertDid;
+  if (!myDid) return null;
+
+  const myOfferStickerCount = offeredStickers.length;
+
+  // 1. Get all Hub Users
+  const hubUsers = await getHubUsers(agent);
+  const candidates = hubUsers.filter(u => u.did !== myDid && !excludeDids.includes(u.did));
+
+  // Randomize
+  const shuffledCandidates = candidates.sort(() => Math.random() - 0.5);
+  let fallbackMatch: MatchedPartner | undefined;
+
+  // Concurrency Control
+  const CONCURRENCY_LIMIT = 10;
+  const SEARCH_LIMIT = 200;
+  const relevantCandidates = shuffledCandidates.slice(0, SEARCH_LIMIT);
+
+  let candidatesChecked = 0;
+  let activePromises: Promise<void>[] = [];
+  let foundPerfectMatch: MatchedPartner | null = null;
+
+  // Helper to process one candidate
+  const checkCandidate = async (user: { did: string }) => {
+    if (foundPerfectMatch) return; // Stop if already found
+
+    let pdsAgent = agent;
+    try {
+      const pdsUrl = await getPdsEndpoint(user.did);
+      if (pdsUrl) pdsAgent = new Agent(pdsUrl);
+
+      // Timeout for operations to prevent hanging
+      const timeoutMs = 5000;
+      const timeoutPromise = new Promise<null>((_, reject) => setTimeout(() => reject(new Error("Timeout")), timeoutMs));
+
+      const checkPromise = (async () => {
+        let cursor;
+        let matchingOffer: { value: Transaction } | undefined;
+        let fetchCount = 0;
+        const MAX_FETCH = 50;
+
+        // 1. Find matching offer
+        do {
+          const res = await pdsAgent.com.atproto.repo.listRecords({
+            repo: user.did,
+            collection: TRANSACTION_COLLECTION,
+            limit: 100,
+            cursor
+          });
+          cursor = res.data.cursor;
+          fetchCount += res.data.records.length;
+
+          matchingOffer = res.data.records.find(r => {
+            const t = r.value as unknown as Transaction;
+            return t.status === 'offered' &&
+              t.isEasyExchange === true &&
+              (!t.partner) &&
+              t.stickerOut && t.stickerOut.length === myOfferStickerCount;
+          }) as { value: Transaction } | undefined;
+
+          if (matchingOffer) break;
+          if (fetchCount >= MAX_FETCH) break;
+        } while (cursor);
+
+        if (matchingOffer) {
+          const t = matchingOffer.value;
+          const stickers = await fetchStickersForTransaction(agent, t, user.did);
+
+          // 2. Check Ownership (Does partner need my stickers?)
+          const targetDid = user.did;
+          let partnerHasMySticker = true;
+          try {
+            // Optimisation: Limit sticker fetch or rely on partial check?
+            // We stick to getAllStickerRecords but maybe we should rely on a simpler check if possible.
+            // For now, let's just run it but wrapped in the timeout which applies to the whole function.
+            const partnerStickers = await getAllStickerRecords(pdsAgent, targetDid);
+            partnerHasMySticker = partnerStickers.some(p =>
+              offeredStickers.some(offered => {
+                const offeredSub = offered.subjectDid || (offered as any).owner;
+                const pSub = p.subjectDid || (p as any).owner;
+                return p.model === offered.model && pSub === offeredSub;
+              })
+            );
+          } catch { }
+
+          // 3. Fetch Profile
+          let profile: MatchedPartner['profile'] | undefined;
+          try {
+            const pRes = await publicAgent.getProfile({ actor: user.did });
+            profile = {
+              displayName: pRes.data.displayName,
+              handle: pRes.data.handle,
+              avatar: pRes.data.avatar
+            };
+          } catch { }
+
+          const match: MatchedPartner = {
+            did: user.did,
+            offer: t,
+            stickers,
+            profile
+          };
+
+          if (!partnerHasMySticker) {
+            foundPerfectMatch = match;
+            return;
+          }
+
+          if (!fallbackMatch) {
+            fallbackMatch = match;
+          }
+        }
+      })();
+
+      await Promise.race([checkPromise, timeoutPromise]);
+
+    } catch (e) {
+      // console.warn("Failed to check candidate (or timeout)", user.did, e);
+    }
+  };
+
+  // Execution Loop
+  for (const candidate of relevantCandidates) {
+    if (foundPerfectMatch) break;
+
+    const p = checkCandidate(candidate).finally(() => {
+      activePromises = activePromises.filter(ap => ap !== p);
+    });
+    activePromises.push(p);
+
+    if (activePromises.length >= CONCURRENCY_LIMIT) {
+      await Promise.race(activePromises);
+    }
+  }
+
+  // Wait for remaining
+  await Promise.all(activePromises);
+
+  return foundPerfectMatch || fallbackMatch || null;
+}
+
+export interface MyOpenOffer {
+  uri: string;
+  transaction: Transaction;
+  stickers: Sticker[];
+  partnerProfile?: {
+    displayName?: string;
+    handle: string;
+    avatar?: string;
+  };
+}
+
+export async function getMyOpenOffers(agent: Agent): Promise<MyOpenOffer[]> {
+  const myDid = agent.assertDid;
+  if (!myDid) return [];
+
+  const openOffers: MyOpenOffer[] = [];
+  let cursor;
+
+  try {
+    do {
+      const res = await agent.com.atproto.repo.listRecords({
+        repo: myDid,
+        collection: TRANSACTION_COLLECTION,
+        limit: 100,
+        cursor
+      });
+      cursor = res.data.cursor;
+
+      for (const r of res.data.records) {
+        const t = r.value as unknown as Transaction;
+        if (t.status === 'offered') {
+          // Identify Partner Profile for Display
+          let partnerProfile: { displayName?: string, handle: string, avatar?: string } | undefined;
+
+          if (t.partner) {
+            try {
+              const p = await publicAgent.getProfile({ actor: t.partner });
+              partnerProfile = {
+                displayName: p.data.displayName,
+                handle: p.data.handle,
+                avatar: p.data.avatar
+              };
+            } catch (e) {
+              partnerProfile = { handle: t.partner }; // Fallback
+            }
+          }
+
+          // Fetch My Own Stickers (that are offered)
+          // We use fetchStickersForTransaction but pointing to SELF (agent.assertDid)
+          const stickers = await fetchStickersForTransaction(agent, t, myDid);
+
+          openOffers.push({
+            uri: r.uri,
+            transaction: t,
+            stickers,
+            partnerProfile
+          });
+        }
+      }
+    } while (cursor);
+  } catch (e) {
+    console.error("Failed to fetch my open offers", e);
+  }
+
+  return openOffers;
+}
+
+export async function withdrawExchangeOffer(agent: Agent, offerUri: string) {
+  const myDid = agent.assertDid;
+  if (!myDid) return;
+
+  const rkey = offerUri.split('/').pop();
+  if (!rkey) return;
+
+  await agent.com.atproto.repo.deleteRecord({
+    repo: myDid,
+    collection: TRANSACTION_COLLECTION,
+    rkey
+  });
+}
+

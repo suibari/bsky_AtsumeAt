@@ -1,8 +1,8 @@
 <script lang="ts">
-  import { i18n } from "$lib/i18n.svelte";
+  import { settings } from "$lib/settings.svelte";
 
   function setLanguage(lang: "ja" | "en") {
-    i18n.lang = lang;
+    settings.lang = lang;
   }
 </script>
 
@@ -11,7 +11,7 @@
 >
   <button
     onclick={() => setLanguage("ja")}
-    class="px-3 py-1 rounded-full text-xs font-bold transition-all {i18n.lang ===
+    class="px-3 py-1 rounded-full text-xs font-bold transition-all {settings.lang ===
     'ja'
       ? 'bg-primary text-white shadow-md'
       : 'text-gray-500 hover:text-primary'}"
@@ -20,7 +20,7 @@
   </button>
   <button
     onclick={() => setLanguage("en")}
-    class="px-3 py-1 rounded-full text-xs font-bold transition-all {i18n.lang ===
+    class="px-3 py-1 rounded-full text-xs font-bold transition-all {settings.lang ===
     'en'
       ? 'bg-primary text-white shadow-md'
       : 'text-gray-500 hover:text-primary'}"

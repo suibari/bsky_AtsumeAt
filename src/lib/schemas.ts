@@ -12,6 +12,7 @@ export interface Sticker {
   tags?: string[]; // User-defined tags for organization
   image: string | BlobRef; // Avatar URL or BlobRef
   imageType?: 'avatar' | 'custom';
+  shape?: 'circle' | 'square' | 'rectangle' | 'star' | 'heart' | 'diamond' | 'butterfly' | 'transparent';
   subjectDid?: string; // DID of the user depicted (if applicable)
   originalOwner: string; // DID of the creator/minter
   model: string; // 'default' | 'cid:<cid>'
@@ -32,7 +33,8 @@ export interface Config {
 
 export interface Transaction {
   $type: typeof TRANSACTION_COLLECTION;
-  partner: string; // DID of exchange partner
+  partner?: string; // DID of exchange partner (Optional for Easy Exchange)
+  isEasyExchange?: boolean; // Flag for Easy Exchange
   stickerIn: string[]; // CIDs or IDs
   stickerOut: string[]; // CIDs or IDs
   message?: string; // Optional exchange message

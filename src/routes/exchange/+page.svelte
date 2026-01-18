@@ -13,6 +13,11 @@
     rejectExchange,
     createExchangePost,
     fetchStickersForTransaction,
+    findEasyExchangePartner,
+    type MatchedPartner,
+    getMyOpenOffers,
+    withdrawExchangeOffer,
+    type MyOpenOffer,
   } from "$lib/exchange";
   import { getHubUsers } from "$lib/hub"; // Import getHubUsers
   import { getUserStickers, type StickerWithProfile } from "$lib/stickers";
@@ -23,7 +28,7 @@
     type Transaction,
   } from "$lib/schemas";
   import StickerCanvas from "$lib/components/StickerCanvas.svelte";
-  import { i18n } from "$lib/i18n.svelte";
+  import { settings } from "$lib/settings.svelte";
   import SignInForm from "$lib/components/SignInForm.svelte";
   import ActorTypeahead from "$lib/components/ActorTypeahead.svelte";
 
@@ -51,9 +56,16 @@
   let proposalMessage = $state("");
   let resolveError = $state("");
 
+  // Easy Exchange State
+  let matchedPartner = $state<MatchedPartner | null>(null);
+  let findingPartner = $state(false);
+  let excludeDids = $state<string[]>([]);
+
   // Valid Tabs
-  type Tab = "recommend" | "search";
+  type Tab = "recommend" | "search" | "easy" | "withdraw";
   let activeTab = $state<Tab>("recommend");
+  let myOpenOffers = $state<MyOpenOffer[]>([]);
+  let loadingMyOffers = $state(false);
   let recommendedUsers = $state<
     (ProfileViewBasic | ProfileView | ProfileViewDetailed)[]
   >([]);
@@ -320,7 +332,7 @@
       const res = await agent.resolveHandle({ handle: partnerHandle });
       partnerDid = res.data.did;
     } catch (e) {
-      resolveError = i18n.t.exchange.userNotFound;
+      resolveError = settings.t.exchange.userNotFound;
       partnerDid = null;
     }
   }
@@ -338,7 +350,7 @@
   async function handleInitiate() {
     if (!agent || !partnerDid) return;
     if (selectedStickers.size === 0) {
-      alert(i18n.t.exchange.selectToGive.replace("{n}", "1")); // Fallback message
+      alert(settings.t.exchange.selectToGive.replace("{n}", "1")); // Fallback message
       return;
     }
 
@@ -361,12 +373,13 @@
         stickersToSend,
         mentionOnBluesky, // Pass flag
         proposalMessage, // Pass message
+        false, // isEasyExchange = false
       );
-      alert(i18n.t.exchange.offerSuccess);
+      alert(settings.t.exchange.offerSuccess);
       window.location.href = "/";
     } catch (e) {
       console.error(e);
-      alert(i18n.t.exchange.failedToOffer);
+      alert(settings.t.exchange.failedToOffer);
     } finally {
       processingAction = null;
     }
@@ -376,7 +389,7 @@
   async function handleAccept() {
     if (!agent || !targetUserParam) return;
     if (selectedStickers.size === 0) {
-      alert(i18n.t.exchange.selectToGive.replace("{n}", "1"));
+      alert(settings.t.exchange.selectToGive.replace("{n}", "1"));
       return;
     }
 
@@ -400,7 +413,7 @@
   // Handle Reject
   async function handleReject() {
     if (!agent || !targetUserParam) return;
-    if (!confirm(i18n.t.exchange.rejectConfirm)) return;
+    if (!confirm(settings.t.exchange.rejectConfirm)) return;
 
     processingAction = "reject";
     try {
@@ -410,18 +423,143 @@
       console.error("Rejection failed", e);
       alert("Failed to reject exchange. See console.");
     } finally {
+    }
+  }
+
+  // Handle Easy Exchange
+  async function startEasyExchange() {
+    if (!agent) return;
+    if (selectedStickers.size === 0) {
+      alert(settings.t.exchange.selectToGive.replace("{n}", "1"));
+      return;
+    }
+
+    findingPartner = true;
+    matchedPartner = null;
+
+    const count = selectedStickers.size;
+    const offeredIds = Array.from(selectedStickers);
+    const stickersToSend = myStickers.filter((s) =>
+      selectedStickers.has(s.uri),
+    );
+
+    try {
+      // 1. Search for partner
+      const found = await findEasyExchangePartner(
+        agent,
+        stickersToSend,
+        excludeDids,
+      );
+
+      if (found) {
+        matchedPartner = found;
+        partnerDid = found.did; // Set for acceptance context
+      } else {
+        // 2. No partner -> Create Pending
+        await createExchangePost(
+          agent,
+          null,
+          null,
+          stickersToSend,
+          false, // No post
+          undefined,
+          true, // isEasyExchange = true
+        );
+        alert(settings.t.exchange.easyExchangePending);
+        window.location.href = "/";
+      }
+    } catch (e) {
+      console.error(e);
+      alert(settings.t.exchange.failedToOffer);
+    } finally {
+      findingPartner = false;
+    }
+  }
+
+  async function acceptEasyExchange() {
+    if (!agent || !matchedPartner) return;
+    processingAction = "accept";
+    try {
+      await acceptExchange(
+        agent,
+        matchedPartner.did,
+        Array.from(selectedStickers),
+      );
+      successAccept = true;
+      alert(settings.t.exchange.acceptedTitle);
+      window.location.href = "/";
+    } catch (e) {
+      console.error(e);
+      alert("Failed to exchange.");
+    } finally {
       processingAction = null;
     }
   }
+
+  function rejectEasyMatch() {
+    if (matchedPartner) {
+      excludeDids.push(matchedPartner.did);
+      matchedPartner = null;
+      startEasyExchange();
+    }
+  }
+
+  // Handle Withdraw
+  async function fetchMyOpenOffers() {
+    if (!agent) return;
+    loadingMyOffers = true;
+    try {
+      myOpenOffers = await getMyOpenOffers(agent);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      loadingMyOffers = false;
+    }
+  }
+
+  async function handleWithdraw(uri: string) {
+    if (!agent) return;
+    if (!confirm(settings.t.exchange.withdrawConfirm)) return;
+
+    try {
+      await withdrawExchangeOffer(agent, uri);
+      // Optimistic update
+      myOpenOffers = myOpenOffers.filter((o) => o.uri !== uri);
+      alert(settings.t.exchange.withdrawnMessage);
+    } catch (e) {
+      console.error(e);
+      alert("Failed to withdraw.");
+    }
+  }
+
+  function setTab(t: Tab) {
+    activeTab = t;
+    // Reset Partner State
+    partnerHandle = "";
+    partnerDid = null;
+    resolveError = "";
+    // Reset Easy Exchange State
+    matchedPartner = null;
+    findingPartner = false;
+    excludeDids = [];
+  }
+
+  $effect(() => {
+    if (activeTab === "withdraw" && agent) {
+      fetchMyOpenOffers();
+    }
+  });
 </script>
 
 <div class="min-h-screen bg-surface">
   <div class="max-w-6xl mx-auto p-4 md:p-8 flex flex-col items-center">
     <header class="w-full flex justify-between items-center mb-8">
       <a href="/" class="text-gray-500 hover:text-primary"
-        >← {i18n.t.exchange.backToBook}</a
+        >← {settings.t.exchange.backToBook}</a
       >
-      <h1 class="text-2xl font-bold text-primary">{i18n.t.exchange.title}</h1>
+      <h1 class="text-2xl font-bold text-primary">
+        {settings.t.exchange.title}
+      </h1>
       <div class="w-20"></div>
     </header>
 
@@ -432,10 +570,10 @@
     {:else if !agent}
       <div class="card-glass max-w-md w-full text-center p-8 mt-10">
         <h2 class="text-2xl font-bold mb-2">
-          {i18n.t.exchange.signInRequired}
+          {settings.t.exchange.signInRequired}
         </h2>
         <p class="mb-8 text-gray-600 text-sm">
-          {i18n.t.exchange.signInMessage}
+          {settings.t.exchange.signInMessage}
         </p>
         <SignInForm />
       </div>
@@ -446,41 +584,41 @@
           <div
             class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-2"
           ></div>
-          <p class="text-gray-500">{i18n.t.exchange.verifying}</p>
+          <p class="text-gray-500">{settings.t.exchange.verifying}</p>
         </div>
       {:else if isValidOffer}
         {#if successAccept}
           <div class="bg-white p-8 rounded-2xl shadow-xl text-center max-w-md">
             <h2 class="text-3xl font-bold text-green-500 mb-4">
-              {i18n.t.exchange.acceptedTitle}
+              {settings.t.exchange.acceptedTitle}
             </h2>
             <p class="text-gray-600 mb-8">
-              {i18n.t.exchange.acceptedMessage}
+              {settings.t.exchange.acceptedMessage}
             </p>
-            <a href="/" class="btn-primary">{i18n.t.exchange.viewBook}</a>
+            <a href="/" class="btn-primary">{settings.t.exchange.viewBook}</a>
           </div>
         {:else if successReject}
           <div class="bg-white p-8 rounded-2xl shadow-xl text-center max-w-md">
             <h2 class="text-3xl font-bold text-gray-500 mb-4">
-              {i18n.t.exchange.rejectedTitle}
+              {settings.t.exchange.rejectedTitle}
             </h2>
             <p class="text-gray-600 mb-8">
-              {i18n.t.exchange.rejectedMessage}
+              {settings.t.exchange.rejectedMessage}
             </p>
-            <a href="/" class="btn-primary">{i18n.t.exchange.viewBook}</a>
+            <a href="/" class="btn-primary">{settings.t.exchange.viewBook}</a>
           </div>
         {:else}
           <div
             class="bg-white p-8 rounded-2xl shadow-xl max-w-2xl text-center w-full"
           >
             <h2 class="text-2xl font-bold mb-2">
-              {i18n.t.exchange.incomingTitle}
+              {settings.t.exchange.incomingTitle}
             </h2>
             <p class="text-gray-600 mb-6">
               {offererProfile?.displayName ||
                 offererProfile?.handle ||
                 targetUserParam}
-              {i18n.t.exchange.wantsToSwap}
+              {settings.t.exchange.wantsToSwap}
             </p>
 
             {#if incomingMessage}
@@ -494,7 +632,7 @@
             {#if incomingStickers.length > 0}
               <div class="mb-6 text-left">
                 <h3 class="text-lg font-bold mb-2">
-                  {i18n.t.exchange.willReceive.replace(
+                  {settings.t.exchange.willReceive.replace(
                     "{n}",
                     incomingStickers.length.toString(),
                   )}
@@ -507,6 +645,7 @@
                       <StickerCanvas
                         avatarUrl={typeof s.image === "string" ? s.image : ""}
                         staticAngle={true}
+                        shape={s.shape || "circle"}
                       />
                     </div>
                   {/each}
@@ -516,7 +655,7 @@
 
             <div class="mb-6 text-left">
               <h3 class="text-lg font-bold mb-2">
-                {i18n.t.exchange.selectToGive.replace(
+                {settings.t.exchange.selectToGive.replace(
                   "{n}",
                   selectedStickers.size.toString(),
                 )}
@@ -524,7 +663,7 @@
 
               {#if myStickers.length === 0}
                 <p class="text-gray-500 italic text-center py-4">
-                  {i18n.t.exchange.noStickers}
+                  {settings.t.exchange.noStickers}
                 </p>
               {:else}
                 <div
@@ -545,6 +684,7 @@
                             ? sticker.image
                             : ""}
                           staticAngle={true}
+                          shape={sticker.shape || "circle"}
                         />
                       </div>
                       {#if selectedStickers.has(sticker.uri)}
@@ -561,7 +701,7 @@
                         class="p-1 text-center text-xs text-gray-500 truncate border-t border-gray-50"
                       >
                         {sticker.name ||
-                          (i18n.lang === "ja"
+                          (settings.lang === "ja"
                             ? `${sticker.profile?.displayName || sticker.profile?.handle || "だれか"}のシール`
                             : `${sticker.profile?.displayName || sticker.profile?.handle || "Unknown"}'s sticker`)}
                       </div>
@@ -575,13 +715,13 @@
               <label
                 for="acceptanceMessage"
                 class="block text-sm font-medium text-gray-700 mb-1"
-                >{i18n.t.exchange.messageLabel}</label
+                >{settings.t.exchange.messageLabel}</label
               >
               <input
                 id="acceptanceMessage"
                 type="text"
                 bind:value={acceptanceMessage}
-                placeholder={i18n.t.exchange.messagePlaceholder}
+                placeholder={settings.t.exchange.messagePlaceholder}
                 class="input-text w-full"
                 maxlength="100"
               />
@@ -591,7 +731,7 @@
               <a
                 href="/"
                 class="px-4 py-2 text-gray-500 hover:text-gray-700 self-center"
-                >{i18n.t.common.cancel}</a
+                >{settings.t.common.cancel}</a
               >
               <button
                 onclick={handleReject}
@@ -599,8 +739,8 @@
                 class="px-4 py-2 text-red-500 hover:text-red-700 font-bold"
               >
                 {processingAction === "reject"
-                  ? i18n.t.exchange.rejecting
-                  : i18n.t.exchange.rejectAction}
+                  ? settings.t.exchange.rejecting
+                  : settings.t.exchange.rejectAction}
               </button>
               <button
                 onclick={handleAccept}
@@ -609,8 +749,8 @@
                 class="btn-secondary"
               >
                 {processingAction === "accept"
-                  ? i18n.t.exchange.exchanging
-                  : i18n.t.exchange.exchangeAction}
+                  ? settings.t.exchange.exchanging
+                  : settings.t.exchange.exchangeAction}
               </button>
             </div>
           </div>
@@ -619,16 +759,16 @@
         <!-- Invalid Offer -->
         <div class="bg-white p-8 rounded-2xl shadow-xl max-w-md text-center">
           <h2 class="text-xl font-bold text-red-500 mb-4">
-            {i18n.t.exchange.invalidLink}
+            {settings.t.exchange.invalidLink}
           </h2>
           <p class="text-gray-600 mb-6">
-            {i18n.t.exchange.invalidMessage}
+            {settings.t.exchange.invalidMessage}
           </p>
           <a
             href="/exchange"
             class="bg-gray-100 text-gray-700 font-bold py-2 px-6 rounded-lg hover:bg-gray-200"
           >
-            {i18n.t.exchange.startNew}
+            {settings.t.exchange.startNew}
           </a>
         </div>
       {/if}
@@ -637,36 +777,56 @@
       <div
         class="w-full max-w-4xl card-glass-strong p-8 relative border-2 border-white"
       >
-        <h2 class="text-xl font-bold mb-4">{i18n.t.exchange.startNew}</h2>
+        <h2 class="text-xl font-bold mb-4">{settings.t.exchange.startNew}</h2>
 
         <!-- 1. Select Partner -->
         <div class="mb-6 relative z-10">
           <!-- Tabs -->
-          <div class="flex gap-4 mb-4 border-b border-gray-200">
+          <div
+            class="flex gap-4 mb-4 border-b border-gray-200 overflow-x-auto whitespace-nowrap"
+          >
             <button
-              class="px-4 py-2 font-medium transition-colors border-b-2 {activeTab ===
+              class="px-4 py-2 font-medium transition-colors border-b-2 flex-shrink-0 {activeTab ===
               'recommend'
                 ? 'border-primary text-primary'
                 : 'border-transparent text-gray-500 hover:text-gray-700'}"
-              onclick={() => (activeTab = "recommend")}
+              onclick={() => setTab("recommend")}
             >
-              {i18n.t.exchange.recommendTab}
+              {settings.t.exchange.recommendTab}
             </button>
             <button
-              class="px-4 py-2 font-medium transition-colors border-b-2 {activeTab ===
+              class="px-4 py-2 font-medium transition-colors border-b-2 flex-shrink-0 {activeTab ===
               'search'
                 ? 'border-primary text-primary'
                 : 'border-transparent text-gray-500 hover:text-gray-700'}"
-              onclick={() => (activeTab = "search")}
+              onclick={() => setTab("search")}
             >
-              {i18n.t.exchange.searchTab}
+              {settings.t.exchange.searchTab}
+            </button>
+            <button
+              class="px-4 py-2 font-medium transition-colors border-b-2 flex-shrink-0 {activeTab ===
+              'easy'
+                ? 'border-primary text-primary'
+                : 'border-transparent text-gray-500 hover:text-gray-700'}"
+              onclick={() => setTab("easy")}
+            >
+              {settings.t.exchange.easyExchangeTab}
+            </button>
+            <button
+              class="px-4 py-2 font-medium transition-colors border-b-2 flex-shrink-0 {activeTab ===
+              'withdraw'
+                ? 'border-primary text-primary'
+                : 'border-transparent text-gray-500 hover:text-gray-700'}"
+              onclick={() => setTab("withdraw")}
+            >
+              {settings.t.exchange.withdrawTab}
             </button>
           </div>
 
           {#if activeTab === "recommend"}
             <div class="mb-4">
               <h3 class="text-sm font-bold text-gray-700 mb-2">
-                {i18n.t.exchange.recommendedUsers}
+                {settings.t.exchange.recommendedUsers}
               </h3>
               {#if recommendationsLoading}
                 <div class="flex justify-center p-4">
@@ -676,27 +836,37 @@
                 </div>
               {:else if recommendedUsers.length === 0}
                 <p class="text-gray-500 text-sm">
-                  {i18n.t.exchange.noRecommendations}
+                  {settings.t.exchange.noRecommendations}
                 </p>
               {:else}
                 <div
                   class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3"
                 >
                   {#each recommendedUsers as user}
-                    <button
+                    <div
                       class="flex items-center gap-3 p-3 rounded-xl border border-gray-100 bg-white hover:bg-gray-50 hover:border-primary/30 transition-all text-left group"
-                      onclick={() => selectUser(user)}
                     >
-                      {#if user.avatar}
-                        <img
-                          src={user.avatar}
-                          alt={user.handle}
-                          class="w-10 h-10 rounded-full bg-gray-200 object-cover"
-                        />
-                      {:else}
-                        <div class="w-10 h-10 rounded-full bg-gray-200"></div>
-                      {/if}
-                      <div class="flex-1 min-w-0">
+                      <a
+                        href="/profile/{user.did}"
+                        class="relative transition-transform hover:scale-110 block"
+                        title={settings.t.common.viewProfile || "View Profile"}
+                      >
+                        {#if user.avatar}
+                          <img
+                            src={user.avatar}
+                            alt={user.handle}
+                            class="w-10 h-10 rounded-full bg-gray-200 object-cover shadow-sm hover:ring-2 hover:ring-primary hover:ring-offset-1 transition-all"
+                          />
+                        {:else}
+                          <div
+                            class="w-10 h-10 rounded-full bg-gray-200 shadow-sm hover:ring-2 hover:ring-primary hover:ring-offset-1 transition-all"
+                          ></div>
+                        {/if}
+                      </a>
+                      <button
+                        class="flex-1 min-w-0 text-left"
+                        onclick={() => selectUser(user)}
+                      >
                         <div
                           class="font-bold text-gray-800 text-sm truncate group-hover:text-primary transition-colors"
                         >
@@ -705,8 +875,8 @@
                         <div class="text-xs text-gray-500 truncate">
                           @{user.handle}
                         </div>
-                      </div>
-                    </button>
+                      </button>
+                    </div>
                   {/each}
                 </div>
               {/if}
@@ -717,7 +887,7 @@
             <label
               for="partnerHandle"
               class="block text-sm font-medium text-gray-700 mb-1"
-              >{i18n.t.exchange.partnerLabel}</label
+              >{settings.t.exchange.partnerLabel}</label
             >
             <div class="flex gap-2">
               <ActorTypeahead
@@ -728,23 +898,231 @@
                   resolveError = "";
                 }}
                 onEnter={resolvePartner}
-                placeholder={i18n.t.exchange.partnerPlaceholder}
+                placeholder={settings.t.exchange.partnerPlaceholder}
                 className="flex-1"
               />
               <button
                 onclick={resolvePartner}
                 class="bg-gray-100 hover:bg-gray-200 px-4 py-2 rounded-lg font-medium text-gray-700"
               >
-                {i18n.t.exchange.check}
+                {settings.t.exchange.check}
               </button>
+            </div>
+          {/if}
+
+          {#if activeTab === "easy"}
+            <div class="mb-4">
+              <p class="text-sm text-gray-600 mb-4">
+                {settings.t.exchange.easyExchangeDesc}
+              </p>
+
+              {#if findingPartner}
+                <div
+                  class="flex flex-col items-center justify-center p-8 bg-gray-50 rounded-xl"
+                >
+                  <div class="flex items-center mb-2">
+                    <div
+                      class="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full mr-3"
+                    ></div>
+                    <span class="text-primary font-bold"
+                      >{settings.t.exchange.searchingPartner}</span
+                    >
+                  </div>
+                  <p class="text-xs text-gray-500">
+                    {settings.t.exchange.easyExchangeWait}
+                  </p>
+                </div>
+              {:else if matchedPartner}
+                {@const parts =
+                  settings.t.exchange.foundPartnerDesc.split("{name}")}
+                <div
+                  class="bg-green-50 border border-green-200 p-4 rounded-xl mb-4"
+                >
+                  <h3 class="font-bold text-green-800 mb-2">
+                    {settings.t.exchange.foundPartner}
+                  </h3>
+                  <div class="flex items-center gap-3 mb-4">
+                    <a
+                      href="https://bsky.app/profile/{matchedPartner.profile
+                        ?.handle || matchedPartner.did}"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      class="flex-shrink-0 hover:opacity-80 transition-opacity"
+                    >
+                      {#if matchedPartner.profile?.avatar}
+                        <img
+                          src={matchedPartner.profile.avatar}
+                          alt={matchedPartner.profile.handle}
+                          class="w-12 h-12 rounded-full border-2 border-white shadow-sm"
+                        />
+                      {:else}
+                        <div
+                          class="w-12 h-12 rounded-full bg-green-200 flex items-center justify-center text-green-700 font-bold border-2 border-white shadow-sm"
+                        >
+                          ?
+                        </div>
+                      {/if}
+                    </a>
+                    <div class="flex-1">
+                      <p class="text-green-700">
+                        {parts[0]}
+                        <a
+                          href="https://bsky.app/profile/{matchedPartner.profile
+                            ?.handle || matchedPartner.did}"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          class="font-bold hover:underline"
+                        >
+                          {matchedPartner.profile?.displayName ||
+                            matchedPartner.profile?.handle ||
+                            matchedPartner.did}
+                        </a>
+                        {parts[1]}
+                      </p>
+                    </div>
+                  </div>
+                  <!-- Show stickers they offer -->
+                  <div
+                    class="flex gap-2 overflow-x-auto p-2 bg-white/50 rounded-lg mb-4"
+                  >
+                    {#each matchedPartner.stickers as s}
+                      <div class="w-16 h-16 flex-shrink-0">
+                        <StickerCanvas
+                          avatarUrl={typeof s.image === "string" ? s.image : ""}
+                          staticAngle={true}
+                          shape={s.shape || "circle"}
+                        />
+                      </div>
+                    {/each}
+                  </div>
+
+                  <div class="flex gap-3">
+                    <button
+                      onclick={rejectEasyMatch}
+                      class="bg-white text-gray-500 border border-gray-300 px-4 py-2 rounded-lg font-bold hover:bg-gray-100 flex-1"
+                    >
+                      {settings.t.exchange.reject}
+                    </button>
+                    <button
+                      onclick={acceptEasyExchange}
+                      disabled={processingAction !== null}
+                      class="bg-primary text-white px-4 py-2 rounded-lg font-bold hover:bg-primary-dark flex-1 shadow-md"
+                    >
+                      {settings.t.exchange.exchangeAction}
+                    </button>
+                  </div>
+                </div>
+              {:else}
+                <!-- Initial state for Easy Tab -->
+                <!-- Logic: User selects stickers BELOW, then clicks button? -->
+                <!-- But the "Select Partner" block is typically Step 1, "Select Stickers" Step 2 -->
+                <!-- If Easy Tab is active, we don't need to select partner name. match starts when we click "Start" -->
+                <!-- So we should show the "Start" button AFTER selecting stickers? -->
+                <!-- Currently the UI flow is Top: Select Partner, Bottom: Select Stickers, Then: Action Button -->
+
+                <!-- We should update the Action Button logic at the bottom to handle easy exchange -->
+              {/if}
+            </div>
+          {/if}
+
+          {#if activeTab === "withdraw"}
+            <div class="mb-4">
+              {#if loadingMyOffers}
+                <div class="flex justify-center p-8">
+                  <div
+                    class="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full"
+                  ></div>
+                </div>
+              {:else if myOpenOffers.length === 0}
+                <div
+                  class="text-center p-8 text-gray-500 bg-gray-50 rounded-xl"
+                >
+                  {settings.t.exchange.noOpenOffers}
+                </div>
+              {:else}
+                <div class="space-y-4">
+                  {#each myOpenOffers as offer}
+                    <div class="bg-white border rounded-xl p-4 shadow-sm">
+                      <div class="flex justify-between items-start mb-2">
+                        <div>
+                          <!-- Partner Info -->
+                          {#if offer.transaction.isEasyExchange && !offer.transaction.partner}
+                            <div
+                              class="flex items-center gap-2 text-primary font-bold"
+                            >
+                              <span class="text-xl">🎲</span>
+                              {settings.t.exchange.easyExchangeLabel}
+                            </div>
+                          {:else if offer.partnerProfile}
+                            <div class="flex items-center gap-2">
+                              {#if offer.partnerProfile.avatar}
+                                <img
+                                  src={offer.partnerProfile.avatar}
+                                  alt=""
+                                  class="w-8 h-8 rounded-full bg-gray-200"
+                                />
+                              {:else}
+                                <div
+                                  class="w-8 h-8 rounded-full bg-gray-200"
+                                ></div>
+                              {/if}
+                              <div class="font-bold text-sm">
+                                {offer.partnerProfile.displayName ||
+                                  offer.partnerProfile.handle}
+                              </div>
+                            </div>
+                          {:else if offer.transaction.partner}
+                            <div class="font-bold text-sm text-gray-500">
+                              {offer.transaction.partner}
+                            </div>
+                          {:else}
+                            <div class="text-gray-500">Unknown Offer</div>
+                          {/if}
+
+                          <div class="text-xs text-gray-400 mt-1">
+                            {new Date(
+                              offer.transaction.createdAt,
+                            ).toLocaleString()}
+                          </div>
+                        </div>
+                        <button
+                          class="text-red-500 hover:text-red-700 text-sm font-bold border border-red-200 bg-red-50 hover:bg-red-100 px-3 py-1 rounded-lg transition-colors"
+                          onclick={() => handleWithdraw(offer.uri)}
+                        >
+                          {settings.t.exchange.withdrawAction}
+                        </button>
+                      </div>
+
+                      <!-- Stickers -->
+                      <div
+                        class="flex gap-2 overflow-x-auto p-2 bg-gray-50 rounded-lg"
+                      >
+                        {#each offer.stickers as s}
+                          <div class="w-12 h-12 flex-shrink-0">
+                            <StickerCanvas
+                              avatarUrl={typeof s.image === "string"
+                                ? s.image
+                                : ""}
+                              staticAngle={true}
+                              shape={s.shape || "circle"}
+                            />
+                          </div>
+                        {/each}
+                      </div>
+                    </div>
+                  {/each}
+                </div>
+              {/if}
             </div>
           {/if}
 
           {#if resolveError}<p class="text-red-500 text-sm mt-1">
               {resolveError}
             </p>{/if}
-          {#if partnerDid}<p class="text-green-600 text-sm mt-1">
-              {i18n.t.exchange.selectedPartner.replace(
+          {#if partnerDid && activeTab !== "easy"}<p
+              class="text-green-600 text-sm mt-1"
+            >
+              {settings.t.exchange.selectedPartner.replace(
                 "{handle}",
                 partnerHandle,
               )}
@@ -752,10 +1130,10 @@
         </div>
 
         <!-- 2. Select Stickers -->
-        {#if partnerDid}
+        {#if (partnerDid || activeTab === "easy") && !(activeTab === "easy" && matchedPartner)}
           <div class="mb-6">
             <h3 class="block text-sm font-bold text-gray-700 mb-2">
-              {i18n.t.exchange.selectStickersToOffer.replace(
+              {settings.t.exchange.selectStickersToOffer.replace(
                 "{n}",
                 selectedStickers.size.toString(),
               )}
@@ -781,6 +1159,7 @@
                       <StickerCanvas
                         avatarUrl={sticker.image as string}
                         staticAngle={true}
+                        shape={sticker.shape || "circle"}
                       />
                     </div>
                     {#if selectedStickers.has(sticker.uri)}
@@ -797,7 +1176,7 @@
                       class="p-2 text-center text-xs text-gray-500 truncate border-t border-gray-50"
                     >
                       {sticker.name ||
-                        (i18n.lang === "ja"
+                        (settings.lang === "ja"
                           ? `${sticker.profile?.displayName || sticker.profile?.handle || "だれか"}のシール`
                           : `${sticker.profile?.displayName || sticker.profile?.handle || "Unknown"}'s sticker`)}
                     </div>
@@ -811,51 +1190,61 @@
             <label
               for="proposalMessage"
               class="block text-sm font-medium text-gray-700 mb-1"
-              >{i18n.t.exchange.messageLabel}</label
+              >{settings.t.exchange.messageLabel}</label
             >
             <input
               id="proposalMessage"
               type="text"
               bind:value={proposalMessage}
-              placeholder={i18n.t.exchange.messagePlaceholder}
+              placeholder={settings.t.exchange.messagePlaceholder}
               class="input-text w-full"
               maxlength="100"
             />
           </div>
 
-          <div class="flex flex-col gap-2 mb-4 justify-end items-end">
-            <label
-              class="flex items-center gap-2 cursor-pointer text-sm text-gray-700"
-            >
-              <input
-                type="checkbox"
-                bind:checked={mentionOnBluesky}
-                class="rounded text-primary focus:ring-primary"
-              />
-              {i18n.t.exchange.mentionOnBluesky}
-            </label>
-            <label
-              class="flex items-center gap-2 cursor-pointer text-sm text-gray-500"
-            >
-              <input
-                type="checkbox"
-                bind:checked={saveSettings}
-                class="rounded text-gray-500 focus:ring-gray-400"
-              />
-              {i18n.t.exchange.saveSettings}
-            </label>
-          </div>
+          {#if activeTab !== "easy"}
+            <div class="flex flex-col gap-2 mb-4 justify-end items-end">
+              <label
+                class="flex items-center gap-2 cursor-pointer text-sm text-gray-700"
+              >
+                <input
+                  type="checkbox"
+                  bind:checked={mentionOnBluesky}
+                  class="rounded text-primary focus:ring-primary"
+                />
+                {settings.t.exchange.mentionOnBluesky}
+              </label>
+              <label
+                class="flex items-center gap-2 cursor-pointer text-sm text-gray-500"
+              >
+                <input
+                  type="checkbox"
+                  bind:checked={saveSettings}
+                  class="rounded text-gray-500 focus:ring-gray-400"
+                />
+                {settings.t.exchange.saveSettings}
+              </label>
+            </div>
+          {/if}
 
           <div class="flex justify-end">
             <button
-              onclick={handleInitiate}
+              onclick={activeTab === "easy"
+                ? startEasyExchange
+                : handleInitiate}
               disabled={processingAction !== null ||
-                selectedStickers.size === 0}
+                selectedStickers.size === 0 ||
+                (activeTab === "easy" && findingPartner)}
               class="btn-secondary"
             >
-              {processingAction === "accept"
-                ? i18n.t.exchange.sending
-                : i18n.t.exchange.createOffer}
+              {processingAction === "accept" ||
+              (activeTab === "easy" && findingPartner)
+                ? activeTab === "easy"
+                  ? settings.t.exchange.searchingPartner
+                  : settings.t.exchange.sending
+                : activeTab === "easy"
+                  ? settings.t.exchange.exchangeAction
+                  : settings.t.exchange.createOffer}
             </button>
           </div>
         {/if}

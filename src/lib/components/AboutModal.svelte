@@ -1,6 +1,6 @@
 <script lang="ts">
   import { fade, scale } from "svelte/transition";
-  import { i18n } from "$lib/i18n.svelte";
+  import { settings } from "$lib/settings.svelte";
 
   let { onClose } = $props<{ onClose: () => void }>();
 </script>
@@ -22,11 +22,11 @@
     <div
       class="px-8 py-6 border-b border-primary/10 flex justify-between items-center bg-transparent"
     >
-      <h2 class="text-2xl font-bold text-gray-700">{i18n.t.about.title}</h2>
+      <h2 class="text-2xl font-bold text-gray-700">{settings.t.about.title}</h2>
       <button
         onclick={onClose}
         class="p-2 -mr-2 text-gray-400 hover:text-gray-600 rounded-full hover:bg-gray-100 transition"
-        aria-label={i18n.t.common.back}
+        aria-label={settings.t.common.back}
       >
         <svg
           xmlns="http://www.w3.org/2000/svg"
@@ -46,24 +46,24 @@
     <!-- Content -->
     <div class="p-8 overflow-y-auto prose prose-sm text-gray-600">
       <p class="text-sm mb-6 whitespace-pre-wrap">
-        {i18n.t.about.aboutText}
+        {settings.t.about.aboutText}
       </p>
 
       <h3 class="text-gray-800 font-bold mt-4 mb-2">
-        {i18n.t.about.creationTitle}
+        {settings.t.about.creationTitle}
       </h3>
       <p class="text-sm mb-6 whitespace-pre-wrap">
-        {i18n.t.about.creationText}
+        {settings.t.about.creationText}
       </p>
 
       <h3 class="text-gray-800 font-bold mt-4 mb-2">
-        {i18n.t.about.otherTitle}
+        {settings.t.about.otherTitle}
       </h3>
       <p class="text-sm mb-6 whitespace-pre-wrap">
-        {i18n.t.about.otherText}
+        {settings.t.about.otherText}
       </p>
 
-      <h3 class="text-gray-800 font-bold mt-8 mb-2">{i18n.t.about.links}</h3>
+      <h3 class="text-gray-800 font-bold mt-8 mb-2">{settings.t.about.links}</h3>
       <div class="flex flex-col gap-2">
         <a
           href="https://bsky.app/profile/suibari.com"
@@ -90,7 +90,7 @@
         onclick={onClose}
         class="px-6 py-2 bg-white border-2 border-gray-200 rounded-full text-sm font-bold text-gray-700 hover:bg-gray-50 hover:border-gray-300 focus:outline-none transition"
       >
-        {i18n.t.common.ok}
+        {settings.t.common.ok}
       </button>
     </div>
   </div>

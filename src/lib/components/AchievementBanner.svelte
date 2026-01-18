@@ -1,6 +1,6 @@
 <script lang="ts">
   import type { Achievement } from "$lib/achievements";
-  import { i18n } from "$lib/i18n.svelte";
+  import { settings } from "$lib/settings.svelte";
 
   let { achievements }: { achievements: Achievement[] } = $props();
 
@@ -36,7 +36,7 @@
     parts.pop();
     const key = `${parts.join(".")}.condition`;
 
-    const template = i18n.resolve(key);
+    const template = settings.resolve(key);
     return template.replace("{n}", achievement.count.toString());
   }
 </script>
@@ -53,7 +53,7 @@
         title={getCondition(achievement)}
       >
         <span>{getIcon(achievement.type)}</span>
-        <span>{i18n.resolve(achievement.titleKey)}</span>
+        <span>{settings.resolve(achievement.titleKey)}</span>
       </div>
     {/each}
   </div>

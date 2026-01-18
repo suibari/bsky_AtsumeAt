@@ -7,7 +7,7 @@
     rejectExchange,
     type IncomingOffer,
   } from "$lib/exchange";
-  import { i18n } from "$lib/i18n.svelte";
+  import { settings } from "$lib/settings.svelte";
   import StickerCanvas from "$lib/components/StickerCanvas.svelte";
   import { fade, slide } from "svelte/transition";
 
@@ -42,14 +42,14 @@
 
   async function handleReject(offer: IncomingOffer) {
     if (!agent) return;
-    if (!confirm(i18n.t.exchange.rejectConfirm)) return;
+    if (!confirm(settings.t.exchange.rejectConfirm)) return;
 
     processing = offer.partnerDid;
     try {
       await rejectExchange(agent, offer.partnerDid, offer.uri);
       // Remove from list
       offers = offers.filter((o) => o.uri !== offer.uri);
-      message = i18n.t.exchange.rejectedTitle;
+      message = settings.t.exchange.rejectedTitle;
       setTimeout(() => (message = null), 3000);
     } catch (e) {
       console.error("Rejection failed", e);
@@ -64,10 +64,10 @@
   <div class="max-w-4xl mx-auto p-4 md:p-8">
     <header class="mb-6 flex items-center justify-between">
       <a href="/" class="text-gray-500 hover:text-primary"
-        >← {i18n.t.common.back}</a
+        >← {settings.t.common.back}</a
       >
       <h1 class="text-2xl font-bold text-primary">
-        {i18n.t.notifications.title}
+        {settings.t.notifications.title}
       </h1>
       <div class="w-8"></div>
     </header>
@@ -82,7 +82,7 @@
       <div
         class="text-center py-20 bg-white/50 rounded-2xl border-2 border-dashed border-white"
       >
-        <p class="text-gray-500 font-medium">{i18n.t.notifications.empty}</p>
+        <p class="text-gray-500 font-medium">{settings.t.notifications.empty}</p>
       </div>
     {:else}
       <div class="space-y-4">
@@ -92,19 +92,24 @@
             transition:slide
           >
             <div class="flex items-center gap-3">
-              {#if offer.profile?.avatar}
-                <img
-                  src={offer.profile.avatar}
-                  alt="Avatar"
-                  class="w-12 h-12 rounded-full object-cover border border-gray-200"
-                />
-              {:else}
-                <div
-                  class="w-12 h-12 rounded-full bg-gray-200 flex items-center justify-center text-xl"
-                >
-                  ?
-                </div>
-              {/if}
+              <a
+                href="/profile/{offer.partnerDid}"
+                class="block transition-opacity hover:opacity-80"
+              >
+                {#if offer.profile?.avatar}
+                  <img
+                    src={offer.profile.avatar}
+                    alt="Avatar"
+                    class="w-12 h-12 rounded-full object-cover border border-gray-200"
+                  />
+                {:else}
+                  <div
+                    class="w-12 h-12 rounded-full bg-gray-200 flex items-center justify-center text-xl"
+                  >
+                    ?
+                  </div>
+                {/if}
+              </a>
               <div>
                 <h3 class="font-bold text-gray-800">
                   {offer.profile?.displayName ||
@@ -112,7 +117,7 @@
                     offer.partnerDid}
                 </h3>
                 <p class="text-sm text-gray-600">
-                  {i18n.t.notifications.wantsToSend.replace(
+                  {settings.t.notifications.wantsToSend.replace(
                     "{n}",
                     (offer.offer.stickerOut?.length || 0).toString(),
                   )}
@@ -127,15 +132,15 @@
                 class="bg-gray-100 text-red-500 px-6 py-2 rounded-full text-sm font-bold shadow-sm hover:shadow-md transition-shadow hover:bg-gray-200"
               >
                 {processing === offer.partnerDid
-                  ? i18n.t.exchange.rejecting
-                  : i18n.t.exchange.reject}
+                  ? settings.t.exchange.rejecting
+                  : settings.t.exchange.reject}
               </button>
               <button
                 onclick={() => handleAccept(offer)}
                 disabled={processing === offer.partnerDid}
                 class="bg-secondary text-white px-6 py-2 rounded-full text-sm font-bold shadow-sm hover:shadow-md transition-shadow"
               >
-                {i18n.t.notifications.accept}
+                {settings.t.notifications.accept}
               </button>
             </div>
           </div>
