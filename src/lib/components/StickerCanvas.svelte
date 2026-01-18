@@ -176,9 +176,12 @@
     <!-- Sticker Shape Wrapper -->
     <!-- We apply the shape (clip-path or border-radius) here -->
     <div
-      class="face front absolute inset-0 w-full h-full flex items-center justify-center shadow-xl"
+      class="face front absolute inset-0 w-full h-full flex items-center justify-center {shape ===
+      'transparent'
+        ? ''
+        : 'shadow-xl'}"
       style="{containerStyle}; {shape === 'transparent'
-        ? 'background: transparent;'
+        ? 'background: transparent; filter: drop-shadow(0 10px 8px rgba(0, 0, 0, 0.04)) drop-shadow(0 4px 3px rgba(0, 0, 0, 0.1));'
         : useRealBorder
           ? `border: 4px solid ${borderColor}; transition: border-color 0.3s ease;`
           : `background: ${borderColor}; transition: background-color 0.3s ease;`}"
@@ -199,55 +202,83 @@
           draggable="false"
         />
 
-        <!-- Gloss Overlay -->
-        <div
-          class="gloss absolute inset-0 w-full h-full pointer-events-none z-10"
-          style="
-            background: linear-gradient(115deg, transparent 40%, rgba(255, 255, 255, 0.7) 50%, transparent 60%); 
-            background-size: 200% 100%;
-            background-position: {100 -
-            ((((finalRotY % 360) + 360) % 360) / 360) * 200}%;
-            mix-blend-mode: overlay;
-          "
-        ></div>
+        <!-- Gloss Overlay (Exclude transparent) -->
+        {#if shape !== "transparent"}
+          <div
+            class="gloss absolute inset-0 w-full h-full pointer-events-none z-10"
+            style="
+              background: linear-gradient(115deg, transparent 40%, rgba(255, 255, 255, 0.7) 50%, transparent 60%); 
+              background-size: 200% 100%;
+              background-position: {100 -
+              ((((finalRotY % 360) + 360) % 360) / 360) * 200}%;
+              mix-blend-mode: overlay;
+            "
+          ></div>
+        {/if}
 
-        <!-- Specular Highlight (Static) -->
-        <div
-          class="absolute inset-0 ring-1 ring-inset ring-white/50 z-20"
-          class:rounded-full={shape === "circle"}
-          class:rounded-xl={shape === "square"}
-          style={!useRealBorder ? containerStyle : ""}
-        ></div>
+        <!-- Specular Highlight (Static) (Exclude transparent) -->
+        {#if shape !== "transparent"}
+          <div
+            class="absolute inset-0 ring-1 ring-inset ring-white/50 z-20"
+            class:rounded-full={shape === "circle"}
+            class:rounded-xl={shape === "square"}
+            style={!useRealBorder ? containerStyle : ""}
+          ></div>
+        {/if}
       </div>
     </div>
 
     <!-- Back Face -->
     <!-- Use concentric div approach for border to handle clip-paths correctly (like Rectangle) -->
     <div
-      class="face back absolute inset-0 w-full h-full flex items-center justify-center shadow-xl bg-white"
+      class="face back absolute inset-0 w-full h-full flex items-center justify-center {shape ===
+      'transparent'
+        ? ''
+        : 'shadow-xl'} {shape === 'transparent' ? '' : 'bg-white'}"
       style="
           transform: rotateY(180deg); 
-          {containerStyle}
+          {containerStyle};
+          {shape === 'transparent'
+        ? 'background: transparent; filter: drop-shadow(0 10px 8px rgba(0, 0, 0, 0.04)) drop-shadow(0 4px 3px rgba(0, 0, 0, 0.1));'
+        : ''}
         "
       class:rounded-full={shape === "circle"}
       class:rounded-2xl={shape === "square"}
     >
       <!-- Inner Content (Pattern) -->
       <!-- Simulate 4px border by sizing this to ~95% -->
-      <div
-        class="flex items-center justify-center relative w-full h-full"
-        style="width: 95%; height: 95%; {containerStyle}; 
-               background-color: {borderColor};
-               background-image: repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(0,0,0,0.1) 10px, rgba(0,0,0,0.1) 20px);
-               transition: background-color 0.3s ease;"
-      >
+      {#if shape === "transparent"}
+        <!-- Masked Back for Transparent Shape -->
         <div
-          class="w-2/3 h-2/3 bg-white/20 animate-pulse"
-          class:rounded-full={shape === "circle"}
-          class:rounded-xl={shape === "square"}
-          style={!useRealBorder ? containerStyle : ""}
+          class="w-full h-full"
+          style="
+            background-color: {borderColor};
+            background-image: repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(0,0,0,0.1) 10px, rgba(0,0,0,0.1) 20px);
+            -webkit-mask-image: url({proxiedImage});
+            mask-image: url({proxiedImage});
+            -webkit-mask-size: 100% 100%;
+            mask-size: 100% 100%;
+            transition: background-color 0.3s ease;
+          "
         ></div>
-      </div>
+      {:else}
+        <!-- Inner Content (Pattern) -->
+        <!-- Simulate 4px border by sizing this to ~95% -->
+        <div
+          class="flex items-center justify-center relative w-full h-full"
+          style="width: 95%; height: 95%; {containerStyle}; 
+                 background-color: {borderColor};
+                 background-image: repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(0,0,0,0.1) 10px, rgba(0,0,0,0.1) 20px);
+                 transition: background-color 0.3s ease;"
+        >
+          <div
+            class="w-2/3 h-2/3 bg-white/20 animate-pulse"
+            class:rounded-full={shape === "circle"}
+            class:rounded-xl={shape === "square"}
+            style={!useRealBorder ? containerStyle : ""}
+          ></div>
+        </div>
+      {/if}
     </div>
   </div>
 </div>

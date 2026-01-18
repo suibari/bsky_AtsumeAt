@@ -396,11 +396,14 @@
         <!-- Crop Area -->
         <div
           class="relative w-[300px] h-[300px] bg-white overflow-hidden shadow-inner cursor-move touch-none transition-all duration-300"
-          style={CSS_SHAPES[shape]
+          style="{CSS_SHAPES[shape]
             ? `clip-path: ${CSS_SHAPES[shape]}`
             : SVG_DEFS[shape]
               ? `clip-path: url(#shape-${shape})`
-              : `clip-path: ${CSS_SHAPES.circle}`}
+              : `clip-path: ${CSS_SHAPES.circle}`};
+              {shape === 'transparent'
+            ? 'background-image: linear-gradient(45deg, #eee 25%, transparent 25%), linear-gradient(-45deg, #eee 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #eee 75%), linear-gradient(-45deg, transparent 75%, #eee 75%); background-size: 20px 20px; background-position: 0 0, 0 10px, 10px -10px, -10px 0px;'
+            : ''}"
           bind:this={cropContainer}
           onmousedown={onMouseDown}
           onmousemove={onMouseMove}
