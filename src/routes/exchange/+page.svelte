@@ -557,7 +557,9 @@
       <a href="/" class="text-gray-500 hover:text-primary"
         >← {settings.t.exchange.backToBook}</a
       >
-      <h1 class="text-2xl font-bold text-primary">{settings.t.exchange.title}</h1>
+      <h1 class="text-2xl font-bold text-primary">
+        {settings.t.exchange.title}
+      </h1>
       <div class="w-20"></div>
     </header>
 
@@ -643,6 +645,7 @@
                       <StickerCanvas
                         avatarUrl={typeof s.image === "string" ? s.image : ""}
                         staticAngle={true}
+                        shape={s.shape || "circle"}
                       />
                     </div>
                   {/each}
@@ -681,6 +684,7 @@
                             ? sticker.image
                             : ""}
                           staticAngle={true}
+                          shape={sticker.shape || "circle"}
                         />
                       </div>
                       {#if selectedStickers.has(sticker.uri)}
@@ -986,6 +990,7 @@
                         <StickerCanvas
                           avatarUrl={typeof s.image === "string" ? s.image : ""}
                           staticAngle={true}
+                          shape={s.shape || "circle"}
                         />
                       </div>
                     {/each}
@@ -1099,6 +1104,7 @@
                                 ? s.image
                                 : ""}
                               staticAngle={true}
+                              shape={s.shape || "circle"}
                             />
                           </div>
                         {/each}
@@ -1153,6 +1159,7 @@
                       <StickerCanvas
                         avatarUrl={sticker.image as string}
                         staticAngle={true}
+                        shape={sticker.shape || "circle"}
                       />
                     </div>
                     {#if selectedStickers.has(sticker.uri)}
