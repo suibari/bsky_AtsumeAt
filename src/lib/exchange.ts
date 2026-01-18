@@ -750,7 +750,7 @@ export async function findEasyExchangePartner(agent: Agent, offeredStickers: Sti
   const myDid = agent.assertDid;
   if (!myDid) return null;
 
-  const myOfferStickerCount = offeredStickers.length;
+
 
   // 1. Get all Hub Users
   const hubUsers = await getHubUsers(agent);
@@ -804,7 +804,7 @@ export async function findEasyExchangePartner(agent: Agent, offeredStickers: Sti
             return t.status === 'offered' &&
               t.isEasyExchange === true &&
               (!t.partner) &&
-              t.stickerOut && t.stickerOut.length === myOfferStickerCount;
+              t.stickerOut && t.stickerOut.length > 0;
           }) as { value: Transaction } | undefined;
 
           if (matchingOffer) break;
