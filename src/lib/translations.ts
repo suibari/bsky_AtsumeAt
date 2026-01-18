@@ -124,7 +124,7 @@ export const translations = {
       rejecting: "拒否しています...",
       rejectAction: "拒否する",
       easyExchangeTab: "おきがる交換",
-      easyExchangeDesc: "ランダムに相手を見つけて交換のおさそい！",
+      easyExchangeDesc: "相手をランダムに探して、交換できます",
       searchingPartner: "交換相手を探しています...",
       foundPartner: "交換相手が見つかりました！",
       foundPartnerDesc: "{name} さんが見つかりました！交換しますか？",
