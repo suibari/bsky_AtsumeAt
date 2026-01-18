@@ -136,7 +136,7 @@
 
       <!-- Scrollable Content -->
       <div
-        class="overflow-y-auto overflow-x-hidden p-6 sm:p-8 space-y-6 scrollbar-hide"
+        class="overflow-y-auto overflow-x-hidden p-6 sm:p-8 space-y-6 scrollbar-hide flex-1 min-h-0"
       >
         <!-- Large 3D View -->
         <div
