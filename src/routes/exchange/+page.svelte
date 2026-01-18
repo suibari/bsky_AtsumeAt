@@ -839,20 +839,30 @@
                   class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3"
                 >
                   {#each recommendedUsers as user}
-                    <button
+                    <div
                       class="flex items-center gap-3 p-3 rounded-xl border border-gray-100 bg-white hover:bg-gray-50 hover:border-primary/30 transition-all text-left group"
-                      onclick={() => selectUser(user)}
                     >
-                      {#if user.avatar}
-                        <img
-                          src={user.avatar}
-                          alt={user.handle}
-                          class="w-10 h-10 rounded-full bg-gray-200 object-cover"
-                        />
-                      {:else}
-                        <div class="w-10 h-10 rounded-full bg-gray-200"></div>
-                      {/if}
-                      <div class="flex-1 min-w-0">
+                      <a
+                        href="/profile/{user.did}"
+                        class="relative transition-transform hover:scale-110 block"
+                        title={i18n.t.common.viewProfile || "View Profile"}
+                      >
+                        {#if user.avatar}
+                          <img
+                            src={user.avatar}
+                            alt={user.handle}
+                            class="w-10 h-10 rounded-full bg-gray-200 object-cover shadow-sm hover:ring-2 hover:ring-primary hover:ring-offset-1 transition-all"
+                          />
+                        {:else}
+                          <div
+                            class="w-10 h-10 rounded-full bg-gray-200 shadow-sm hover:ring-2 hover:ring-primary hover:ring-offset-1 transition-all"
+                          ></div>
+                        {/if}
+                      </a>
+                      <button
+                        class="flex-1 min-w-0 text-left"
+                        onclick={() => selectUser(user)}
+                      >
                         <div
                           class="font-bold text-gray-800 text-sm truncate group-hover:text-primary transition-colors"
                         >
@@ -861,8 +871,8 @@
                         <div class="text-xs text-gray-500 truncate">
                           @{user.handle}
                         </div>
-                      </div>
-                    </button>
+                      </button>
+                    </div>
                   {/each}
                 </div>
               {/if}

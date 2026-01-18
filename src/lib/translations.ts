@@ -50,6 +50,7 @@ export const translations = {
       error: "エラーが発生しました",
       success: "完了しました！",
       noStickers: "シールがまだありません ✨",
+      viewProfile: "プロフィールを見る",
     },
     create: {
       title: "シールを作る",
@@ -267,6 +268,7 @@ export const translations = {
       error: "An error occurred",
       success: "Success!",
       noStickers: "No stickers yet ✨",
+      viewProfile: "View Profile",
     },
     create: {
       title: "Create Sticker",
