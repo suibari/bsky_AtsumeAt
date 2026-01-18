@@ -337,8 +337,31 @@ export async function resolvePendingExchanges(agent: Agent, onStatus?: (msg: str
 
   // 2. Check each partner
   for (const offer of myOffers) {
-    const partnerDid = offer.value.partner;
-    if (!partnerDid) continue; // Skip offers without partner (Easy Exchange pending)
+    let partnerDid = offer.value.partner;
+    if (!partnerDid) {
+      // Handle Easy Exchange (No partner defined yet)
+      if (offer.value.isEasyExchange) {
+        // Search for WHO accepted it via Backlinks
+        const links = await getBacklinks(offer.uri, `${TRANSACTION_COLLECTION}:refTransaction`);
+
+        for (const link of links) {
+          const responderDid = link.did || (link.author && link.author.did);
+          if (!responderDid) continue;
+
+          // Check if this user actually completed it
+          const claimed = await checkInverseExchange(agent, responderDid, offer.uri);
+
+          if (claimed === 'completed') {
+            // Found the mystery partner!
+            partnerDid = responderDid;
+            // Continue to update logic below...
+            break;
+          }
+        }
+      }
+
+      if (!partnerDid) continue; // Still no partner found
+    }
 
     let partnerName = partnerDid;
     if (onStatus) {
@@ -784,7 +807,7 @@ export async function findEasyExchangePartner(agent: Agent, offeredStickers: Sti
 
       const checkPromise = (async () => {
         let cursor;
-        let matchingOffer: { value: Transaction } | undefined;
+        let matchingOffer: { value: Transaction, uri: string } | undefined;
         let fetchCount = 0;
         const MAX_FETCH = 50;
 
@@ -805,7 +828,7 @@ export async function findEasyExchangePartner(agent: Agent, offeredStickers: Sti
               t.isEasyExchange === true &&
               (!t.partner) &&
               t.stickerOut && t.stickerOut.length > 0;
-          }) as { value: Transaction } | undefined;
+          }) as { value: Transaction, uri: string } | undefined;
 
           if (matchingOffer) break;
           if (fetchCount >= MAX_FETCH) break;
@@ -813,6 +836,28 @@ export async function findEasyExchangePartner(agent: Agent, offeredStickers: Sti
 
         if (matchingOffer) {
           const t = matchingOffer.value;
+
+          // 1.5 Check Re-Entrancy / Double Matching
+          // Has someone else already COMPLETED this easy exchange?
+          // We check backlinks for any transaction pointing to this offer with status 'completed'
+          let isAlreadyTaken = false;
+          try {
+            const backlinks = await getBacklinks(matchingOffer.uri as string, `${TRANSACTION_COLLECTION}:refTransaction`);
+            isAlreadyTaken = backlinks.some(l => {
+              const val = l.value as Transaction;
+              // If we have value, identifying status is easy. 
+              // If not hydrated, we might need to fetch, but usually recent ones are indexed.
+              // Safest is to check if ANY 'completed' transaction references this.
+              if (val && val.status === 'completed') return true;
+              return false;
+            });
+          } catch (e) { }
+
+          if (isAlreadyTaken) {
+            // console.log("Skipping taken offer", matchingOffer.uri);
+            return;
+          }
+
           const stickers = await fetchStickersForTransaction(agent, t, user.did);
 
           // 2. Check Ownership (Does partner need my stickers?)
