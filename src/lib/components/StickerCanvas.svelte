@@ -160,9 +160,9 @@
 </script>
 
 <div
-  class="scene relative w-full h-full cursor-grab active:cursor-grabbing {allowVerticalRotation
-    ? 'touch-none'
-    : 'touch-pan-y'}"
+  class="scene relative w-full h-full {staticAngle
+    ? ''
+    : `cursor-grab active:cursor-grabbing ${allowVerticalRotation ? 'touch-none' : 'touch-pan-y'}`}"
   onmousedown={onPointerDown}
   onmousemove={onPointerMove}
   ontouchstart={onPointerDown}
