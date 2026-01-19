@@ -45,7 +45,7 @@
     {loading ? settings.t.common.loading : settings.t.landing.signInWithBluesky}
   </button>
 
-  <div class="mt-4 text-sm text-gray-500 text-center">
+  <div class="mt-4 text-sm text-gray-500 dark:text-gray-400 text-center">
     <p>{settings.t.landing.connectMessage}</p>
   </div>
 </div>

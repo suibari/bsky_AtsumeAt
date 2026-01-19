@@ -82,7 +82,9 @@
       <div
         class="text-center py-20 bg-white/50 rounded-2xl border-2 border-dashed border-white"
       >
-        <p class="text-gray-500 font-medium">{settings.t.notifications.empty}</p>
+        <p class="text-gray-500 font-medium">
+          {settings.t.notifications.empty}
+        </p>
       </div>
     {:else}
       <div class="space-y-4">

@@ -4,6 +4,7 @@
   import { Agent } from "@atproto/api";
   import { deleteAllData } from "$lib/hub";
   import LanguageSwitcher from "$lib/components/LanguageSwitcher.svelte";
+  import ThemeSwitcher from "$lib/components/ThemeSwitcher.svelte";
   import { settings } from "$lib/settings.svelte";
 
   let agent = $state<Agent | null>(null);
@@ -37,13 +38,15 @@
   }
 </script>
 
-<div class="min-h-screen bg-surface">
-  <header class="bg-white shadow z-20">
+<div class="min-h-screen bg-background text-text-primary">
+  <header
+    class="bg-white/80 dark:bg-gray-900/80 backdrop-blur-md shadow-sm border-b border-primary/20 z-20 sticky top-0"
+  >
     <div class="max-w-6xl mx-auto p-4 flex items-center justify-between">
       <div class="flex items-center gap-4">
         <a
           href="/"
-          class="text-gray-600 hover:text-primary transition-colors"
+          class="text-gray-600 dark:text-gray-400 hover:text-primary dark:hover:text-primary transition-colors"
           aria-label={settings.t.common.back}
         >
           <svg
@@ -61,32 +64,38 @@
             />
           </svg>
         </a>
-        <h1 class="text-xl font-bold text-gray-800">{settings.t.settings.title}</h1>
+        <h1 class="text-xl font-bold text-gray-800 dark:text-gray-100">
+          {settings.t.settings.title}
+        </h1>
       </div>
       <div class="w-8"></div>
     </div>
   </header>
 
   <main class="max-w-xl mx-auto p-6 space-y-6">
-    <div class="bg-white rounded-lg shadow-sm p-6 border border-gray-100">
-      <h2 class="text-lg font-semibold text-gray-800 mb-4">
+    <div
+      class="bg-white dark:bg-gray-900 rounded-lg shadow-sm p-6 border border-gray-100 dark:border-gray-800"
+    >
+      <h2 class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4">
         {settings.t.settings.language}
       </h2>
       <div
-        class="flex justify-center p-4 bg-surface rounded-xl border border-primary/5"
+        class="flex justify-center p-4 bg-gray-50 dark:bg-gray-800 rounded-xl border border-primary/5 dark:border-gray-700"
       >
         <LanguageSwitcher />
       </div>
     </div>
 
-    <div class="bg-white rounded-lg shadow-sm p-6 border border-gray-100">
-      <h2 class="text-lg font-semibold text-gray-800 mb-4">
+    <div
+      class="bg-white dark:bg-gray-900 rounded-lg shadow-sm p-6 border border-gray-100 dark:border-gray-800"
+    >
+      <h2 class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4">
         {settings.t.settings.displaySettings}
       </h2>
       <div
-        class="flex items-center justify-between p-4 bg-surface rounded-xl border border-primary/5"
+        class="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-800 rounded-xl border border-primary/5 dark:border-gray-700"
       >
-        <span class="text-gray-700 font-medium"
+        <span class="text-gray-700 font-medium dark:text-gray-200"
           >{settings.t.settings.disableRotation}</span
         >
         <label class="relative inline-flex items-center cursor-pointer">
@@ -98,28 +107,39 @@
               settings.setDisableRotation(e.currentTarget.checked)}
           />
           <div
-            class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary/20 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"
+            class="w-11 h-6 bg-gray-200 dark:bg-gray-700 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary/20 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"
           ></div>
         </label>
       </div>
+
+      <div class="mt-6">
+        <h3
+          class="text-sm font-semibold text-gray-500 dark:text-gray-400 mb-2 uppercase tracking-wider"
+        >
+          {settings.t.settings.theme}
+        </h3>
+        <ThemeSwitcher />
+      </div>
     </div>
 
-    <div class="bg-white rounded-lg shadow-sm p-6 border border-gray-100">
-      <h2 class="text-lg font-semibold text-red-600 mb-4">
+    <div
+      class="bg-white dark:bg-gray-900 rounded-lg shadow-sm p-6 border border-gray-100 dark:border-gray-800"
+    >
+      <h2 class="text-lg font-semibold text-red-600 dark:text-red-400 mb-4">
         {settings.t.settings.dangerZone}
       </h2>
-      <p class="text-sm text-gray-600 mb-6">
+      <p class="text-sm text-gray-600 dark:text-gray-400 mb-6">
         {settings.t.settings.dangerMessage}
       </p>
 
       <button
         onclick={handleDeleteAll}
         disabled={isDeleting}
-        class="w-full py-3 px-4 bg-red-50 hover:bg-red-100 text-red-600 font-bold rounded-lg border border-red-200 transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+        class="w-full py-3 px-4 bg-red-50 dark:bg-red-900/10 hover:bg-red-100 dark:hover:bg-red-900/20 text-red-600 dark:text-red-400 font-bold rounded-lg border border-red-200 dark:border-red-900/30 transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
       >
         {#if isDeleting}
           <div
-            class="animate-spin rounded-full h-5 w-5 border-b-2 border-red-600"
+            class="animate-spin rounded-full h-5 w-5 border-b-2 border-red-600 dark:border-red-400"
           ></div>
           {settings.t.settings.deleting}
         {:else}

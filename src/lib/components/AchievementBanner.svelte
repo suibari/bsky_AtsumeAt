@@ -15,7 +15,7 @@
       case 4: // Rainbow (Ultimate: Pink -> Yellow -> Sky)
         return "bg-gradient-to-r from-pink-200 via-yellow-200 to-sky-300 text-purple-900 border-purple-300 shadow-md";
       default:
-        return "bg-gray-50 text-gray-700 border-gray-200";
+        return "bg-gray-50 dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-700";
     }
   }
 

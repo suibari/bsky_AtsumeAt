@@ -491,11 +491,15 @@
   }
 </script>
 
-<div class="min-h-screen bg-surface flex flex-col items-center">
+<div
+  class="min-h-screen bg-background text-text-primary flex flex-col items-center"
+>
   <header
     class="w-full max-w-6xl p-4 flex justify-between items-center z-10 relative"
   >
-    <a href="/" class="text-gray-500 hover:text-primary font-bold"
+    <a
+      href="/"
+      class="text-gray-500 hover:text-primary dark:text-gray-400 dark:hover:text-primary font-bold"
       >← {settings.t.common.back}</a
     >
     <h1 class="text-xl font-bold text-primary">{settings.t.share.title}</h1>
@@ -512,30 +516,30 @@
       <!-- Toolbar -->
       <div class="flex gap-4 z-20">
         <button
-          class="p-3 rounded-full bg-white shadow-md hover:bg-gray-50 transition-colors {isPenMode
+          class="p-3 rounded-full bg-white dark:bg-gray-800 shadow-md hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors {isPenMode
             ? 'ring-2 ring-primary text-primary'
-            : 'text-gray-600'}"
+            : 'text-gray-600 dark:text-gray-400'}"
           onclick={togglePen}
           title={settings.t.share.penTool}
         >
           ✏️
         </button>
         <button
-          class="p-3 rounded-full bg-white shadow-md hover:bg-gray-50 text-gray-600 transition-colors"
+          class="p-3 rounded-full bg-white dark:bg-gray-800 shadow-md hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-400 transition-colors"
           onclick={undo}
           title={settings.t.share.undo}
         >
           ↩️
         </button>
         <button
-          class="p-3 rounded-full bg-white shadow-md hover:bg-gray-50 text-red-500 transition-colors"
+          class="p-3 rounded-full bg-white dark:bg-gray-800 shadow-md hover:bg-gray-50 dark:hover:bg-gray-700 text-red-500 transition-colors"
           onclick={deleteSelected}
           title={settings.t.share.delete}
         >
           🗑️
         </button>
         <button
-          class="p-3 rounded-full bg-white shadow-md hover:bg-gray-50 text-gray-500 transition-colors"
+          class="p-3 rounded-full bg-white dark:bg-gray-800 shadow-md hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-500 dark:text-gray-400 transition-colors"
           onclick={randomizeBackground}
           title={settings.t.share.changeBg}
         >
@@ -546,7 +550,7 @@
       <!-- The Sticker Sheet -->
       <div
         bind:this={captureContainer}
-        class="relative shadow-2xl rounded-lg overflow-hidden border-4 border-white transform transition-transform bg-white"
+        class="relative shadow-2xl rounded-lg overflow-hidden border-4 border-white dark:border-gray-800 transform transition-transform bg-white dark:bg-gray-900"
         style="width: 400px; height: 600px; background: {bgGradient};"
       >
         <div
@@ -568,12 +572,14 @@
 
     <!-- Sticker Drawer (Side/Bottom) -->
     <div
-      class="w-full md:w-80 h-[600px] bg-white/80 backdrop-blur rounded-2xl border-2 border-primary/20 shadow-xl flex flex-col z-20"
+      class="w-full md:w-80 h-[600px] bg-white/80 dark:bg-gray-900/80 backdrop-blur rounded-2xl border-2 border-primary/20 shadow-xl flex flex-col z-20"
     >
       <div
-        class="p-4 border-b border-gray-100 flex justify-between items-center"
+        class="p-4 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center"
       >
-        <h2 class="font-bold text-gray-700">{settings.t.share.myStickers}</h2>
+        <h2 class="font-bold text-gray-700 dark:text-gray-200">
+          {settings.t.share.myStickers}
+        </h2>
         <span class="text-xs bg-primary/20 text-primary px-2 py-1 rounded-full"
           >{stickers.length}</span
         >
@@ -598,10 +604,12 @@
       </div>
 
       <!-- Footer Post Controls -->
-      <div class="p-4 bg-gray-50 border-t border-gray-100 rounded-b-2xl">
+      <div
+        class="p-4 bg-gray-50 dark:bg-gray-900 border-t border-gray-100 dark:border-gray-700 rounded-b-2xl"
+      >
         <label
           for="alt-text"
-          class="block mb-2 text-xs font-bold text-gray-500 uppercase tracking-wider"
+          class="block mb-2 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider"
         >
           ALT Text
         </label>
@@ -609,20 +617,20 @@
           id="alt-text"
           type="text"
           bind:value={altText}
-          class="w-full p-2 mb-3 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none"
+          class="w-full p-2 mb-3 text-sm border border-gray-200 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
           placeholder={settings.t.share.myCollection}
         />
 
         <label
           for="post-text"
-          class="block mb-2 text-xs font-bold text-gray-500 uppercase tracking-wider"
+          class="block mb-2 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider"
         >
           Post Text
         </label>
         <textarea
           id="post-text"
           bind:value={postText}
-          class="w-full h-20 p-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none resize-none mb-3"
+          class="w-full h-20 p-2 text-sm border border-gray-200 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none resize-none mb-3 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
         ></textarea>
         <button
           class="w-full bg-primary text-white font-bold py-3 rounded-xl shadow-lg hover:bg-primary/90 disabled:opacity-50 transition-all flex items-center justify-center gap-2"
