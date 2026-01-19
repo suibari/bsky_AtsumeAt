@@ -153,6 +153,7 @@ export async function acceptExchange(agent: Agent, partnerDid: string, stickersT
         obtainedFrom: partnerDid, // The GIVER is the partner
         originalCreator: rOriginalOwner, // Original Issuer
         name: stickerData.name, // Preserve Name
+        shape: stickerData.shape, // Preserve Shape
         message: incomingMessage // Apply message to sticker!
       };
 
@@ -178,6 +179,7 @@ export async function acceptExchange(agent: Agent, partnerDid: string, stickersT
           model: stickerData.model,
           description: stickerData.description,
           name: stickerData.name, // Add Name
+          shape: stickerData.shape, // Add Shape
           message: incomingMessage, // Add message
           obtainedFrom: partnerDid,
           obtainedAt: new Date().toISOString(),
@@ -506,6 +508,7 @@ export async function checkInverseExchange(agent: Agent, partnerDid: string, off
             obtainedFrom: partnerDid,
             originalCreator: rOriginalOwner,
             name: remoteSticker.name, // Preserve Name
+            shape: remoteSticker.shape, // Preserve Shape
             message: incomingMessage // Apply message
           };
 
@@ -528,6 +531,7 @@ export async function checkInverseExchange(agent: Agent, partnerDid: string, off
               model: remoteSticker.model,
               description: remoteSticker.description,
               name: remoteSticker.name, // Add Name
+              shape: remoteSticker.shape, // Add Shape
               message: incomingMessage, // Add message
               obtainedFrom: partnerDid,
               obtainedAt: new Date().toISOString(),
