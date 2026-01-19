@@ -130,7 +130,7 @@ export async function acceptExchange(agent: Agent, partnerDid: string, stickersT
 
       const alreadyHas = myStickers.some(s => {
         const sSubject = s.subjectDid || (s as any).owner;
-        return sSubject === rSubject && s.model === stickerData.model;
+        return sSubject === rSubject && s.model === stickerData.model && s.shape === stickerData.shape;
       });
       if (alreadyHas) continue;
 
@@ -488,7 +488,7 @@ export async function checkInverseExchange(agent: Agent, partnerDid: string, off
         // Check duplicate
         const alreadyHas = myStickers.some(s => {
           const sSubject = s.subjectDid || (s as any).owner;
-          return sSubject === rSubject && s.model === remoteSticker.model;
+          return sSubject === rSubject && s.model === remoteSticker.model && s.shape === remoteSticker.shape;
         });
 
         if (!alreadyHas) {
