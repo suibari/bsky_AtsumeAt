@@ -143,7 +143,8 @@ export async function acceptExchange(agent: Agent, partnerDid: string, stickersT
         // Check for IPLD $link
         const link = ref.$link ? ref.$link : ref.toString();
         // Construct canonical URL
-        imageToSave = `https://cdn.bsky.app/img/feed_fullsize/plain/${blobDid}/${link}@jpeg`;
+        const ext = stickerData.shape === 'transparent' ? 'png' : 'jpeg';
+        imageToSave = `https://cdn.bsky.app/img/feed_fullsize/plain/${blobDid}/${link}@${ext}`;
       }
 
       // Request Signature for Provenance
@@ -497,7 +498,8 @@ export async function checkInverseExchange(agent: Agent, partnerDid: string, off
           if (typeof imageToSave === 'object' && (imageToSave as any).ref) {
             const blobDid = rOriginalOwner || partnerDid;
             const link = (imageToSave as any).ref.toString();
-            imageToSave = `https://cdn.bsky.app/img/feed_fullsize/plain/${blobDid}/${link}@jpeg`;
+            const ext = remoteSticker.shape === 'transparent' ? 'png' : 'jpeg';
+            imageToSave = `https://cdn.bsky.app/img/feed_fullsize/plain/${blobDid}/${link}@${ext}`;
           }
 
           // Construct info payload for signing
