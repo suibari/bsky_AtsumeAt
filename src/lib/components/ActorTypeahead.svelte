@@ -88,28 +88,32 @@
     <div class="fixed inset-0 z-40" onclick={handleOuterClick}></div>
 
     <div
-      class="absolute top-full left-0 w-full bg-white border border-gray-200 rounded-lg shadow-xl mt-1 max-h-60 overflow-y-auto z-50 text-left"
+      class="absolute top-full left-0 w-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl mt-1 max-h-60 overflow-y-auto z-50 text-left"
       transition:fly={{ y: -5, duration: 150 }}
     >
       {#each searchResults as user}
         <button
-          class="w-full text-left px-4 py-2 hover:bg-gray-50 flex items-center gap-2 border-b last:border-b-0"
+          class="w-full text-left px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-2 border-b border-gray-100 dark:border-gray-700 last:border-b-0"
           onclick={() => selectUser(user)}
         >
           {#if user.avatar}
             <img
               src={user.avatar}
               alt={user.handle}
-              class="w-8 h-8 rounded-full object-cover"
+              class="w-8 h-8 rounded-full object-cover bg-gray-200 dark:bg-gray-700"
             />
           {:else}
-            <div class="w-8 h-8 rounded-full bg-gray-200"></div>
+            <div
+              class="w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-700"
+            ></div>
           {/if}
           <div class="flex-1 min-w-0">
-            <div class="font-bold text-sm truncate">
+            <div class="font-bold text-sm truncate dark:text-gray-100">
               {user.displayName || user.handle}
             </div>
-            <div class="text-xs text-gray-500 truncate">@{user.handle}</div>
+            <div class="text-xs text-gray-500 dark:text-gray-400 truncate">
+              @{user.handle}
+            </div>
           </div>
         </button>
       {/each}

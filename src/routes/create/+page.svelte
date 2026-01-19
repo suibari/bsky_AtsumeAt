@@ -327,7 +327,7 @@
   }
 </script>
 
-<div class="min-h-screen bg-surface">
+<div class="min-h-screen bg-background text-text-primary">
   <div class="max-w-6xl mx-auto p-4 md:p-8 flex flex-col items-center">
     <header class="w-full max-w-3xl flex items-center justify-between mb-8">
       <a href="/" class="text-gray-500 hover:text-primary"
@@ -338,16 +338,18 @@
     </header>
 
     <div
-      class="w-full max-w-3xl bg-white rounded-xl shadow p-6 flex flex-col items-center"
+      class="w-full max-w-3xl bg-white dark:bg-surface rounded-xl shadow p-6 flex flex-col items-center border border-gray-100 dark:border-gray-800"
     >
       {#if !imageUrl}
         <!-- Tab Navigation -->
-        <div class="w-full flex border-b border-gray-200 mb-6">
+        <div
+          class="w-full flex border-b border-gray-200 dark:border-gray-700 mb-6"
+        >
           <button
             class="flex-1 py-3 text-center font-medium border-b-2 transition-colors {activeTab ===
             'post'
               ? 'border-primary text-primary'
-              : 'border-transparent text-gray-500 hover:text-gray-700'}"
+              : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'}"
             onclick={() => (activeTab = "post")}
           >
             {settings.t.create.tabs?.post ?? "From Posts"}
@@ -356,7 +358,7 @@
             class="flex-1 py-3 text-center font-medium border-b-2 transition-colors {activeTab ===
             'file'
               ? 'border-primary text-primary'
-              : 'border-transparent text-gray-500 hover:text-gray-700'}"
+              : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'}"
             onclick={() => (activeTab = "file")}
           >
             {settings.t.create.tabs?.file ?? "From File"}
@@ -367,7 +369,7 @@
           <div
             class="w-full h-64 border-2 border-dashed {isFileHovering
               ? 'border-primary bg-primary/10'
-              : 'border-gray-300 bg-gray-50'} rounded-lg flex flex-col items-center justify-center cursor-pointer hover:bg-gray-100 transition-colors"
+              : 'border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50'} rounded-lg flex flex-col items-center justify-center cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
             onclick={() => fileInput?.click()}
             ondragover={onFileDragOver}
             ondragleave={onFileDragLeave}
@@ -377,7 +379,9 @@
             onkeydown={(e) => e.key === "Enter" && fileInput?.click()}
           >
             <span class="text-4xl mb-2">📷</span>
-            <span class="text-gray-500">{settings.t.create.selectImage}</span>
+            <span class="text-gray-500 dark:text-gray-400"
+              >{settings.t.create.selectImage}</span
+            >
             <input
               bind:this={fileInput}
               type="file"
@@ -395,7 +399,7 @@
       {:else}
         <!-- Crop Area -->
         <div
-          class="relative w-[300px] h-[300px] bg-white overflow-hidden shadow-inner cursor-move touch-none transition-all duration-300"
+          class="relative w-[300px] h-[300px] bg-white dark:bg-gray-800 overflow-hidden shadow-inner cursor-move touch-none transition-all duration-300 border border-gray-200 dark:border-gray-700"
           style="{CSS_SHAPES[shape]
             ? `clip-path: ${CSS_SHAPES[shape]}`
             : SVG_DEFS[shape]
@@ -429,7 +433,7 @@
         <!-- Controls -->
         <div class="w-full mt-6 space-y-4">
           <div>
-            <label class="text-sm font-medium text-gray-700"
+            <label class="text-sm font-medium text-gray-700 dark:text-gray-300"
               >{settings.t.create.zoom}</label
             >
             <input
@@ -438,13 +442,14 @@
               max="3"
               step="0.1"
               bind:value={scale}
-              class="w-full"
+              class="w-full accent-primary"
             />
           </div>
 
           <!-- Shape Selector -->
           <div>
-            <label class="text-sm font-medium text-gray-700 mb-2 block"
+            <label
+              class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block"
               >{settings.t.create.shapeLabel || "Shape"}</label
             >
             <div class="flex gap-2 justify-center flex-wrap">
@@ -453,19 +458,23 @@
                   class="w-10 h-10 rounded-lg border-2 flex items-center justify-center transition-all {shape ===
                   s
                     ? 'border-primary bg-primary/10'
-                    : 'border-gray-200 hover:border-gray-300'}"
+                    : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-500 bg-white dark:bg-gray-800'}"
                   onclick={() => (shape = s as any)}
                   title={s}
                 >
                   <!-- Quick icons/shapes -->
                   {#if s === "circle"}
-                    <div class="w-6 h-6 bg-gray-400 rounded-full"></div>
+                    <div
+                      class="w-6 h-6 bg-gray-400 dark:bg-gray-500 rounded-full"
+                    ></div>
                   {:else if s === "square"}
-                    <div class="w-6 h-6 bg-gray-400 rounded-md"></div>
+                    <div
+                      class="w-6 h-6 bg-gray-400 dark:bg-gray-500 rounded-md"
+                    ></div>
                   {:else if s === "transparent"}
                     <!-- Checkerboard icon for transparent -->
                     <div
-                      class="w-6 h-6 border border-gray-300 relative overflow-hidden bg-white rounded"
+                      class="w-6 h-6 border border-gray-300 dark:border-gray-600 relative overflow-hidden bg-white rounded"
                     >
                       <div
                         class="absolute inset-0"
@@ -474,14 +483,14 @@
                     </div>
                   {:else if CSS_SHAPES[s]}
                     <div
-                      class="w-6 h-6 bg-gray-400"
+                      class="w-6 h-6 bg-gray-400 dark:bg-gray-500"
                       style="clip-path: {CSS_SHAPES[s]}"
                     ></div>
                   {:else if SVG_DEFS[s]}
                     <svg
                       viewBox="0 0 {SVG_DEFS[s].viewBox[0]} {SVG_DEFS[s]
                         .viewBox[1]}"
-                      class="w-6 h-6 fill-gray-400"
+                      class="w-6 h-6 fill-gray-400 dark:fill-gray-500"
                     >
                       <path d={SVG_DEFS[s].d} />
                     </svg>
@@ -493,21 +502,22 @@
 
           <!-- Name Input -->
           <div class="mt-4 w-full">
-            <label class="text-sm font-medium text-gray-700 mb-1 block"
+            <label
+              class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 block"
               >{settings.t.create.nameLabel}</label
             >
             <input
               type="text"
               bind:value={name}
               placeholder={settings.t.create.namePlaceholder}
-              class="w-full border border-gray-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-primary focus:border-transparent outline-none h-10"
+              class="w-full border border-gray-300 dark:border-gray-700 rounded-lg p-2 text-sm focus:ring-2 focus:ring-primary focus:border-transparent outline-none h-10 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
               maxlength="50"
             />
           </div>
 
           <div class="flex gap-2 w-full">
             <button
-              class="flex-1 py-2 px-4 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
+              class="flex-1 py-2 px-4 border border-gray-300 dark:border-gray-700 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800"
               onclick={() => {
                 imageUrl = null;
                 name = "";

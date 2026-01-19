@@ -551,7 +551,7 @@
   });
 </script>
 
-<div class="min-h-screen bg-surface">
+<div class="min-h-screen bg-background text-text-primary">
   <div class="max-w-6xl mx-auto p-4 md:p-8 flex flex-col items-center">
     <header class="w-full flex justify-between items-center mb-8">
       <a href="/" class="text-gray-500 hover:text-primary"
@@ -569,10 +569,10 @@
       ></div>
     {:else if !agent}
       <div class="card-glass max-w-md w-full text-center p-8 mt-10">
-        <h2 class="text-2xl font-bold mb-2">
+        <h2 class="text-2xl font-bold mb-2 dark:text-gray-100">
           {settings.t.exchange.signInRequired}
         </h2>
-        <p class="mb-8 text-gray-600 text-sm">
+        <p class="mb-8 text-gray-600 dark:text-gray-400 text-sm">
           {settings.t.exchange.signInMessage}
         </p>
         <SignInForm />
@@ -584,37 +584,45 @@
           <div
             class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-2"
           ></div>
-          <p class="text-gray-500">{settings.t.exchange.verifying}</p>
+          <p class="text-gray-500 dark:text-gray-400">
+            {settings.t.exchange.verifying}
+          </p>
         </div>
       {:else if isValidOffer}
         {#if successAccept}
-          <div class="bg-white p-8 rounded-2xl shadow-xl text-center max-w-md">
+          <div
+            class="bg-white dark:bg-gray-800 p-8 rounded-2xl shadow-xl text-center max-w-md"
+          >
             <h2 class="text-3xl font-bold text-green-500 mb-4">
               {settings.t.exchange.acceptedTitle}
             </h2>
-            <p class="text-gray-600 mb-8">
+            <p class="text-gray-600 dark:text-gray-300 mb-8">
               {settings.t.exchange.acceptedMessage}
             </p>
             <a href="/" class="btn-primary">{settings.t.exchange.viewBook}</a>
           </div>
         {:else if successReject}
-          <div class="bg-white p-8 rounded-2xl shadow-xl text-center max-w-md">
-            <h2 class="text-3xl font-bold text-gray-500 mb-4">
+          <div
+            class="bg-white dark:bg-gray-800 p-8 rounded-2xl shadow-xl text-center max-w-md"
+          >
+            <h2
+              class="text-3xl font-bold text-gray-500 dark:text-gray-400 mb-4"
+            >
               {settings.t.exchange.rejectedTitle}
             </h2>
-            <p class="text-gray-600 mb-8">
+            <p class="text-gray-600 dark:text-gray-300 mb-8">
               {settings.t.exchange.rejectedMessage}
             </p>
             <a href="/" class="btn-primary">{settings.t.exchange.viewBook}</a>
           </div>
         {:else}
           <div
-            class="bg-white p-8 rounded-2xl shadow-xl max-w-2xl text-center w-full"
+            class="bg-white dark:bg-gray-800 p-8 rounded-2xl shadow-xl max-w-2xl text-center w-full"
           >
-            <h2 class="text-2xl font-bold mb-2">
+            <h2 class="text-2xl font-bold mb-2 dark:text-gray-100">
               {settings.t.exchange.incomingTitle}
             </h2>
-            <p class="text-gray-600 mb-6">
+            <p class="text-gray-600 dark:text-gray-400 mb-6">
               {offererProfile?.displayName ||
                 offererProfile?.handle ||
                 targetUserParam}
@@ -623,7 +631,7 @@
 
             {#if incomingMessage}
               <div
-                class="mb-6 p-4 bg-yellow-50 text-gray-700 italic border-l-4 border-yellow-300 rounded-r-lg shadow-sm"
+                class="mb-6 p-4 bg-yellow-50 dark:bg-yellow-900/20 text-gray-700 dark:text-gray-200 italic border-l-4 border-yellow-300 dark:border-yellow-600 rounded-r-lg shadow-sm"
               >
                 "{incomingMessage}"
               </div>
@@ -631,14 +639,14 @@
 
             {#if incomingStickers.length > 0}
               <div class="mb-6 text-left">
-                <h3 class="text-lg font-bold mb-2">
+                <h3 class="text-lg font-bold mb-2 dark:text-gray-200">
                   {settings.t.exchange.willReceive.replace(
                     "{n}",
                     incomingStickers.length.toString(),
                   )}
                 </h3>
                 <div
-                  class="flex gap-2 overflow-x-auto min-h-[160px] p-2 bg-gray-50 rounded-xl"
+                  class="flex gap-2 overflow-x-auto min-h-[160px] p-2 bg-gray-50 dark:bg-gray-900/50 rounded-xl"
                 >
                   {#each incomingStickers as s}
                     <div class="w-32 h-32 flex-shrink-0 relative">
@@ -654,7 +662,7 @@
             {/if}
 
             <div class="mb-6 text-left">
-              <h3 class="text-lg font-bold mb-2">
+              <h3 class="text-lg font-bold mb-2 dark:text-gray-200">
                 {settings.t.exchange.selectToGive.replace(
                   "{n}",
                   selectedStickers.size.toString(),
@@ -662,12 +670,14 @@
               </h3>
 
               {#if myStickers.length === 0}
-                <p class="text-gray-500 italic text-center py-4">
+                <p
+                  class="text-gray-500 dark:text-gray-400 italic text-center py-4"
+                >
                   {settings.t.exchange.noStickers}
                 </p>
               {:else}
                 <div
-                  class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 max-h-[300px] overflow-y-auto p-4 border rounded-xl bg-gray-50"
+                  class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 max-h-[300px] overflow-y-auto p-4 border dark:border-gray-700 rounded-xl bg-gray-50 dark:bg-gray-900/50"
                 >
                   {#each myStickers as sticker}
                     <div
@@ -698,7 +708,7 @@
                         </div>
                       {/if}
                       <div
-                        class="p-1 text-center text-xs text-gray-500 truncate border-t border-gray-50"
+                        class="p-1 text-center text-xs text-gray-500 dark:text-gray-400 truncate border-t border-gray-50 dark:border-gray-700"
                       >
                         {sticker.name ||
                           (settings.lang === "ja"
@@ -714,7 +724,7 @@
             <div class="mb-6 text-left">
               <label
                 for="acceptanceMessage"
-                class="block text-sm font-medium text-gray-700 mb-1"
+                class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
                 >{settings.t.exchange.messageLabel}</label
               >
               <input
@@ -730,7 +740,7 @@
             <div class="flex justify-center space-x-4">
               <a
                 href="/"
-                class="px-4 py-2 text-gray-500 hover:text-gray-700 self-center"
+                class="px-4 py-2 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 self-center"
                 >{settings.t.common.cancel}</a
               >
               <button
@@ -757,16 +767,18 @@
         {/if}
       {:else}
         <!-- Invalid Offer -->
-        <div class="bg-white p-8 rounded-2xl shadow-xl max-w-md text-center">
+        <div
+          class="bg-white dark:bg-gray-800 p-8 rounded-2xl shadow-xl max-w-md text-center"
+        >
           <h2 class="text-xl font-bold text-red-500 mb-4">
             {settings.t.exchange.invalidLink}
           </h2>
-          <p class="text-gray-600 mb-6">
+          <p class="text-gray-600 dark:text-gray-400 mb-6">
             {settings.t.exchange.invalidMessage}
           </p>
           <a
             href="/exchange"
-            class="bg-gray-100 text-gray-700 font-bold py-2 px-6 rounded-lg hover:bg-gray-200"
+            class="bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 font-bold py-2 px-6 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600"
           >
             {settings.t.exchange.startNew}
           </a>
@@ -775,21 +787,23 @@
     {:else}
       <!-- INITIATE MODE -->
       <div
-        class="w-full max-w-4xl card-glass-strong p-8 relative border-2 border-white"
+        class="w-full max-w-4xl card-glass-strong p-8 relative border-2 border-white dark:border-gray-800"
       >
-        <h2 class="text-xl font-bold mb-4">{settings.t.exchange.startNew}</h2>
+        <h2 class="text-xl font-bold mb-4 dark:text-gray-100">
+          {settings.t.exchange.startNew}
+        </h2>
 
         <!-- 1. Select Partner -->
         <div class="mb-6 relative z-10">
           <!-- Tabs -->
           <div
-            class="flex gap-4 mb-4 border-b border-gray-200 overflow-x-auto whitespace-nowrap"
+            class="flex gap-4 mb-4 border-b border-gray-200 dark:border-gray-700 overflow-x-auto whitespace-nowrap"
           >
             <button
               class="px-4 py-2 font-medium transition-colors border-b-2 flex-shrink-0 {activeTab ===
               'recommend'
                 ? 'border-primary text-primary'
-                : 'border-transparent text-gray-500 hover:text-gray-700'}"
+                : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'}"
               onclick={() => setTab("recommend")}
             >
               {settings.t.exchange.recommendTab}
@@ -798,7 +812,7 @@
               class="px-4 py-2 font-medium transition-colors border-b-2 flex-shrink-0 {activeTab ===
               'search'
                 ? 'border-primary text-primary'
-                : 'border-transparent text-gray-500 hover:text-gray-700'}"
+                : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'}"
               onclick={() => setTab("search")}
             >
               {settings.t.exchange.searchTab}
@@ -807,7 +821,7 @@
               class="px-4 py-2 font-medium transition-colors border-b-2 flex-shrink-0 {activeTab ===
               'easy'
                 ? 'border-primary text-primary'
-                : 'border-transparent text-gray-500 hover:text-gray-700'}"
+                : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'}"
               onclick={() => setTab("easy")}
             >
               {settings.t.exchange.easyExchangeTab}
@@ -816,7 +830,7 @@
               class="px-4 py-2 font-medium transition-colors border-b-2 flex-shrink-0 {activeTab ===
               'withdraw'
                 ? 'border-primary text-primary'
-                : 'border-transparent text-gray-500 hover:text-gray-700'}"
+                : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'}"
               onclick={() => setTab("withdraw")}
             >
               {settings.t.exchange.withdrawTab}
@@ -825,7 +839,9 @@
 
           {#if activeTab === "recommend"}
             <div class="mb-4">
-              <h3 class="text-sm font-bold text-gray-700 mb-2">
+              <h3
+                class="text-sm font-bold text-gray-700 dark:text-gray-300 mb-2"
+              >
                 {settings.t.exchange.recommendedUsers}
               </h3>
               {#if recommendationsLoading}
@@ -835,7 +851,7 @@
                   ></div>
                 </div>
               {:else if recommendedUsers.length === 0}
-                <p class="text-gray-500 text-sm">
+                <p class="text-gray-500 dark:text-gray-400 text-sm">
                   {settings.t.exchange.noRecommendations}
                 </p>
               {:else}
@@ -844,7 +860,7 @@
                 >
                   {#each recommendedUsers as user}
                     <div
-                      class="flex items-center gap-3 p-3 rounded-xl border border-gray-100 bg-white hover:bg-gray-50 hover:border-primary/30 transition-all text-left group"
+                      class="flex items-center gap-3 p-3 rounded-xl border border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 hover:border-primary/30 transition-all text-left group"
                     >
                       <a
                         href="/profile/{user.did}"
@@ -855,11 +871,11 @@
                           <img
                             src={user.avatar}
                             alt={user.handle}
-                            class="w-10 h-10 rounded-full bg-gray-200 object-cover shadow-sm hover:ring-2 hover:ring-primary hover:ring-offset-1 transition-all"
+                            class="w-10 h-10 rounded-full bg-gray-200 dark:bg-gray-600 object-cover shadow-sm hover:ring-2 hover:ring-primary hover:ring-offset-1 transition-all"
                           />
                         {:else}
                           <div
-                            class="w-10 h-10 rounded-full bg-gray-200 shadow-sm hover:ring-2 hover:ring-primary hover:ring-offset-1 transition-all"
+                            class="w-10 h-10 rounded-full bg-gray-200 dark:bg-gray-600 shadow-sm hover:ring-2 hover:ring-primary hover:ring-offset-1 transition-all"
                           ></div>
                         {/if}
                       </a>
@@ -868,11 +884,13 @@
                         onclick={() => selectUser(user)}
                       >
                         <div
-                          class="font-bold text-gray-800 text-sm truncate group-hover:text-primary transition-colors"
+                          class="font-bold text-gray-800 dark:text-gray-100 text-sm truncate group-hover:text-primary transition-colors"
                         >
                           {user.displayName || user.handle}
                         </div>
-                        <div class="text-xs text-gray-500 truncate">
+                        <div
+                          class="text-xs text-gray-500 dark:text-gray-400 truncate"
+                        >
                           @{user.handle}
                         </div>
                       </button>
@@ -886,7 +904,7 @@
           {#if activeTab === "search"}
             <label
               for="partnerHandle"
-              class="block text-sm font-medium text-gray-700 mb-1"
+              class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
               >{settings.t.exchange.partnerLabel}</label
             >
             <div class="flex gap-2">
@@ -903,7 +921,7 @@
               />
               <button
                 onclick={resolvePartner}
-                class="bg-gray-100 hover:bg-gray-200 px-4 py-2 rounded-lg font-medium text-gray-700"
+                class="bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 px-4 py-2 rounded-lg font-medium text-gray-700 dark:text-gray-200"
               >
                 {settings.t.exchange.check}
               </button>
@@ -912,13 +930,13 @@
 
           {#if activeTab === "easy"}
             <div class="mb-4">
-              <p class="text-sm text-gray-600 mb-4">
+              <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">
                 {settings.t.exchange.easyExchangeDesc}
               </p>
 
               {#if findingPartner}
                 <div
-                  class="flex flex-col items-center justify-center p-8 bg-gray-50 rounded-xl"
+                  class="flex flex-col items-center justify-center p-8 bg-gray-50 dark:bg-gray-800 rounded-xl"
                 >
                   <div class="flex items-center mb-2">
                     <div
@@ -928,7 +946,7 @@
                       >{settings.t.exchange.searchingPartner}</span
                     >
                   </div>
-                  <p class="text-xs text-gray-500">
+                  <p class="text-xs text-gray-500 dark:text-gray-400">
                     {settings.t.exchange.easyExchangeWait}
                   </p>
                 </div>
@@ -936,9 +954,9 @@
                 {@const parts =
                   settings.t.exchange.foundPartnerDesc.split("{name}")}
                 <div
-                  class="bg-green-50 border border-green-200 p-4 rounded-xl mb-4"
+                  class="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 p-4 rounded-xl mb-4"
                 >
-                  <h3 class="font-bold text-green-800 mb-2">
+                  <h3 class="font-bold text-green-800 dark:text-green-300 mb-2">
                     {settings.t.exchange.foundPartner}
                   </h3>
                   <div class="flex items-center gap-3 mb-4">
@@ -953,18 +971,18 @@
                         <img
                           src={matchedPartner.profile.avatar}
                           alt={matchedPartner.profile.handle}
-                          class="w-12 h-12 rounded-full border-2 border-white shadow-sm"
+                          class="w-12 h-12 rounded-full border-2 border-white dark:border-gray-800 shadow-sm"
                         />
                       {:else}
                         <div
-                          class="w-12 h-12 rounded-full bg-green-200 flex items-center justify-center text-green-700 font-bold border-2 border-white shadow-sm"
+                          class="w-12 h-12 rounded-full bg-green-200 dark:bg-green-700 flex items-center justify-center text-green-700 dark:text-green-100 font-bold border-2 border-white dark:border-gray-800 shadow-sm"
                         >
                           ?
                         </div>
                       {/if}
                     </a>
                     <div class="flex-1">
-                      <p class="text-green-700">
+                      <p class="text-green-700 dark:text-green-200">
                         {parts[0]}
                         <a
                           href="https://bsky.app/profile/{matchedPartner.profile
@@ -983,7 +1001,7 @@
                   </div>
                   <!-- Show stickers they offer -->
                   <div
-                    class="flex gap-2 overflow-x-auto p-2 bg-white/50 rounded-lg mb-4"
+                    class="flex gap-2 overflow-x-auto p-2 bg-white/50 dark:bg-gray-900/50 rounded-lg mb-4"
                   >
                     {#each matchedPartner.stickers as s}
                       <div class="w-16 h-16 flex-shrink-0">
@@ -999,7 +1017,7 @@
                   <div class="flex gap-3">
                     <button
                       onclick={rejectEasyMatch}
-                      class="bg-white text-gray-500 border border-gray-300 px-4 py-2 rounded-lg font-bold hover:bg-gray-100 flex-1"
+                      class="bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-300 border border-gray-300 dark:border-gray-600 px-4 py-2 rounded-lg font-bold hover:bg-gray-100 dark:hover:bg-gray-700 flex-1"
                     >
                       {settings.t.exchange.reject}
                     </button>
@@ -1035,14 +1053,16 @@
                 </div>
               {:else if myOpenOffers.length === 0}
                 <div
-                  class="text-center p-8 text-gray-500 bg-gray-50 rounded-xl"
+                  class="text-center p-8 text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-800 rounded-xl"
                 >
                   {settings.t.exchange.noOpenOffers}
                 </div>
               {:else}
                 <div class="space-y-4">
                   {#each myOpenOffers as offer}
-                    <div class="bg-white border rounded-xl p-4 shadow-sm">
+                    <div
+                      class="bg-white dark:bg-gray-800 border dark:border-gray-700 rounded-xl p-4 shadow-sm"
+                    >
                       <div class="flex justify-between items-start mb-2">
                         <div>
                           <!-- Partner Info -->
@@ -1059,24 +1079,28 @@
                                 <img
                                   src={offer.partnerProfile.avatar}
                                   alt=""
-                                  class="w-8 h-8 rounded-full bg-gray-200"
+                                  class="w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-600"
                                 />
                               {:else}
                                 <div
-                                  class="w-8 h-8 rounded-full bg-gray-200"
+                                  class="w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-600"
                                 ></div>
                               {/if}
-                              <div class="font-bold text-sm">
+                              <div class="font-bold text-sm dark:text-gray-200">
                                 {offer.partnerProfile.displayName ||
                                   offer.partnerProfile.handle}
                               </div>
                             </div>
                           {:else if offer.transaction.partner}
-                            <div class="font-bold text-sm text-gray-500">
+                            <div
+                              class="font-bold text-sm text-gray-500 dark:text-gray-400"
+                            >
                               {offer.transaction.partner}
                             </div>
                           {:else}
-                            <div class="text-gray-500">Unknown Offer</div>
+                            <div class="text-gray-500 dark:text-gray-400">
+                              Unknown Offer
+                            </div>
                           {/if}
 
                           <div class="text-xs text-gray-400 mt-1">
@@ -1086,7 +1110,7 @@
                           </div>
                         </div>
                         <button
-                          class="text-red-500 hover:text-red-700 text-sm font-bold border border-red-200 bg-red-50 hover:bg-red-100 px-3 py-1 rounded-lg transition-colors"
+                          class="text-red-500 hover:text-red-700 text-sm font-bold border border-red-200 bg-red-50 hover:bg-red-100 dark:bg-red-900/20 dark:border-red-800 dark:hover:bg-red-900/40 px-3 py-1 rounded-lg transition-colors"
                           onclick={() => handleWithdraw(offer.uri)}
                         >
                           {settings.t.exchange.withdrawAction}
@@ -1095,7 +1119,7 @@
 
                       <!-- Stickers -->
                       <div
-                        class="flex gap-2 overflow-x-auto p-2 bg-gray-50 rounded-lg"
+                        class="flex gap-2 overflow-x-auto p-2 bg-gray-50 dark:bg-gray-900/50 rounded-lg"
                       >
                         {#each offer.stickers as s}
                           <div class="w-12 h-12 flex-shrink-0">
@@ -1120,7 +1144,7 @@
               {resolveError}
             </p>{/if}
           {#if partnerDid && activeTab !== "easy"}<p
-              class="text-green-600 text-sm mt-1"
+              class="text-green-600 dark:text-green-400 text-sm mt-1"
             >
               {settings.t.exchange.selectedPartner.replace(
                 "{handle}",
@@ -1132,19 +1156,21 @@
         <!-- 2. Select Stickers -->
         {#if (partnerDid || activeTab === "easy") && !(activeTab === "easy" && matchedPartner)}
           <div class="mb-6">
-            <h3 class="block text-sm font-bold text-gray-700 mb-2">
+            <h3
+              class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2"
+            >
               {settings.t.exchange.selectStickersToOffer.replace(
                 "{n}",
                 selectedStickers.size.toString(),
               )}
             </h3>
             {#if myStickers.length === 0}
-              <p class="text-gray-500 italic">
+              <p class="text-gray-500 dark:text-gray-400 italic">
                 You assume to have stickers, but you have none...
               </p>
             {:else}
               <div
-                class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 max-h-[500px] overflow-y-auto p-4 border rounded-xl bg-gray-50"
+                class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 max-h-[500px] overflow-y-auto p-4 border dark:border-gray-700 rounded-xl bg-gray-50 dark:bg-gray-900/50"
               >
                 {#each myStickers as sticker}
                   <div
@@ -1173,7 +1199,7 @@
                       </div>
                     {/if}
                     <div
-                      class="p-2 text-center text-xs text-gray-500 truncate border-t border-gray-50"
+                      class="p-2 text-center text-xs text-gray-500 dark:text-gray-400 truncate border-t border-gray-50 dark:border-gray-700"
                     >
                       {sticker.name ||
                         (settings.lang === "ja"
@@ -1189,7 +1215,7 @@
           <div class="mb-4">
             <label
               for="proposalMessage"
-              class="block text-sm font-medium text-gray-700 mb-1"
+              class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
               >{settings.t.exchange.messageLabel}</label
             >
             <input
@@ -1205,7 +1231,7 @@
           {#if activeTab !== "easy"}
             <div class="flex flex-col gap-2 mb-4 justify-end items-end">
               <label
-                class="flex items-center gap-2 cursor-pointer text-sm text-gray-700"
+                class="flex items-center gap-2 cursor-pointer text-sm text-gray-700 dark:text-gray-300"
               >
                 <input
                   type="checkbox"
@@ -1215,7 +1241,7 @@
                 {settings.t.exchange.mentionOnBluesky}
               </label>
               <label
-                class="flex items-center gap-2 cursor-pointer text-sm text-gray-500"
+                class="flex items-center gap-2 cursor-pointer text-sm text-gray-500 dark:text-gray-400"
               >
                 <input
                   type="checkbox"

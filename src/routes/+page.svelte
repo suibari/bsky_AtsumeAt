@@ -80,25 +80,28 @@
 </script>
 
 {#if loading}
-  <div class="min-h-screen bg-surface flex items-center justify-center">
+  <div class="min-h-screen bg-background flex items-center justify-center">
     <div class="text-center">
       <div
         class="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"
       ></div>
-      <p class="text-gray-500 font-medium">{loadingMessage}</p>
+      <p class="text-gray-500 dark:text-gray-400 font-medium">
+        {loadingMessage}
+      </p>
     </div>
   </div>
 {:else if agent && view === "book"}
-  <div class="min-h-screen bg-surface">
+  <div class="min-h-screen bg-background text-text-primary">
     <header
-      class="bg-white/80 backdrop-blur-md shadow-sm border-b border-primary/20 z-50 sticky top-0"
+      class="bg-white/80 dark:bg-gray-900/80 backdrop-blur-md shadow-sm border-b border-primary/20 z-50 sticky top-0"
     >
       <div
         class="max-w-6xl mx-auto p-4 flex justify-between items-center relative"
       >
         <div class="flex items-center gap-2">
           <h1 class="text-xl font-bold text-primary">{settings.t.appName}</h1>
-          <span class="text-sm text-gray-400 border-l pl-2 ml-1"
+          <span
+            class="text-sm text-gray-400 dark:text-gray-500 border-l pl-2 ml-1"
             >{settings.t.header.stickerBook}</span
           >
         </div>
@@ -107,7 +110,7 @@
           <!-- Notification Bell -->
           <a
             href="/notifications"
-            class="relative p-2 text-gray-600 hover:text-primary transition-colors"
+            class="relative p-2 text-gray-600 dark:text-gray-300 hover:text-primary transition-colors"
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -125,7 +128,7 @@
             </svg>
             {#if notificationCount > 0}
               <span
-                class="absolute top-1 right-1 flex h-4 w-4 bg-red-500 rounded-full items-center justify-center text-[10px] text-white font-bold ring-2 ring-white"
+                class="absolute top-1 right-1 flex h-4 w-4 bg-red-500 rounded-full items-center justify-center text-[10px] text-white font-bold ring-2 ring-white dark:ring-gray-800"
               >
                 {notificationCount}
               </span>
@@ -135,7 +138,7 @@
           <!-- Info Button -->
           <button
             onclick={() => (showInfo = true)}
-            class="p-2 text-gray-600 hover:text-primary transition-colors"
+            class="p-2 text-gray-600 dark:text-gray-300 hover:text-primary transition-colors"
             aria-label={settings.t.header.info}
           >
             <svg
@@ -157,11 +160,12 @@
           <!-- Menu Button -->
           <button
             onclick={() => (menuOpen = !menuOpen)}
-            class="p-2 rounded-full hover:bg-gray-100 transition-colors"
+            class="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+            aria-label={settings.t.header.menu || "Menu"}
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
-              class="h-6 w-6 text-gray-700"
+              class="h-6 w-6 text-gray-700 dark:text-gray-200"
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
@@ -179,26 +183,26 @@
         <!-- Menu Dropdown -->
         {#if menuOpen}
           <div
-            class="absolute top-16 right-4 w-48 bg-white/95 backdrop-blur-xl rounded-2xl shadow-xl border-2 border-primary/10 py-2 flex flex-col z-30"
+            class="absolute top-16 right-4 w-48 bg-white/95 dark:bg-gray-800/95 backdrop-blur-xl rounded-2xl shadow-xl border-2 border-primary/10 py-2 flex flex-col z-30"
             transition:fly={{ y: -10, duration: 200 }}
           >
             <a
               href="/create"
-              class="px-4 py-2 hover:bg-secondary/20 text-gray-700 font-medium text-sm flex items-center gap-2"
+              class="px-4 py-2 hover:bg-secondary/20 text-gray-700 dark:text-gray-200 font-medium text-sm flex items-center gap-2"
             >
               <span>🎨</span>
               {settings.t.header.create}
             </a>
             <a
               href="/exchange"
-              class="px-4 py-2 hover:bg-secondary/20 text-gray-700 font-medium text-sm flex items-center gap-2"
+              class="px-4 py-2 hover:bg-secondary/20 text-gray-700 dark:text-gray-200 font-medium text-sm flex items-center gap-2"
             >
               <span>🤝</span>
               {settings.t.header.exchange}
             </a>
             <a
               href="/share"
-              class="px-4 py-2 hover:bg-secondary/20 text-gray-700 font-medium text-sm flex items-center gap-2"
+              class="px-4 py-2 hover:bg-secondary/20 text-gray-700 dark:text-gray-200 font-medium text-sm flex items-center gap-2"
             >
               <span>✨</span>
               {settings.t.header.share}
@@ -208,23 +212,23 @@
                 menuOpen = false;
                 showAbout = true;
               }}
-              class="px-4 py-2 w-full text-left hover:bg-secondary/20 text-gray-700 font-medium text-sm flex items-center gap-2"
+              class="px-4 py-2 w-full text-left hover:bg-secondary/20 text-gray-700 dark:text-gray-200 font-medium text-sm flex items-center gap-2"
             >
               <span>ℹ️</span>
               {settings.t.header.about}
             </button>
-            <div class="h-px bg-gray-100 my-1"></div>
+            <div class="h-px bg-gray-100 dark:bg-gray-700 my-1"></div>
             <a
               href="/settings"
-              class="px-4 py-2 hover:bg-secondary/20 text-gray-700 font-medium text-sm flex items-center gap-2"
+              class="px-4 py-2 hover:bg-secondary/20 text-gray-700 dark:text-gray-200 font-medium text-sm flex items-center gap-2"
             >
               <span>⚙️</span>
               {settings.t.header.settings}
             </a>
-            <div class="h-px bg-gray-100 my-1"></div>
+            <div class="h-px bg-gray-100 dark:bg-gray-700 my-1"></div>
             <button
               onclick={handleLogout}
-              class="px-4 py-2 w-full text-left hover:bg-red-50 text-red-600 font-medium text-sm flex items-center gap-2"
+              class="px-4 py-2 w-full text-left hover:bg-red-50 dark:hover:bg-red-900/20 text-red-600 dark:text-red-400 font-medium text-sm flex items-center gap-2"
             >
               <span>🚪</span>
               {settings.t.header.signOut}
@@ -235,6 +239,10 @@
           <div
             class="fixed inset-0 z-10"
             onclick={() => (menuOpen = false)}
+            role="button"
+            tabindex="0"
+            onkeydown={(e) => e.key === "Escape" && (menuOpen = false)}
+            aria-label="Close Menu"
           ></div>
         {/if}
       </div>

@@ -334,15 +334,19 @@
       <div
         class="animate-spin rounded-full h-10 w-10 border-b-2 border-primary mx-auto mb-4"
       ></div>
-      <p class="text-gray-500">{settings.t.common.loading}</p>
+      <p class="text-gray-500 dark:text-gray-400">
+        {settings.t.common.loading}
+      </p>
     </div>
   {:else if stickers.length === 0}
     <div class="card-glass border-dashed border-primary/30 p-12 text-center">
-      <p class="text-gray-500">{settings.t.common.noStickers}</p>
+      <p class="text-gray-500 dark:text-gray-400">
+        {settings.t.common.noStickers}
+      </p>
       {#if !targetDid || targetDid === agent.assertDid}
         <button
           onclick={() => loadStickers(agent.assertDid!)}
-          class="mt-4 px-6 py-2 bg-secondary/20 hover:bg-secondary/40 text-gray-700 rounded-full font-bold transition-colors"
+          class="mt-4 px-6 py-2 bg-secondary/20 hover:bg-secondary/40 text-gray-700 dark:text-gray-200 rounded-full font-bold transition-colors"
           >Refresh</button
         >
       {/if}
@@ -353,12 +357,12 @@
       <div></div>
 
       <div class="flex items-center gap-2">
-        <span class="text-sm text-gray-500"
+        <span class="text-sm text-gray-500 dark:text-gray-400"
           >{settings.t.stickerBook.sortBy || "Sort:"}</span
         >
         <select
           bind:value={sortOrder}
-          class="select-sm rounded-lg border-gray-200 text-sm"
+          class="select-sm rounded-lg border-gray-200 dark:border-gray-700 text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
         >
           <option value="obtained"
             >{settings.t.stickerBook.sortObtained || "Date Obtained"}</option
@@ -382,7 +386,7 @@
           class="px-3 py-1 rounded-full text-xs font-semibold whitespace-nowrap transition-colors {selectedTag ===
           null
             ? 'bg-primary text-white'
-            : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}"
+            : 'bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'}"
           onclick={() => (selectedTag = null)}
         >
           ALL
@@ -392,7 +396,7 @@
             class="px-3 py-1 rounded-full text-xs font-semibold whitespace-nowrap transition-colors {selectedTag ===
             tag
               ? 'bg-primary text-white'
-              : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}"
+              : 'bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'}"
             onclick={() => (selectedTag = tag)}
           >
             #{tag} <span class="opacity-60 text-[10px] ml-0.5">({count})</span>
@@ -406,10 +410,11 @@
         {#if group.title}
           <div class="relative">
             <h4
-              class="text-lg font-bold text-gray-600 sticky top-[72px] z-30 bg-surface/90 backdrop-blur pb-2 pt-4 border-b border-primary/10"
+              class="text-lg font-bold text-gray-600 dark:text-gray-300 sticky top-[72px] z-30 bg-surface/90 dark:bg-black/90 backdrop-blur pb-2 pt-4 border-b border-primary/10"
             >
               {group.title}
-              <span class="text-xs font-medium text-gray-400 ml-2"
+              <span
+                class="text-xs font-medium text-gray-400 dark:text-gray-500 ml-2"
                 >({group.stickers.length})</span
               >
             </h4>
@@ -442,7 +447,9 @@
               <div class="text-center space-y-1">
                 <!-- Depicted (Sticker Name) -->
                 <!-- Depicted (Sticker Name) -->
-                <p class="font-bold text-gray-700 truncate text-sm">
+                <p
+                  class="font-bold text-gray-700 dark:text-gray-200 truncate text-sm"
+                >
                   {#if sticker.imageType === "custom"}
                     {sticker.name ||
                       settings.t.stickerBook.defaultName.replace(
@@ -464,7 +471,7 @@
 
                 <!-- Giver -->
                 {#if sticker.giverProfile && sticker.obtainedFrom}
-                  <p class="text-xs text-gray-500 truncate">
+                  <p class="text-xs text-gray-500 dark:text-gray-400 truncate">
                     From: <a
                       href="/profile/{sticker.obtainedFrom}"
                       class="text-primary hover:underline relative z-10"
@@ -479,7 +486,7 @@
 
                 <!-- Original Owner (Minter) -->
                 {#if sticker.originalOwnerProfile || sticker.originalOwner}
-                  <p class="text-xs text-gray-400 truncate">
+                  <p class="text-xs text-gray-400 dark:text-gray-500 truncate">
                     Minter: <a
                       href="/profile/{sticker.originalOwner}"
                       class="text-primary hover:underline relative z-10"
@@ -492,18 +499,20 @@
                   </p>
                 {/if}
 
-                <p class="text-[10px] text-gray-300">
+                <p class="text-[10px] text-gray-300 dark:text-gray-600">
                   {new Date(sticker.obtainedAt).toLocaleDateString()}
                 </p>
 
                 <!-- Message -->
                 {#if sticker.message}
-                  <div class="mt-2 p-2 bg-yellow-50 rounded-lg relative">
+                  <div
+                    class="mt-2 p-2 bg-yellow-50 dark:bg-yellow-900/30 rounded-lg relative"
+                  >
                     <div
-                      class="absolute -top-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-yellow-50 rotate-45"
+                      class="absolute -top-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-yellow-50 dark:bg-yellow-900/30 rotate-45"
                     ></div>
                     <p
-                      class="text-xs text-gray-600 italic break-words leading-tight"
+                      class="text-xs text-gray-600 dark:text-gray-300 italic break-words leading-tight"
                     >
                       "{sticker.message}"
                     </p>
@@ -515,7 +524,7 @@
                   <div class="flex items-center gap-2">
                     <button
                       onclick={(e) => handleLike(sticker, e)}
-                      class="p-1 rounded-full hover:bg-gray-50 transition-colors relative z-20 group/btn"
+                      class="p-1 rounded-full hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors relative z-20 group/btn"
                       title={likeStates.get(sticker.uri)?.isLiked
                         ? "Unlike"
                         : "Like"}
@@ -526,7 +535,7 @@
                           sticker.uri,
                         )?.isLiked
                           ? 'text-primary fill-current'
-                          : 'text-gray-300 group-hover/btn:text-primary'}"
+                          : 'text-gray-300 dark:text-gray-600 group-hover/btn:text-primary'}"
                         viewBox="0 0 24 24"
                         stroke="currentColor"
                         stroke-width="2"
@@ -556,11 +565,11 @@
                               <img
                                 src={liker.avatar}
                                 alt="Liker"
-                                class="w-5 h-5 rounded-full border border-white ring-1 ring-gray-100 object-cover bg-gray-200"
+                                class="w-5 h-5 rounded-full border border-white dark:border-gray-800 ring-1 ring-gray-100 dark:ring-gray-700 object-cover bg-gray-200 dark:bg-gray-600"
                               />
                             {:else}
                               <div
-                                class="w-5 h-5 rounded-full border border-white ring-1 ring-gray-100 bg-gray-300 flex items-center justify-center text-[8px] text-white"
+                                class="w-5 h-5 rounded-full border border-white dark:border-gray-800 ring-1 ring-gray-100 dark:ring-gray-700 bg-gray-300 dark:bg-gray-600 flex items-center justify-center text-[8px] text-white"
                               >
                                 ?
                               </div>
@@ -580,7 +589,7 @@
                   <!-- Delete Button (Only if owner) -->
                   {#if !targetDid || targetDid === agent.assertDid}
                     <button
-                      class="p-1 text-gray-300 hover:text-red-500 transition-colors z-20"
+                      class="p-1 text-gray-300 dark:text-gray-600 hover:text-red-500 transition-colors z-20"
                       title="Delete Sticker"
                       onclick={(e) => handleDelete(sticker, e)}
                     >

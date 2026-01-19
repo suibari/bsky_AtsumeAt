@@ -8,9 +8,12 @@
 <div
   class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
   onclick={onClose}
+  role="button"
+  tabindex="0"
+  onkeydown={(e) => e.key === "Escape" && onClose()}
   transition:fade={{ duration: 200 }}
-  role="dialog"
   aria-modal="true"
+  aria-label="Close Modal"
 >
   <div
     class="card-glass-strong w-full max-w-lg overflow-hidden flex flex-col max-h-[90vh]"
@@ -22,10 +25,12 @@
     <div
       class="px-8 py-6 border-b border-primary/10 flex justify-between items-center bg-transparent"
     >
-      <h2 class="text-2xl font-bold text-gray-700">{settings.t.info.title}</h2>
+      <h2 class="text-2xl font-bold text-gray-700 dark:text-gray-200">
+        {settings.t.info.title}
+      </h2>
       <button
         onclick={onClose}
-        class="p-2 -mr-2 text-gray-400 hover:text-gray-600 rounded-full hover:bg-gray-100 transition"
+        class="p-2 -mr-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition"
         aria-label={settings.t.common.back}
       >
         <svg
@@ -44,15 +49,19 @@
     </div>
 
     <!-- Content -->
-    <div class="p-8 overflow-y-auto prose prose-sm text-gray-600">
-      <p class="text-lg text-center font-medium text-gray-700 mb-6">
+    <div
+      class="p-8 overflow-y-auto prose prose-sm text-gray-600 dark:text-gray-300"
+    >
+      <p
+        class="text-lg text-center font-medium text-gray-700 dark:text-gray-200 mb-6"
+      >
         {settings.t.info.description}
       </p>
 
       <ul class="list-none pl-0 space-y-4">
         <li class="flex gap-3">
           <div
-            class="flex-shrink-0 w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center text-primary font-bold"
+            class="flex-shrink-0 w-10 h-10 bg-primary/10 dark:bg-primary/20 rounded-full flex items-center justify-center text-primary font-bold"
           >
             1
           </div>
@@ -65,7 +74,7 @@
         </li>
         <li class="flex gap-3">
           <div
-            class="flex-shrink-0 w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center text-primary font-bold"
+            class="flex-shrink-0 w-10 h-10 bg-primary/10 dark:bg-primary/20 rounded-full flex items-center justify-center text-primary font-bold"
           >
             2
           </div>
@@ -78,7 +87,7 @@
         </li>
         <li class="flex gap-3">
           <div
-            class="flex-shrink-0 w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center text-primary font-bold"
+            class="flex-shrink-0 w-10 h-10 bg-primary/10 dark:bg-primary/20 rounded-full flex items-center justify-center text-primary font-bold"
           >
             3
           </div>
@@ -91,7 +100,7 @@
         </li>
         <li class="flex gap-3">
           <div
-            class="flex-shrink-0 w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center text-primary font-bold"
+            class="flex-shrink-0 w-10 h-10 bg-primary/10 dark:bg-primary/20 rounded-full flex items-center justify-center text-primary font-bold"
           >
             4
           </div>
@@ -106,10 +115,12 @@
     </div>
 
     <!-- Footer -->
-    <div class="p-6 border-t border-primary/10 bg-gray-50/50 flex justify-end">
+    <div
+      class="p-6 border-t border-primary/10 bg-gray-50/50 dark:bg-gray-900/50 flex justify-end"
+    >
       <button
         onclick={onClose}
-        class="px-6 py-2 bg-white border-2 border-gray-200 rounded-full text-sm font-bold text-gray-700 hover:bg-gray-50 hover:border-gray-300 focus:outline-none transition"
+        class="px-6 py-2 bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 rounded-full text-sm font-bold text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 hover:border-gray-300 dark:hover:border-gray-600 focus:outline-none transition"
       >
         {settings.t.common.ok}
       </button>
