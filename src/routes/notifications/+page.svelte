@@ -80,9 +80,9 @@
       </div>
     {:else if offers.length === 0}
       <div
-        class="text-center py-20 bg-white/50 rounded-2xl border-2 border-dashed border-white"
+        class="text-center py-20 bg-white/50 dark:bg-gray-800/50 rounded-2xl border-2 border-dashed border-white dark:border-gray-700"
       >
-        <p class="text-gray-500 font-medium">
+        <p class="text-gray-500 dark:text-gray-400 font-medium">
           {settings.t.notifications.empty}
         </p>
       </div>
