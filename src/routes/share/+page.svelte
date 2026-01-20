@@ -3,7 +3,11 @@
   import { getClient, publicAgent } from "$lib/atproto";
   import { Agent, RichText } from "@atproto/api";
   import type { ProfileViewDetailed } from "@atproto/api/dist/client/types/app/bsky/actor/defs";
-  import { getUserStickers, type StickerWithProfile } from "$lib/stickers";
+  import {
+    getUserStickers,
+    type StickerWithProfile,
+    sortStickersByMinter,
+  } from "$lib/stickers";
   import StickerThumb from "./StickerThumb.svelte";
   import html2canvas from "html2canvas";
   import { getDominantColor } from "$lib/color";
@@ -38,7 +42,7 @@
             getUserStickers(agent, agent.assertDid!),
             publicAgent.getProfile({ actor: agent.assertDid! }),
           ]);
-          stickers = stickersRes;
+          stickers = sortStickersByMinter(stickersRes, agent.assertDid!);
           currentUserProfile = profileRes.data;
           const name =
             currentUserProfile.displayName || currentUserProfile.handle;

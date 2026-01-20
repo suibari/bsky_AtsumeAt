@@ -20,7 +20,11 @@
     type MyOpenOffer,
   } from "$lib/exchange";
   import { getHubUsers } from "$lib/hub"; // Import getHubUsers
-  import { getUserStickers, type StickerWithProfile } from "$lib/stickers";
+  import {
+    getUserStickers,
+    type StickerWithProfile,
+    sortStickersByMinter,
+  } from "$lib/stickers";
   import {
     STICKER_COLLECTION,
     type Sticker,
@@ -94,7 +98,10 @@
 
         // Always fetch stickers if logged in
         if (agent.assertDid) {
-          myStickers = await getUserStickers(agent, agent.assertDid);
+          const rawStickers = await getUserStickers(agent, agent.assertDid);
+
+          // Sort Stickers: Self First, then Minter Name
+          myStickers = sortStickersByMinter(rawStickers, agent.assertDid);
         }
 
         // Verify Offer if targetUserParam exists
