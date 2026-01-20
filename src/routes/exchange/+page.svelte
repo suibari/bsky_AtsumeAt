@@ -1026,7 +1026,9 @@
                       disabled={processingAction !== null}
                       class="bg-primary text-white px-4 py-2 rounded-lg font-bold hover:bg-primary-dark flex-1 shadow-md"
                     >
-                      {settings.t.exchange.exchangeAction}
+                      {processingAction === "accept"
+                        ? settings.t.exchange.exchanging
+                        : settings.t.exchange.exchangeAction}
                     </button>
                   </div>
                 </div>
