@@ -126,7 +126,7 @@
 
 <div class="w-full">
   {#if images.length === 0 && !loading}
-    <div class="text-center py-8 text-gray-500">
+    <div class="text-center py-8 text-gray-500 dark:text-gray-400">
       {settings.t.create.picker.noImages}
     </div>
   {:else}
@@ -157,7 +157,7 @@
 
   {#if cursor && !loading}
     <button
-      class="w-full py-2 text-primary font-medium hover:bg-primary/5 rounded-lg transition-colors"
+      class="w-full py-2 text-primary font-medium hover:bg-primary/5 dark:hover:bg-primary/10 rounded-lg transition-colors"
       onclick={loadMore}
     >
       {settings.t.create.picker.loadMore}

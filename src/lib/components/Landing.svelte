@@ -8,16 +8,18 @@
 </script>
 
 <div
-  class="flex flex-col items-center justify-center min-h-screen bg-surface p-4 text-center relative"
+  class="flex flex-col items-center justify-center min-h-screen bg-surface dark:bg-black p-4 text-center relative"
 >
   <div class="flex-grow flex flex-col items-center justify-center">
     <h1 class="text-6xl font-bold mb-4 text-primary drop-shadow-md">
       {settings.t.appName}
     </h1>
-    <p class="text-xl text-gray-600 mb-12">{settings.t.landing.tagline}</p>
+    <p class="text-xl text-gray-600 dark:text-gray-300 mb-12">
+      {settings.t.landing.tagline}
+    </p>
 
     <div class="card-glass p-12 w-full max-w-md">
-      <h2 class="text-2xl font-bold mb-6 text-gray-700">
+      <h2 class="text-2xl font-bold mb-6 text-gray-700 dark:text-gray-200">
         {settings.t.landing.signIn}
       </h2>
 
@@ -28,7 +30,7 @@
   <div class="py-8 flex flex-col items-center gap-4">
     <button
       onclick={() => (showAbout = true)}
-      class="text-sm text-gray-500 hover:text-primary transition-colors font-medium"
+      class="text-sm text-gray-500 dark:text-gray-400 hover:text-primary transition-colors font-medium"
     >
       {settings.t.header.about}
     </button>

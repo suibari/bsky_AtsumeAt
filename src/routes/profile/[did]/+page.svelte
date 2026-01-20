@@ -70,13 +70,19 @@
   });
 </script>
 
-<div class="min-h-screen bg-surface">
+<div class="min-h-screen bg-background text-text-primary">
   <header
-    class="bg-white/80 backdrop-blur-md shadow-sm border-b border-primary/20 z-50 sticky top-0"
+    class="bg-white/80 dark:bg-gray-900/80 backdrop-blur-md shadow-sm border-b border-primary/20 z-50 sticky top-0"
   >
     <div class="max-w-6xl mx-auto p-4 flex items-center gap-4">
-      <a href="/" class="text-gray-500 hover:text-primary">← Home</a>
-      <h1 class="text-xl font-bold text-gray-800">Profile</h1>
+      <a
+        href="/"
+        class="text-gray-500 hover:text-primary dark:text-gray-400 dark:hover:text-primary"
+        >← Home</a
+      >
+      <h1 class="text-xl font-bold text-gray-800 dark:text-gray-100">
+        Profile
+      </h1>
     </div>
   </header>
 
@@ -86,7 +92,9 @@
         <div
           class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"
         ></div>
-        <p class="ml-3 text-gray-500">{settings.t.profile.loading}</p>
+        <p class="ml-3 text-gray-500 dark:text-gray-400">
+          {settings.t.profile.loading}
+        </p>
       </div>
     {:else if profile}
       <div
@@ -102,7 +110,7 @@
           <img
             src={profile.avatar}
             alt={profile.displayName}
-            class="w-24 h-24 rounded-full border-4 border-white shadow-md object-cover transition transform group-hover:scale-105"
+            class="w-24 h-24 rounded-full border-4 border-white dark:border-gray-800 shadow-md object-cover transition transform group-hover:scale-105"
           />
           <div
             class="absolute inset-0 rounded-full bg-black/10 opacity-0 group-hover:opacity-100 transition flex items-center justify-center"
@@ -113,17 +121,19 @@
 
         <!-- Info -->
         <div class="text-center md:text-left flex-1">
-          <h2 class="text-2xl font-bold text-gray-900">
+          <h2 class="text-2xl font-bold text-gray-900 dark:text-gray-100">
             {profile.displayName || profile.handle}
           </h2>
 
-          <p class="text-gray-500 font-medium">@{profile.handle}</p>
+          <p class="text-gray-500 dark:text-gray-400 font-medium">
+            @{profile.handle}
+          </p>
 
           <AchievementBanner {achievements} />
 
           {#if profile.description}
             <p
-              class="mt-4 text-gray-700 whitespace-pre-wrap text-sm leading-relaxed max-w-2xl bg-gray-50 p-4 rounded-xl border border-gray-100"
+              class="mt-4 text-gray-700 dark:text-gray-300 whitespace-pre-wrap text-sm leading-relaxed max-w-2xl bg-gray-50 dark:bg-gray-800 p-4 rounded-xl border border-gray-100 dark:border-gray-700"
             >
               {profile.description}
             </p>
@@ -132,14 +142,22 @@
           <!-- Stats -->
           <div class="flex gap-6 mt-4">
             <div class="text-center">
-              <div class="font-bold text-lg">{profile.followersCount || 0}</div>
-              <div class="text-xs text-gray-500 uppercase tracking-wider">
+              <div class="font-bold text-lg dark:text-gray-100">
+                {profile.followersCount || 0}
+              </div>
+              <div
+                class="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider"
+              >
                 {settings.t.profile.followers}
               </div>
             </div>
             <div class="text-center">
-              <div class="font-bold text-lg">{profile.followsCount || 0}</div>
-              <div class="text-xs text-gray-500 uppercase tracking-wider">
+              <div class="font-bold text-lg dark:text-gray-100">
+                {profile.followsCount || 0}
+              </div>
+              <div
+                class="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider"
+              >
                 {settings.t.profile.following}
               </div>
             </div>
@@ -175,7 +193,9 @@
       </div>
     {:else}
       <div class="text-center py-20">
-        <p class="text-gray-500 mb-6">{settings.t.profile.notFound}</p>
+        <p class="text-gray-500 dark:text-gray-400 mb-6">
+          {settings.t.profile.notFound}
+        </p>
         <a href="/" class="btn-primary">{settings.t.profile.backHome}</a>
       </div>
     {/if}

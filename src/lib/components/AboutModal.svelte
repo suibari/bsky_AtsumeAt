@@ -8,9 +8,12 @@
 <div
   class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
   onclick={onClose}
+  role="button"
+  tabindex="0"
+  onkeydown={(e) => e.key === "Escape" && onClose()}
   transition:fade={{ duration: 200 }}
-  role="dialog"
   aria-modal="true"
+  aria-label="Close Modal"
 >
   <div
     class="card-glass-strong w-full max-w-lg overflow-hidden flex flex-col max-h-[90vh]"
@@ -22,10 +25,12 @@
     <div
       class="px-8 py-6 border-b border-primary/10 flex justify-between items-center bg-transparent"
     >
-      <h2 class="text-2xl font-bold text-gray-700">{settings.t.about.title}</h2>
+      <h2 class="text-2xl font-bold text-gray-700 dark:text-gray-200">
+        {settings.t.about.title}
+      </h2>
       <button
         onclick={onClose}
-        class="p-2 -mr-2 text-gray-400 hover:text-gray-600 rounded-full hover:bg-gray-100 transition"
+        class="p-2 -mr-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition"
         aria-label={settings.t.common.back}
       >
         <svg
@@ -44,26 +49,30 @@
     </div>
 
     <!-- Content -->
-    <div class="p-8 overflow-y-auto prose prose-sm text-gray-600">
+    <div
+      class="p-8 overflow-y-auto prose prose-sm text-gray-600 dark:text-gray-300"
+    >
       <p class="text-sm mb-6 whitespace-pre-wrap">
         {settings.t.about.aboutText}
       </p>
 
-      <h3 class="text-gray-800 font-bold mt-4 mb-2">
+      <h3 class="text-gray-800 dark:text-gray-100 font-bold mt-4 mb-2">
         {settings.t.about.creationTitle}
       </h3>
       <p class="text-sm mb-6 whitespace-pre-wrap">
         {settings.t.about.creationText}
       </p>
 
-      <h3 class="text-gray-800 font-bold mt-4 mb-2">
+      <h3 class="text-gray-800 dark:text-gray-100 font-bold mt-4 mb-2">
         {settings.t.about.otherTitle}
       </h3>
       <p class="text-sm mb-6 whitespace-pre-wrap">
         {settings.t.about.otherText}
       </p>
 
-      <h3 class="text-gray-800 font-bold mt-8 mb-2">{settings.t.about.links}</h3>
+      <h3 class="text-gray-800 dark:text-gray-100 font-bold mt-8 mb-2">
+        {settings.t.about.links}
+      </h3>
       <div class="flex flex-col gap-2">
         <a
           href="https://bsky.app/profile/suibari.com"
@@ -85,10 +94,12 @@
     </div>
 
     <!-- Footer -->
-    <div class="p-6 border-t border-primary/10 bg-gray-50/50 flex justify-end">
+    <div
+      class="p-6 border-t border-primary/10 bg-gray-50/50 dark:bg-gray-900/50 flex justify-end"
+    >
       <button
         onclick={onClose}
-        class="px-6 py-2 bg-white border-2 border-gray-200 rounded-full text-sm font-bold text-gray-700 hover:bg-gray-50 hover:border-gray-300 focus:outline-none transition"
+        class="px-6 py-2 bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 rounded-full text-sm font-bold text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 hover:border-gray-300 dark:hover:border-gray-600 focus:outline-none transition"
       >
         {settings.t.common.ok}
       </button>

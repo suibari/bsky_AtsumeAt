@@ -4,6 +4,7 @@ import { translations, type Language, type TranslationKey } from "./translations
 class SettingsManager {
   disableRotation = $state(false);
   #lang = $state<Language>("ja");
+  #theme = $state<"system" | "light" | "dark">("system");
 
   constructor() {
     this.init();
@@ -25,6 +26,22 @@ class SettingsManager {
         const browserLang = navigator.language.split("-")[0];
         this.#lang = browserLang === "ja" ? "ja" : "en";
       }
+
+      // Theme Setting
+      const savedTheme = localStorage.getItem("settings:theme");
+      if (savedTheme && ["system", "light", "dark"].includes(savedTheme)) {
+        this.#theme = savedTheme as "system" | "light" | "dark";
+      }
+      this.applyTheme();
+
+      // System theme listener
+      window
+        .matchMedia("(prefers-color-scheme: dark)")
+        .addEventListener("change", () => {
+          if (this.#theme === "system") {
+            this.applyTheme();
+          }
+        });
     }
   }
 
@@ -32,6 +49,33 @@ class SettingsManager {
     this.disableRotation = value;
     if (typeof localStorage !== "undefined") {
       localStorage.setItem("settings:disableRotation", String(value));
+    }
+  }
+
+  get theme() {
+    return this.#theme;
+  }
+
+  set theme(value: "system" | "light" | "dark") {
+    this.#theme = value;
+    if (typeof localStorage !== "undefined") {
+      localStorage.setItem("settings:theme", value);
+      this.applyTheme();
+    }
+  }
+
+  public applyTheme() {
+    if (typeof document === "undefined") return;
+
+    const isDark =
+      this.#theme === "dark" ||
+      (this.#theme === "system" &&
+        window.matchMedia("(prefers-color-scheme: dark)").matches);
+
+    if (isDark) {
+      document.documentElement.classList.add("dark");
+    } else {
+      document.documentElement.classList.remove("dark");
     }
   }
 

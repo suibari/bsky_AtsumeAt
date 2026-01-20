@@ -107,7 +107,7 @@
 
     <!-- Modal Content -->
     <div
-      class="relative w-full max-w-lg bg-white/90 backdrop-blur-md rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]"
+      class="relative w-full max-w-lg bg-white/90 dark:bg-gray-900/90 backdrop-blur-md rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]"
       transition:scale={{ duration: 300, easing: quintOut, start: 0.9 }}
       role="dialog"
       aria-modal="true"
@@ -115,7 +115,7 @@
       <!-- Header / Close -->
       <button
         onclick={onclose}
-        class="absolute top-4 right-4 p-2 text-gray-400 hover:text-gray-600 z-10 rounded-full hover:bg-gray-100/50 transition-colors"
+        class="absolute top-4 right-4 p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 z-10 rounded-full hover:bg-gray-100/50 dark:hover:bg-gray-700/50 transition-colors"
         aria-label="Close Modal"
       >
         <svg
@@ -162,7 +162,7 @@
             <input
               type="text"
               bind:value={editName}
-              class="text-2xl font-bold text-center text-gray-800 bg-transparent border-b-2 border-primary/20 focus:border-primary outline-none w-full"
+              class="text-2xl font-bold text-center text-gray-800 dark:text-gray-100 bg-transparent border-b-2 border-primary/20 focus:border-primary outline-none w-full"
               placeholder="Sticker Name"
             />
 
@@ -172,8 +172,8 @@
                 <button
                   class="w-8 h-8 rounded-lg border flex items-center justify-center transition-all {editShape ===
                   s
-                    ? 'border-primary bg-primary/10'
-                    : 'border-gray-200 hover:border-gray-300'}"
+                    ? 'border-primary bg-primary/10 dark:bg-primary/20'
+                    : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'}"
                   onclick={() => (editShape = s as any)}
                   title={s}
                 >
@@ -208,7 +208,7 @@
               {/each}
             </div>
           {:else}
-            <h2 class="text-2xl font-bold text-gray-800">
+            <h2 class="text-2xl font-bold text-gray-800 dark:text-gray-100">
               {sticker.name ||
                 settings.t.stickerBook.defaultName.replace(
                   "{name}",
@@ -220,7 +220,9 @@
             </h2>
           {/if}
 
-          <div class="text-sm text-gray-500 flex flex-col gap-1 items-center">
+          <div
+            class="text-sm text-gray-500 dark:text-gray-400 flex flex-col gap-1 items-center"
+          >
             {#if sticker.originalOwnerProfile}
               <span
                 >Minter: <span class="font-medium text-primary"
@@ -230,7 +232,7 @@
               >
             {/if}
             {#if sticker.obtainedAt}
-              <span class="text-xs text-gray-400"
+              <span class="text-xs text-gray-400 dark:text-gray-500"
                 >Obtained: {new Date(
                   sticker.obtainedAt,
                 ).toLocaleDateString()}</span
@@ -266,7 +268,7 @@
               </div>
               {#each editTags as tag}
                 <span
-                  class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-primary/10 text-primary"
+                  class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-primary/10 dark:bg-primary/20 text-primary"
                 >
                   #{tag}
                   <button
@@ -294,7 +296,7 @@
                   type="text"
                   bind:value={newTagInput}
                   placeholder="Add tag..."
-                  class="px-3 py-1 text-sm bg-gray-50 border border-transparent focus:bg-white focus:border-primary rounded-full outline-none w-24 transition-all"
+                  class="px-3 py-1 text-sm bg-gray-50 dark:bg-gray-800 border border-transparent focus:bg-white dark:focus:bg-gray-800 focus:border-primary rounded-full outline-none w-24 transition-all text-gray-800 dark:text-gray-100"
                   onkeydown={(e) => e.key === "Enter" && addTag()}
                 />
                 <button
@@ -319,7 +321,7 @@
             {:else if (sticker.tags?.length || 0) > 0}
               {#each sticker.tags || [] as tag}
                 <span
-                  class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-gray-100 text-gray-600"
+                  class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300"
                 >
                   #{tag}
                 </span>
@@ -331,8 +333,12 @@
         </div>
 
         {#if sticker.message}
-          <div class="bg-yellow-50 p-4 rounded-xl border border-yellow-100/50">
-            <p class="text-gray-600 italic text-center">"{sticker.message}"</p>
+          <div
+            class="bg-yellow-50 dark:bg-yellow-900/30 p-4 rounded-xl border border-yellow-100/50 dark:border-yellow-900/50"
+          >
+            <p class="text-gray-600 dark:text-gray-300 italic text-center">
+              "{sticker.message}"
+            </p>
           </div>
         {/if}
       </div>
@@ -344,12 +350,12 @@
       <!-- Assuming owner is agent.assertDid. -->
       {#if agent.assertDid && sticker.uri.includes(agent.assertDid)}
         <div
-          class="p-4 bg-gray-50/80 border-t border-gray-100 flex justify-between items-center"
+          class="p-4 bg-gray-50/80 dark:bg-gray-900/80 border-t border-gray-100 dark:border-gray-700 flex justify-between items-center"
         >
           {#if isEditing}
             <button
               onclick={() => (isEditing = false)}
-              class="px-4 py-2 text-gray-500 hover:text-gray-700 font-medium"
+              class="px-4 py-2 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 font-medium"
               disabled={isSaving}
             >
               {settings.t.common.cancel}
@@ -376,7 +382,7 @@
             </div>
             <button
               onclick={() => (isEditing = true)}
-              class="px-6 py-2 bg-white border border-gray-200 text-gray-700 hover:bg-gray-50 hover:border-gray-300 rounded-full font-bold transition-all shadow-sm"
+              class="px-6 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 hover:border-gray-300 dark:hover:border-gray-600 rounded-full font-bold transition-all shadow-sm"
             >
               {settings.t.stickerViewer.editDetails}
             </button>

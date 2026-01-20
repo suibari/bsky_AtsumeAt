@@ -625,3 +625,29 @@ export async function loadStickerLikeState(agent: Agent, sticker: StickerWithPro
     likers
   };
 }
+
+export function sortStickersByMinter(
+  stickers: StickerWithProfile[],
+  primaryMinterDid: string,
+): StickerWithProfile[] {
+  return stickers.sort((a, b) => {
+    const isPrimaryA = a.originalOwner === primaryMinterDid;
+    const isPrimaryB = b.originalOwner === primaryMinterDid;
+
+    if (isPrimaryA && !isPrimaryB) return -1;
+    if (!isPrimaryA && isPrimaryB) return 1;
+
+    const minterA =
+      a.originalOwnerProfile?.displayName ||
+      a.originalOwnerProfile?.handle ||
+      a.originalOwner ||
+      "Unknown";
+    const minterB =
+      b.originalOwnerProfile?.displayName ||
+      b.originalOwnerProfile?.handle ||
+      b.originalOwner ||
+      "Unknown";
+
+    return minterA.localeCompare(minterB);
+  });
+}

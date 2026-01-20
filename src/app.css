@@ -1,28 +1,53 @@
 @import "tailwindcss";
 
-@theme {
+@custom-variant dark (&:where(.dark, .dark *));
+
+:root {
   --color-primary: #FFB7B2; /* Soft Pink */
   --color-secondary: #C7F9CC; /* Mint Green */
   --color-accent: #FFF4BD; /* Creamy Yellow */
-  --color-background: #FEFEFA; /* Off-white */
+  --color-background: #FFFFFF;
   --color-surface: #FFFFFF; /* White */
+  --color-text-primary: #5d5d5d;
+  --color-text-secondary: #4b5563;
+  --color-border: #e5e7eb;
+}
+
+.dark {
+  --color-primary: #FFB7B2; /* Keep same? Or Adjust? Keeping same for now */
+  --color-secondary: #C7F9CC;
+  --color-accent: #FFF4BD;
+  --color-background: #000000; /* Pure Black requested */
+  --color-surface: #121212;
+  --color-text-primary: #f3f4f6; /* Gray 100 */
+  --color-text-secondary: #d1d5db; /* Gray 300 */
+  --color-border: #374151;
+}
+
+@theme {
   --font-display: "Zen Maru Gothic", sans-serif;
   --font-body: "Zen Maru Gothic", sans-serif;
+  /* Use the CSS variables */
+  --color-primary: var(--color-primary);
+  --color-secondary: var(--color-secondary);
+  --color-accent: var(--color-accent);
+  --color-background: var(--color-background);
+  --color-surface: var(--color-surface);
 }
 
 body {
   background-color: var(--color-background);
-  color: #5d5d5d; /* Soft dark gray */
+  color: var(--color-text-primary);
   font-family: var(--font-body);
 }
 
 @layer utilities {
   .card-glass {
-    @apply bg-white/80 backdrop-blur-sm rounded-[2rem] shadow-md border-2 border-primary/20;
+    @apply bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm rounded-[2rem] shadow-md border-2 border-primary/20 dark:border-primary/10;
   }
 
   .card-glass-strong {
-    @apply bg-white/95 backdrop-blur-xl rounded-[2rem] shadow-2xl border-2 border-primary/20;
+    @apply bg-white/95 dark:bg-gray-900/95 backdrop-blur-xl rounded-[2rem] shadow-2xl border-2 border-primary/20 dark:border-primary/10;
   }
 
   .btn-primary {
@@ -34,10 +59,10 @@ body {
   }
 
   .sticker-card-interactive {
-    @apply relative bg-white rounded-[1.5rem] p-3 shadow-sm hover:shadow-lg transition-all duration-300 border-2 border-transparent hover:border-primary/50 hover:-translate-y-1;
+    @apply relative bg-white dark:bg-gray-800 rounded-[1.5rem] p-3 shadow-sm hover:shadow-lg transition-all duration-300 border-2 border-transparent hover:border-primary/50 hover:-translate-y-1;
   }
 
   .input-text {
-    @apply border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition;
+    @apply border border-gray-300 dark:border-gray-700 rounded-lg p-3 focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100;
   }
 }
